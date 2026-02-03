@@ -1,0 +1,64 @@
+[workspace]
+
+resolver = "2"
+
+members = []
+
+[workspace.package]
+version = "0.0.1"
+edition = "2021"
+license = "MIT"
+authors = ["Ramate LLC"]
+repository = "www.github.com/ramate/fuste"
+homepage = "www.github.com/ramate/fuste"
+publish = false
+rust-version = "1.85.0"
+
+
+
+[workspace.dependencies]
+anyhow = "1.0"
+futures = "0.3.17"
+serde = "1.0"
+serde_json = "1.0"
+serde_derive = "1.0"
+thiserror = "1.0.50"
+goblin = { version = "0.10.3" }
+clap = { version = "4.4.10", features = ["derive"] }
+tokio = { version = "1.35.1", features = ["full"] }
+syn = { version = "2.0", features = ["full"] }
+quote = "1.0.23"
+proc-macro2 = "1.0.32"
+paste = { version = "1.0", default-features = false }
+
+orfile = { git = "https://github.com/movementlabsxyz/orfile.git", rev = "d02299214e5aa202130cd1eb9593ce8064d1ec69" }
+orfile-util = { git = "https://github.com/movementlabsxyz/orfile.git", rev = "d02299214e5aa202130cd1eb9593ce8064d1ec69" }
+orfile-macro = { git = "https://github.com/movementlabsxyz/orfile.git", rev = "d02299214e5aa202130cd1eb9593ce8064d1ec69" }
+clap-markdown-ext = { git = "https://github.com/movementlabsxyz/clap-markdown-ext.git", rev = "8f54fe424504bf37fb01dc69aaed8166e429fe6a"}
+
+[workspace.lints.clippy]
+debug_assert_with_mut_call = "deny"
+inefficient_to_string = "deny"
+map_flatten = "deny"
+manual_ok_or = "deny"
+doc_link_with_quotes = "deny"
+match_same_arms = "deny"
+semicolon_if_nothing_returned = "deny"
+unwrap_used = "warn"
+expect_used = "warn"
+
+[profile.dev]
+panic = "unwind"
+
+[profile.release.build-override]
+opt-level = 3
+
+[profile.wasm-dev]
+inherits = "dev"
+opt-level = 1
+
+[profile.server-dev]
+inherits = "dev"
+
+[profile.android-dev]
+inherits = "dev"
