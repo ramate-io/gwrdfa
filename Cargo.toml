@@ -2,7 +2,9 @@
 
 resolver = "2"
 
-members = []
+members = [
+  "gwrdfa/parabyzantine"
+]
 
 [workspace.package]
 version = "0.0.1"
