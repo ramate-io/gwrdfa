@@ -1,27 +1,32 @@
-use crate::buffer::{Bufferlike, Bundle, Indexlike, Querylike};
+use crate::buffer::{Bufferlike, Bundle, Querylike};
 use core::marker::PhantomData;
 
 /// Facts are entities that exist at a particular snapshot of the buffer.
 #[derive(Debug, Copy, Clone)]
-pub struct Facts<'a, Entity: Sized, F: Bufferlike<Entity>> {
-	inner: &'a F,
+pub struct Facts<'a, Entity: Sized, Buffer: Bufferlike<Entity>> {
+	inner: &'a Buffer,
 	__phantom: PhantomData<Entity>,
 }
 
-impl<'a, Entity: Sized, F: Bufferlike<Entity>> Facts<'a, Entity, F> {
-	pub fn new(inner: &'a F) -> Self {
+impl<'a, Entity: Sized, Buffer: Bufferlike<Entity>> Facts<'a, Entity, Buffer> {
+	pub fn new(inner: &'a Buffer) -> Self {
 		Self { inner, __phantom: PhantomData }
 	}
 
 	/// Queries the facts in the buffer.
-	pub fn query<
-		B: Bundle<Entity> + 'a,
-		Query: Querylike<Entity, F, B> + 'a,
-		Index: Indexlike<Entity, F, B, Query> + 'a,
-	>(
+	pub fn query<B: Bundle<Entity> + 'a, Query: Querylike<Entity, Buffer, B> + 'a>(
 		&'a self,
-		index: Index,
-	) -> Query {
-		index.query(self.inner)
+		mut query: Query,
+	) -> impl Iterator<Item = (Entity, B)> + 'a {
+		core::iter::from_fn(move || query.next(self.inner))
+	}
+
+	/// Gets a bundle from the facts in the buffer.
+	pub fn get<B: Bundle<Entity>, Query: Querylike<Entity, Buffer, B>>(
+		&self,
+		entity: Entity,
+		query: Query,
+	) -> Option<B> {
+		query.get(self.inner, entity)
 	}
 }

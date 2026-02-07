@@ -23,17 +23,6 @@ pub trait Bundle<T> {
 ///
 /// Using them should mostly be encapsulated behind [Facts]
 pub trait Bufferlike<Entity: Sized>: Sized {
-	fn query<
-		B: Bundle<Entity>,
-		Query: Querylike<Entity, Self, B>,
-		I: Indexlike<Entity, Self, B, Query>,
-	>(
-		&self,
-		index: I,
-	) -> Query {
-		index.query(self)
-	}
-
 	fn insert<B: Bundle<Entity>>(&mut self, entity: Option<Entity>, bundle: B);
 
 	fn remove<B: Bundle<Entity>>(&mut self, entity: Entity, bundle: B);
@@ -41,27 +30,14 @@ pub trait Bufferlike<Entity: Sized>: Sized {
 	fn remove_entity(&mut self, entity: Entity);
 }
 
-/// Indexes handle building query objects.
-///
-/// They are used for logical optimizations, i.e.,
-/// so that we don't always have to construct queries that literally iterate over the entire buffer.
-pub trait Indexlike<
-	Entity: Sized,
-	Buffer: Bufferlike<Entity>,
-	B: Bundle<Entity>,
-	Query: Querylike<Entity, Buffer, B>,
->: Sized
-{
-	fn query(&self, buffer: &Buffer) -> Query;
-}
-
 /// Queries are view helpers that are used to look at values in the buffer.
+/// They can also perform logical optimizations w.r.t. the buffer and the intended types or values.
 ///
 /// They are constructed from indexes and contain bespoke ways to work with the buffer.
 pub trait Querylike<Entity: Sized, Buffer: Bufferlike<Entity>, B: Bundle<Entity>> {
 	fn next(&mut self, buffer: &Buffer) -> Option<(Entity, B)>;
 
-	fn get(&self, entity: Entity) -> Option<B>;
+	fn get(&self, buffer: &Buffer, entity: Entity) -> Option<B>;
 }
 
 /// Draft buffers are buffers that are not yet committed to the main buffer.

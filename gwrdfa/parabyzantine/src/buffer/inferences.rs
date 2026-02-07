@@ -6,13 +6,13 @@ use core::marker::PhantomData;
 /// They act on the draft buffer, and are then committed to the main buffer in a single operation.
 /// This a constrained semantic model that ensures atomicity of the commit operation.
 #[derive(Debug)]
-pub struct Inferences<'a, Entity: Sized, D: DraftBufferlike<Entity>> {
-	inner: &'a mut D,
+pub struct Inferences<Entity: Sized, D: DraftBufferlike<Entity>> {
+	inner: D,
 	__phantom: PhantomData<Entity>,
 }
 
-impl<'a, Entity: Sized, D: DraftBufferlike<Entity>> Inferences<'a, Entity, D> {
-	pub fn new(inner: &'a mut D) -> Self {
+impl<Entity: Sized, D: DraftBufferlike<Entity>> Inferences<Entity, D> {
+	pub fn new(inner: D) -> Self {
 		Self { inner, __phantom: PhantomData }
 	}
 
