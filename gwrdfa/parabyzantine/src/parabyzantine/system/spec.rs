@@ -1,6 +1,10 @@
 use crate::buffer::{Bufferlike, DraftBufferlike};
 
-pub trait ParabyzantineWorldSpec {
+pub trait ParabyzantineMember<Spec: ParabyzantineSystemSpec, S: ParabyzantineSystem<Spec>> {
+	fn parabyzantine_buffer(system: &S) -> &Spec::CertificateBuffer;
+}
+
+pub trait ParabyzantineSystemSpec {
 	type CertificateEntity: Sized;
 	type CertificateBuffer: Bufferlike<Self::CertificateEntity>;
 	type CertificateDraftBuffer: DraftBufferlike<Self::CertificateEntity, Self::CertificateBuffer>;

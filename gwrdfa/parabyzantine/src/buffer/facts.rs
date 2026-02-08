@@ -30,3 +30,9 @@ impl<'a, Entity: Sized, Buffer: Bufferlike<Entity>> Facts<'a, Entity, Buffer> {
 		query.get(self.inner, entity)
 	}
 }
+
+impl<'a, Entity: Sized, Buffer: Bufferlike<Entity>> From<&'a Buffer> for Facts<'a, Entity, Buffer> {
+	fn from(inner: &'a Buffer) -> Self {
+		Facts::new(inner)
+	}
+}

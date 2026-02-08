@@ -1,12 +1,12 @@
 use crate::parabyzantine::broadcast_in::{
 	ParabyzantineBroadcastInSpec, ParabyzantineBroadcastInWorld,
 };
-use crate::parabyzantine::world::{ParabyzantineWorld, ParabyzantineWorldSpec};
+use crate::parabyzantine::system::{ParabyzantineSystem, ParabyzantineSystemSpec};
 
 /// Blanket implementation for the agreement spec.
 ///
 /// Downcasting the world to an agreement world.
-impl<Spec: ParabyzantineWorldSpec> ParabyzantineBroadcastInSpec for Spec {
+impl<Spec: ParabyzantineSystemSpec> ParabyzantineBroadcastInSpec for Spec {
 	type BroadcastEntity = Spec::BroadcastEntity;
 	type BroadcastBuffer = Spec::BroadcastBuffer;
 	type BroadcastDraftBuffer = Spec::BroadcastDraftBuffer;
@@ -18,30 +18,30 @@ impl<Spec: ParabyzantineWorldSpec> ParabyzantineBroadcastInSpec for Spec {
 	type TransactionDraftBuffer = Spec::TransactionDraftBuffer;
 }
 
-impl<Spec: ParabyzantineWorldSpec, World: ParabyzantineWorld<Spec>>
+impl<Spec: ParabyzantineSystemSpec, World: ParabyzantineSystem<Spec>>
 	ParabyzantineBroadcastInWorld<Spec> for World
 {
 	fn broadcast_buffer(&self) -> &Spec::BroadcastBuffer {
-		ParabyzantineWorld::broadcast_buffer(self)
+		ParabyzantineSystem::broadcast_buffer(self)
 	}
 
 	fn broadcast_draft_buffer(&self) -> Spec::BroadcastDraftBuffer {
-		ParabyzantineWorld::broadcast_draft_buffer(self)
+		ParabyzantineSystem::broadcast_draft_buffer(self)
 	}
 
 	fn certificate_buffer(&self) -> &Spec::CertificateBuffer {
-		ParabyzantineWorld::certificate_buffer(self)
+		ParabyzantineSystem::certificate_buffer(self)
 	}
 
 	fn certificate_draft_buffer(&self) -> Spec::CertificateDraftBuffer {
-		ParabyzantineWorld::certificate_draft_buffer(self)
+		ParabyzantineSystem::certificate_draft_buffer(self)
 	}
 
 	fn transaction_buffer(&self) -> &Spec::TransactionBuffer {
-		ParabyzantineWorld::transaction_buffer(self)
+		ParabyzantineSystem::transaction_buffer(self)
 	}
 
 	fn transaction_draft_buffer(&self) -> Spec::TransactionDraftBuffer {
-		ParabyzantineWorld::transaction_draft_buffer(self)
+		ParabyzantineSystem::transaction_draft_buffer(self)
 	}
 }

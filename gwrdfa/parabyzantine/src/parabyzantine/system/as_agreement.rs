@@ -1,10 +1,12 @@
-use crate::parabyzantine::agreement::{ParabyzantineAgreementSpec, ParabyzantineAgreementWorld};
-use crate::parabyzantine::world::{ParabyzantineWorld, ParabyzantineWorldSpec};
+use crate::parabyzantine::agreement::{
+	system::ParabyzantineAgreementSystem, ParabyzantineAgreementSpec,
+};
+use crate::parabyzantine::system::{ParabyzantineSystem, ParabyzantineSystemSpec};
 
 /// Blanket implementation for the agreement spec.
 ///
 /// Downcasting the world to an agreement world.
-impl<Spec: ParabyzantineWorldSpec> ParabyzantineAgreementSpec for Spec {
+impl<Spec: ParabyzantineSystemSpec> ParabyzantineAgreementSpec for Spec {
 	type CertificateEntity = Spec::CertificateEntity;
 	type CertificateBuffer = Spec::CertificateBuffer;
 	type CertificateDraftBuffer = Spec::CertificateDraftBuffer;
@@ -13,22 +15,22 @@ impl<Spec: ParabyzantineWorldSpec> ParabyzantineAgreementSpec for Spec {
 	type AgreementDraftBuffer = Spec::AgreementDraftBuffer;
 }
 
-impl<Spec: ParabyzantineWorldSpec, World: ParabyzantineWorld<Spec>>
-	ParabyzantineAgreementWorld<Spec> for World
+impl<Spec: ParabyzantineSystemSpec, World: ParabyzantineSystem<Spec>>
+	ParabyzantineAgreementSystem<Spec> for World
 {
 	fn certificate_buffer(&self) -> &Spec::CertificateBuffer {
-		ParabyzantineWorld::certificate_buffer(self)
+		ParabyzantineSystem::certificate_buffer(self)
 	}
 
 	fn certificate_draft_buffer(&self) -> Spec::CertificateDraftBuffer {
-		ParabyzantineWorld::certificate_draft_buffer(self)
+		ParabyzantineSystem::certificate_draft_buffer(self)
 	}
 
 	fn agreement_buffer(&self) -> &Spec::AgreementBuffer {
-		ParabyzantineWorld::agreement_buffer(self)
+		ParabyzantineSystem::agreement_buffer(self)
 	}
 
 	fn agreement_draft_buffer(&self) -> Spec::AgreementDraftBuffer {
-		ParabyzantineWorld::agreement_draft_buffer(self)
+		ParabyzantineSystem::agreement_draft_buffer(self)
 	}
 }

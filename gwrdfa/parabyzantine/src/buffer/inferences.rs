@@ -31,3 +31,11 @@ impl<Entity: Sized, Buffer: Bufferlike<Entity>, D: DraftBufferlike<Entity, Buffe
 		self.inner.draft_remove_entity(entity);
 	}
 }
+
+impl<Entity: Sized, Buffer: Bufferlike<Entity>, D: DraftBufferlike<Entity, Buffer>> From<D>
+	for Inferences<Entity, Buffer, D>
+{
+	fn from(inner: D) -> Self {
+		Inferences::new(inner)
+	}
+}
