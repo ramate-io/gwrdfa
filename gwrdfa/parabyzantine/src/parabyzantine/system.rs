@@ -1,4 +1,4 @@
-// pub mod as_agreement;
+pub mod as_agreement;
 //pub mod as_broadcast_in;
 //pub mod as_broadcast_out;
 //pub mod as_task;
@@ -48,7 +48,7 @@ pub trait ParabyzantineSystemSpec<System: ParabyzantineSystem<Self>>: Sized {
 }
 
 pub trait ParabyzantineSystem<Spec: ParabyzantineSystemSpec<Self>>: Sized {
-	fn world(&self) -> ParabyzantineWorld<Spec, Self> {
+	fn parabyzantine_world(&self) -> ParabyzantineWorld<Spec, Self> {
 		ParabyzantineWorld {
 			certificate_facts: self.member::<Spec::CertificateBuffer>().into(),
 			certificate_inferences: self.produce::<Spec::CertificateDraftBuffer>().into(),
@@ -106,6 +106,6 @@ impl<'a, Spec: ParabyzantineSystemSpec<System>, System: ParabyzantineSystem<Spec
 	for ParabyzantineWorld<'a, Spec, System>
 {
 	fn view(from: &'a System) -> Self {
-		from.world()
+		from.parabyzantine_world()
 	}
 }
