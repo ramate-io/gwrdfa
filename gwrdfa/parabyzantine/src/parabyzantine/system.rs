@@ -6,7 +6,7 @@ pub mod as_agreement;
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
 use crate::{Container, Factory, Member, Product, View};
 
-pub trait ParabyzantineSystemSpec<System: ParabyzantineSystem<Self>>: Sized {
+pub trait ParabyzantineSpec<System: ParabyzantineSystem<Self>>: Sized {
 	/// The entity type for the certificate.
 	type CertificateEntity: Sized;
 	/// The buffer type for the certificate.
@@ -47,7 +47,7 @@ pub trait ParabyzantineSystemSpec<System: ParabyzantineSystem<Self>>: Sized {
 		+ Product<System>;
 }
 
-pub trait ParabyzantineSystem<Spec: ParabyzantineSystemSpec<Self>>: Sized {
+pub trait ParabyzantineSystem<Spec: ParabyzantineSpec<Self>>: Sized {
 	fn parabyzantine_world(&self) -> ParabyzantineWorld<Spec, Self> {
 		ParabyzantineWorld {
 			certificate_facts: self.member::<Spec::CertificateBuffer>().into(),
@@ -66,7 +66,7 @@ pub trait ParabyzantineSystem<Spec: ParabyzantineSystemSpec<Self>>: Sized {
 
 pub struct ParabyzantineWorld<
 	'a,
-	Spec: ParabyzantineSystemSpec<System>,
+	Spec: ParabyzantineSpec<System>,
 	System: ParabyzantineSystem<Spec>,
 > {
 	/// The facts for the certificate.
@@ -102,7 +102,7 @@ pub struct ParabyzantineWorld<
 /// View the world of a parabyzantine system.
 ///
 /// This is implemented for ergonomics so that the user can write in the same style if they so choose.
-impl<'a, Spec: ParabyzantineSystemSpec<System>, System: ParabyzantineSystem<Spec>> View<'a, System>
+impl<'a, Spec: ParabyzantineSpec<System>, System: ParabyzantineSystem<Spec>> View<'a, System>
 	for ParabyzantineWorld<'a, Spec, System>
 {
 	fn view(from: &'a System) -> Self {

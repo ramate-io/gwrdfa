@@ -1,6 +1,3 @@
-pub mod system;
-pub mod world;
-
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
 use crate::{Container, Factory, Member, Product, View};
 
@@ -50,6 +47,9 @@ pub struct AgreementWorld<
 		Inferences<Spec::AgreementEntity, Spec::AgreementBuffer, Spec::AgreementDraftBuffer>,
 }
 
+/// View the world of a parabyzantine agreement system.
+///
+/// This is implemented for ergonomics so that the user can write in the same style if they so choose.
 impl<'a, Spec: ParabyzantineAgreementSpec<System>, System: ParabyzantineAgreementSystem<Spec>>
 	View<'a, System> for AgreementWorld<'a, Spec, System>
 {
