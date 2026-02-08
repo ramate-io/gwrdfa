@@ -1,5 +1,5 @@
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
-use crate::{Container, Factory, Member, Product, View, Visitor};
+use crate::{Comember, Container, Factory, Member, Product, View, Visitor};
 
 /// Specifies the entities and buffers for a parabyzantine agreement Data.
 ///
@@ -26,7 +26,13 @@ pub trait ParabyzantineAgreementData<Spec: ParabyzantineAgreementSpec<Self>>: Si
 	fn parabyzantine_agreement_world(&self) -> AgreementWorld<Spec, Self>;
 }
 
-/// Blanket implementation for the agreement Data when members are available.
+/// Blanket implementation for the agreement Data when members and products are available.
+///
+/// Currently, we're forcing this pattern by requiring the Spec to bound these fields as members and products of the Data.
+/// This is more of a developer awareness thing than a technical requirement.
+/// It's easier to debug where you're coming up short on members and products
+/// if it points to a particular field in the spec, as opposed to simply showing
+/// a failed trait bound.
 impl<'a, Spec: ParabyzantineAgreementSpec<Data>, Data> ParabyzantineAgreementData<Spec> for Data
 where
 	Data: Sized,
@@ -70,13 +76,19 @@ impl<'a, Spec: ParabyzantineAgreementSpec<Data>, Data: ParabyzantineAgreementDat
 	}
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct ParabyzantineAgreement;
+
 pub trait ParabyzantineAgreementScheduleSpec<
 	Spec: ParabyzantineAgreementSpec<Data>,
 	Data: ParabyzantineAgreementData<Spec>,
+	Scheduler: Sized,
 >: Sized
 {
 	/// The visitor for the agreement step of the Parabyzantine agreement Data.
 	///
-	/// This visitor is responsible for visiting the [AgreementWorld] and performing the agreement step.
-	type AgreementVisitor: for<'a> Visitor<AgreementWorld<'a, Spec, Data>>;
+	/// This visitor is responsible for visiting the [AgreementWorld] and
+	/// making inferences from the available facts.
+	type AgreementVisitor: for<'a> Visitor<AgreementWorld<'a, Spec, Data>>
+		+ Comember<ParabyzantineAgreement, Scheduler>;
 }

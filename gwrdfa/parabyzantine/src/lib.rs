@@ -59,3 +59,27 @@ pub trait Visitor<H> {
 }
 
 impl<H> Host for H where H: Sized {}
+
+pub trait Cocontainer: Sized {
+	fn comember<R, Co: Comember<R, Self>>(&self) -> &Co {
+		Co::as_coref(self)
+	}
+
+	fn comember_mut<R, Co: Comember<R, Self>>(&mut self) -> &mut Co {
+		Co::as_comut(self)
+	}
+}
+
+/// Comember is a trait that allows the extraction of a member from a container via a related type.
+///
+/// This is often useful when you want to define some higher-level protocol,
+/// which varies with underlying types.
+///
+/// "Grab be whatever the underlying type mapped to the well known comember type is."
+pub trait Comember<R, C> {
+	fn as_coref(of: &C) -> &Self;
+
+	fn as_comut(of: &mut C) -> &mut Self;
+}
+
+impl<C> Cocontainer for C where C: Sized {}
