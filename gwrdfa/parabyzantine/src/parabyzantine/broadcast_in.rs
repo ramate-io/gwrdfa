@@ -17,33 +17,47 @@ pub trait ParabyzantineBroadcastInSpec {
 pub trait ParabyzantineBroadcastInWorld<Spec: ParabyzantineBroadcastInSpec> {
 	fn broadcast_buffer(&self) -> &Spec::BroadcastBuffer;
 
-	fn broadcast_facts(&self) -> Facts<Spec::BroadcastEntity, Spec::BroadcastBuffer>;
+	fn broadcast_facts(&self) -> Facts<Spec::BroadcastEntity, Spec::BroadcastBuffer> {
+		Facts::new(self.broadcast_buffer())
+	}
 
 	fn broadcast_draft_buffer(&self) -> Spec::BroadcastDraftBuffer;
 
 	fn broadcast_inferences(
 		&self,
-	) -> Inferences<Spec::BroadcastEntity, Spec::BroadcastBuffer, Spec::BroadcastDraftBuffer>;
+	) -> Inferences<Spec::BroadcastEntity, Spec::BroadcastBuffer, Spec::BroadcastDraftBuffer> {
+		Inferences::new(self.broadcast_draft_buffer())
+	}
 
 	fn transaction_buffer(&self) -> &Spec::TransactionBuffer;
 
-	fn transaction_facts(&self) -> Facts<Spec::TransactionEntity, Spec::TransactionBuffer>;
+	fn transaction_facts(&self) -> Facts<Spec::TransactionEntity, Spec::TransactionBuffer> {
+		Facts::new(self.transaction_buffer())
+	}
 
 	fn transaction_draft_buffer(&self) -> Spec::TransactionDraftBuffer;
 
 	fn transaction_inferences(
 		&self,
-	) -> Inferences<Spec::TransactionEntity, Spec::TransactionBuffer, Spec::TransactionDraftBuffer>;
+	) -> Inferences<Spec::TransactionEntity, Spec::TransactionBuffer, Spec::TransactionDraftBuffer>
+	{
+		Inferences::new(self.transaction_draft_buffer())
+	}
 
 	fn certificate_buffer(&self) -> &Spec::CertificateBuffer;
 
-	fn certificate_facts(&self) -> Facts<Spec::CertificateEntity, Spec::CertificateBuffer>;
+	fn certificate_facts(&self) -> Facts<Spec::CertificateEntity, Spec::CertificateBuffer> {
+		Facts::new(self.certificate_buffer())
+	}
 
 	fn certificate_draft_buffer(&self) -> Spec::CertificateDraftBuffer;
 
 	fn certificate_inferences(
 		&self,
-	) -> Inferences<Spec::CertificateEntity, Spec::CertificateBuffer, Spec::CertificateDraftBuffer>;
+	) -> Inferences<Spec::CertificateEntity, Spec::CertificateBuffer, Spec::CertificateDraftBuffer>
+	{
+		Inferences::new(self.certificate_draft_buffer())
+	}
 }
 
 /// Parabyzantine broadcast in systems are concerned with deriving transactions and certificates from broadcasts.

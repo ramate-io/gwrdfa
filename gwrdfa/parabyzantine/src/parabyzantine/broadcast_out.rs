@@ -15,23 +15,31 @@ pub trait ParabyzantineBroadcastOutSpec {
 pub trait ParabyzantineBroadcastOutWorld<Spec: ParabyzantineBroadcastOutSpec> {
 	fn task_buffer(&self) -> &Spec::TaskBuffer;
 
-	fn task_facts(&self) -> Facts<Spec::TaskEntity, Spec::TaskBuffer>;
+	fn task_facts(&self) -> Facts<Spec::TaskEntity, Spec::TaskBuffer> {
+		Facts::new(self.task_buffer())
+	}
 
 	fn task_draft_buffer(&self) -> Spec::TaskDraftBuffer;
 
 	fn task_inferences(
 		&self,
-	) -> Inferences<Spec::TaskEntity, Spec::TaskBuffer, Spec::TaskDraftBuffer>;
+	) -> Inferences<Spec::TaskEntity, Spec::TaskBuffer, Spec::TaskDraftBuffer> {
+		Inferences::new(self.task_draft_buffer())
+	}
 
 	fn broadcast_buffer(&self) -> &Spec::BroadcastBuffer;
 
-	fn broadcast_facts(&self) -> Facts<Spec::BroadcastEntity, Spec::BroadcastBuffer>;
+	fn broadcast_facts(&self) -> Facts<Spec::BroadcastEntity, Spec::BroadcastBuffer> {
+		Facts::new(self.broadcast_buffer())
+	}
 
 	fn broadcast_draft_buffer(&self) -> Spec::BroadcastDraftBuffer;
 
 	fn broadcast_inferences(
 		&self,
-	) -> Inferences<Spec::BroadcastEntity, Spec::BroadcastBuffer, Spec::BroadcastDraftBuffer>;
+	) -> Inferences<Spec::BroadcastEntity, Spec::BroadcastBuffer, Spec::BroadcastDraftBuffer> {
+		Inferences::new(self.broadcast_draft_buffer())
+	}
 }
 
 /// Parabyzantine broadcast out systems are concerned with deriving broadcasts from tasks.
