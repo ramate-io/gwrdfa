@@ -1,6 +1,4 @@
-use crate::parabyzantine::broadcast_out::{
-	ParabyzantineBroadcastOutData, ParabyzantineBroadcastOutSpec,
-};
+use crate::parabyzantine::broadcast_out::ParabyzantineBroadcastOutSpec;
 use crate::parabyzantine::data::{ParabyzantineData, ParabyzantineSpec};
 
 /// Blanket implementation for the broadcast out spec.
@@ -15,10 +13,4 @@ impl<Spec: ParabyzantineSpec<Data>, Data: ParabyzantineData<Spec>>
 	type BroadcastEntity = Spec::BroadcastEntity;
 	type BroadcastBuffer = Spec::BroadcastBuffer;
 	type BroadcastDraftBuffer = Spec::BroadcastDraftBuffer;
-}
-
-/// Blanket implementation for the broadcast out Data.
-impl<Spec: ParabyzantineSpec<Data>, Data: ParabyzantineData<Spec>>
-	ParabyzantineBroadcastOutData<Spec> for Data
-{
 }

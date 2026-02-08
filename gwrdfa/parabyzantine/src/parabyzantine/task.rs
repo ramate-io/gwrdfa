@@ -30,6 +30,20 @@ pub trait ParabyzantineTaskSpec<Data: ParabyzantineTaskData<Self>>: Sized {
 }
 
 pub trait ParabyzantineTaskData<Spec: ParabyzantineTaskSpec<Self>>: Sized {
+	fn parabyzantine_task_world(&self) -> TaskWorld<Spec, Self>;
+}
+
+/// Blanket implementation for the task Data when members are available.
+impl<Spec: ParabyzantineTaskSpec<Data>, Data> ParabyzantineTaskData<Spec> for Data
+where
+	Data: Sized,
+	Spec::AgreementBuffer: Member<Data>,
+	Spec::AgreementDraftBuffer: Product<Data>,
+	Spec::TransactionBuffer: Member<Data>,
+	Spec::TransactionDraftBuffer: Product<Data>,
+	Spec::TaskBuffer: Member<Data>,
+	Spec::TaskDraftBuffer: Product<Data>,
+{
 	fn parabyzantine_task_world(&self) -> TaskWorld<Spec, Self> {
 		TaskWorld {
 			agreement_facts: self.member::<Spec::AgreementBuffer>().into(),

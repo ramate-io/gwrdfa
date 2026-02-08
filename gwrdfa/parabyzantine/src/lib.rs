@@ -47,3 +47,15 @@ pub trait View<'a, F> {
 }
 
 impl<F> Scene for F where F: Sized {}
+
+pub trait Host: Sized {
+	fn visit<V: Visitor<Self>>(&mut self, visitor: &mut V) {
+		visitor.visit(self);
+	}
+}
+
+pub trait Visitor<H> {
+	fn visit(&mut self, host: &mut H);
+}
+
+impl<H> Host for H where H: Sized {}

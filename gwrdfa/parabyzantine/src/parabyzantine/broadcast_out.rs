@@ -22,6 +22,18 @@ pub trait ParabyzantineBroadcastOutSpec<Data: ParabyzantineBroadcastOutData<Self
 }
 
 pub trait ParabyzantineBroadcastOutData<Spec: ParabyzantineBroadcastOutSpec<Self>>: Sized {
+	fn parabyzantine_broadcast_out_world(&self) -> BroadcastOutWorld<Spec, Self>;
+}
+
+/// Blanket implementation for the broadcast out Data when members are available.
+impl<Spec: ParabyzantineBroadcastOutSpec<Data>, Data> ParabyzantineBroadcastOutData<Spec> for Data
+where
+	Data: Sized,
+	Spec::TaskBuffer: Member<Data>,
+	Spec::TaskDraftBuffer: Product<Data>,
+	Spec::BroadcastBuffer: Member<Data>,
+	Spec::BroadcastDraftBuffer: Product<Data>,
+{
 	fn parabyzantine_broadcast_out_world(&self) -> BroadcastOutWorld<Spec, Self> {
 		BroadcastOutWorld {
 			task_facts: self.member::<Spec::TaskBuffer>().into(),

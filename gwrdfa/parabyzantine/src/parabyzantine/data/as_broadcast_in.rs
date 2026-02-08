@@ -1,6 +1,4 @@
-use crate::parabyzantine::broadcast_in::{
-	ParabyzantineBroadcastInData, ParabyzantineBroadcastInSpec,
-};
+use crate::parabyzantine::broadcast_in::ParabyzantineBroadcastInSpec;
 use crate::parabyzantine::data::{ParabyzantineData, ParabyzantineSpec};
 
 /// Blanket implementation for the broadcast in spec.
@@ -18,10 +16,4 @@ impl<Spec: ParabyzantineSpec<Data>, Data: ParabyzantineData<Spec>>
 	type CertificateEntity = Spec::CertificateEntity;
 	type CertificateBuffer = Spec::CertificateBuffer;
 	type CertificateDraftBuffer = Spec::CertificateDraftBuffer;
-}
-
-/// Blanket implementation for the broadcast in Data.
-impl<Spec: ParabyzantineSpec<Data>, Data: ParabyzantineData<Spec>>
-	ParabyzantineBroadcastInData<Spec> for Data
-{
 }

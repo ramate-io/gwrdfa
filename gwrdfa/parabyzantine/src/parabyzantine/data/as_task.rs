@@ -1,5 +1,5 @@
 use crate::parabyzantine::data::{ParabyzantineData, ParabyzantineSpec};
-use crate::parabyzantine::task::{ParabyzantineTaskData, ParabyzantineTaskSpec};
+use crate::parabyzantine::task::ParabyzantineTaskSpec;
 
 /// Blanket implementation for the task spec.
 ///
@@ -16,10 +16,4 @@ impl<Spec: ParabyzantineSpec<Data>, Data: ParabyzantineData<Spec>> Parabyzantine
 	type TaskEntity = Spec::TaskEntity;
 	type TaskBuffer = Spec::TaskBuffer;
 	type TaskDraftBuffer = Spec::TaskDraftBuffer;
-}
-
-/// Blanket implementation for the task Data.
-impl<Spec: ParabyzantineSpec<Data>, Data: ParabyzantineData<Spec>> ParabyzantineTaskData<Spec>
-	for Data
-{
 }

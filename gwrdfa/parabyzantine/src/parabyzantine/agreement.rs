@@ -1,5 +1,5 @@
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
-use crate::{Container, Factory, Member, Product, View};
+use crate::{Container, Factory, Member, Product, View, Visitor};
 
 /// Specifies the entities and buffers for a parabyzantine agreement Data.
 ///
@@ -23,6 +23,18 @@ pub trait ParabyzantineAgreementSpec<Data: ParabyzantineAgreementData<Self>>: Si
 }
 
 pub trait ParabyzantineAgreementData<Spec: ParabyzantineAgreementSpec<Self>>: Sized {
+	fn parabyzantine_agreement_world(&self) -> AgreementWorld<Spec, Self>;
+}
+
+/// Blanket implementation for the agreement Data when members are available.
+impl<'a, Spec: ParabyzantineAgreementSpec<Data>, Data> ParabyzantineAgreementData<Spec> for Data
+where
+	Data: Sized,
+	Spec::CertificateBuffer: Member<Data>,
+	Spec::CertificateDraftBuffer: Product<Data>,
+	Spec::AgreementBuffer: Member<Data>,
+	Spec::AgreementDraftBuffer: Product<Data>,
+{
 	fn parabyzantine_agreement_world(&self) -> AgreementWorld<Spec, Self> {
 		AgreementWorld {
 			certificate_facts: self.member::<Spec::CertificateBuffer>().into(),
@@ -56,4 +68,15 @@ impl<'a, Spec: ParabyzantineAgreementSpec<Data>, Data: ParabyzantineAgreementDat
 	fn view(from: &'a Data) -> Self {
 		from.parabyzantine_agreement_world()
 	}
+}
+
+pub trait ParabyzantineAgreementScheduleSpec<
+	Spec: ParabyzantineAgreementSpec<Data>,
+	Data: ParabyzantineAgreementData<Spec>,
+>: Sized
+{
+	/// The visitor for the agreement step of the Parabyzantine agreement Data.
+	///
+	/// This visitor is responsible for visiting the [AgreementWorld] and performing the agreement step.
+	type AgreementVisitor: for<'a> Visitor<AgreementWorld<'a, Spec, Data>>;
 }

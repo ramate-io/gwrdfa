@@ -31,6 +31,20 @@ pub trait ParabyzantineBroadcastInSpec<Data: ParabyzantineBroadcastInData<Self>>
 }
 
 pub trait ParabyzantineBroadcastInData<Spec: ParabyzantineBroadcastInSpec<Self>>: Sized {
+	fn parabyzantine_broadcast_in_world(&self) -> BroadcastInWorld<Spec, Self>;
+}
+
+/// Blanket implementation for the broadcast in Data when members are available.
+impl<Spec: ParabyzantineBroadcastInSpec<Data>, Data> ParabyzantineBroadcastInData<Spec> for Data
+where
+	Data: Sized,
+	Spec::BroadcastBuffer: Member<Data>,
+	Spec::BroadcastDraftBuffer: Product<Data>,
+	Spec::TransactionBuffer: Member<Data>,
+	Spec::TransactionDraftBuffer: Product<Data>,
+	Spec::CertificateBuffer: Member<Data>,
+	Spec::CertificateDraftBuffer: Product<Data>,
+{
 	fn parabyzantine_broadcast_in_world(&self) -> BroadcastInWorld<Spec, Self> {
 		BroadcastInWorld {
 			broadcast_facts: self.member::<Spec::BroadcastBuffer>().into(),

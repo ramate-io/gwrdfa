@@ -48,6 +48,24 @@ pub trait ParabyzantineSpec<Data: ParabyzantineData<Self>>: Sized {
 }
 
 pub trait ParabyzantineData<Spec: ParabyzantineSpec<Self>>: Sized {
+	fn parabyzantine_world(&self) -> ParabyzantineWorld<Spec, Self>;
+}
+
+/// Blanket implementation for the Parabyzantine Data when members are available.
+impl<'a, Spec: ParabyzantineSpec<Data>, Data> ParabyzantineData<Spec> for Data
+where
+	Data: Sized,
+	Spec::CertificateBuffer: Member<Data>,
+	Spec::CertificateDraftBuffer: Product<Data>,
+	Spec::AgreementBuffer: Member<Data>,
+	Spec::AgreementDraftBuffer: Product<Data>,
+	Spec::TransactionBuffer: Member<Data>,
+	Spec::TransactionDraftBuffer: Product<Data>,
+	Spec::TaskBuffer: Member<Data>,
+	Spec::TaskDraftBuffer: Product<Data>,
+	Spec::BroadcastBuffer: Member<Data>,
+	Spec::BroadcastDraftBuffer: Product<Data>,
+{
 	fn parabyzantine_world(&self) -> ParabyzantineWorld<Spec, Self> {
 		ParabyzantineWorld {
 			certificate_facts: self.member::<Spec::CertificateBuffer>().into(),
