@@ -1,4 +1,4 @@
-use crate::buffer::{Bundle, DraftBufferlike};
+use crate::buffer::{Bufferlike, Bundle, DraftBufferlike};
 use core::marker::PhantomData;
 
 /// Inferences are entities that should be written to or modified in the buffer.
@@ -6,12 +6,15 @@ use core::marker::PhantomData;
 /// They act on the draft buffer, and are then committed to the main buffer in a single operation.
 /// This a constrained semantic model that ensures atomicity of the commit operation.
 #[derive(Debug)]
-pub struct Inferences<Entity: Sized, D: DraftBufferlike<Entity>> {
+pub struct Inferences<Entity: Sized, Buffer: Bufferlike<Entity>, D: DraftBufferlike<Entity, Buffer>>
+{
 	inner: D,
-	__phantom: PhantomData<Entity>,
+	__phantom: PhantomData<(Entity, Buffer)>,
 }
 
-impl<Entity: Sized, D: DraftBufferlike<Entity>> Inferences<Entity, D> {
+impl<Entity: Sized, Buffer: Bufferlike<Entity>, D: DraftBufferlike<Entity, Buffer>>
+	Inferences<Entity, Buffer, D>
+{
 	pub fn new(inner: D) -> Self {
 		Self { inner, __phantom: PhantomData }
 	}

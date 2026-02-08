@@ -51,7 +51,7 @@ pub trait Querylike<Entity: Sized, Buffer: Bufferlike<Entity>, B: Bundle<Entity>
 /// given a certain global condition is satisfied and then remove in a later stage when that condition is satisfied.
 ///
 /// Using them should mostly be encapsulated behind [Inferences]
-pub trait DraftBufferlike<Entity: Sized>: Sized {
+pub trait DraftBufferlike<Entity: Sized, Buffer: Bufferlike<Entity>>: Sized {
 	/// Inserts a bundle into the draft buffer.
 	///
 	/// Canonically, inserting Self::Entity as a bundle is equivalent to upserting the entity itself.
@@ -65,5 +65,6 @@ pub trait DraftBufferlike<Entity: Sized>: Sized {
 	/// Removes an entity from the draft buffer.
 	fn draft_remove_entity(&mut self, entity: Entity);
 
-	fn commit(&mut self, buffer: &mut impl Bufferlike<Entity>);
+	/// Commits the draft buffer to the main buffer.
+	fn commit(&mut self, buffer: &mut Buffer);
 }
