@@ -6,48 +6,48 @@ pub mod as_task;
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
 use crate::{Container, Factory, Member, Product, View};
 
-pub trait ParabyzantineSpec<System: ParabyzantineSystem<Self>>: Sized {
+pub trait ParabyzantineSpec<Data: ParabyzantineData<Self>>: Sized {
 	/// The entity type for the certificate.
 	type CertificateEntity: Sized;
 	/// The buffer type for the certificate.
-	type CertificateBuffer: Bufferlike<Self::CertificateEntity> + Member<System>;
+	type CertificateBuffer: Bufferlike<Self::CertificateEntity> + Member<Data>;
 	/// The draft buffer type for the certificate.
 	type CertificateDraftBuffer: DraftBufferlike<Self::CertificateEntity, Self::CertificateBuffer>
-		+ Product<System>;
+		+ Product<Data>;
 
 	/// The entity type for the agreement.
 	type AgreementEntity: Sized;
 	/// The buffer type for the agreement.
-	type AgreementBuffer: Bufferlike<Self::AgreementEntity> + Member<System>;
+	type AgreementBuffer: Bufferlike<Self::AgreementEntity> + Member<Data>;
 	/// The draft buffer type for the agreement.
 	type AgreementDraftBuffer: DraftBufferlike<Self::AgreementEntity, Self::AgreementBuffer>
-		+ Product<System>;
+		+ Product<Data>;
 
 	/// The entity type for the transaction.
 	type TransactionEntity: Sized;
 	/// The buffer type for the transaction.
-	type TransactionBuffer: Bufferlike<Self::TransactionEntity> + Member<System>;
+	type TransactionBuffer: Bufferlike<Self::TransactionEntity> + Member<Data>;
 	/// The draft buffer type for the transaction.
 	type TransactionDraftBuffer: DraftBufferlike<Self::TransactionEntity, Self::TransactionBuffer>
-		+ Product<System>;
+		+ Product<Data>;
 
 	/// The entity type for the task.
 	type TaskEntity: Sized;
 	/// The buffer type for the task.
-	type TaskBuffer: Bufferlike<Self::TaskEntity> + Member<System>;
+	type TaskBuffer: Bufferlike<Self::TaskEntity> + Member<Data>;
 	/// The draft buffer type for the task.
-	type TaskDraftBuffer: DraftBufferlike<Self::TaskEntity, Self::TaskBuffer> + Product<System>;
+	type TaskDraftBuffer: DraftBufferlike<Self::TaskEntity, Self::TaskBuffer> + Product<Data>;
 
 	/// The entity type for the broadcast.
 	type BroadcastEntity: Sized;
 	/// The buffer type for the broadcast.
-	type BroadcastBuffer: Bufferlike<Self::BroadcastEntity> + Member<System>;
+	type BroadcastBuffer: Bufferlike<Self::BroadcastEntity> + Member<Data>;
 	/// The draft buffer type for the broadcast.
 	type BroadcastDraftBuffer: DraftBufferlike<Self::BroadcastEntity, Self::BroadcastBuffer>
-		+ Product<System>;
+		+ Product<Data>;
 }
 
-pub trait ParabyzantineSystem<Spec: ParabyzantineSpec<Self>>: Sized {
+pub trait ParabyzantineData<Spec: ParabyzantineSpec<Self>>: Sized {
 	fn parabyzantine_world(&self) -> ParabyzantineWorld<Spec, Self> {
 		ParabyzantineWorld {
 			certificate_facts: self.member::<Spec::CertificateBuffer>().into(),
@@ -64,11 +64,7 @@ pub trait ParabyzantineSystem<Spec: ParabyzantineSpec<Self>>: Sized {
 	}
 }
 
-pub struct ParabyzantineWorld<
-	'a,
-	Spec: ParabyzantineSpec<System>,
-	System: ParabyzantineSystem<Spec>,
-> {
+pub struct ParabyzantineWorld<'a, Spec: ParabyzantineSpec<Data>, Data: ParabyzantineData<Spec>> {
 	/// The facts for the certificate.
 	pub certificate_facts: Facts<'a, Spec::CertificateEntity, Spec::CertificateBuffer>,
 	/// The inferences for the certificate.
@@ -99,13 +95,13 @@ pub struct ParabyzantineWorld<
 		Inferences<Spec::BroadcastEntity, Spec::BroadcastBuffer, Spec::BroadcastDraftBuffer>,
 }
 
-/// View the world of a parabyzantine system.
+/// View the world of a parabyzantine Data.
 ///
 /// This is implemented for ergonomics so that the user can write in the same style if they so choose.
-impl<'a, Spec: ParabyzantineSpec<System>, System: ParabyzantineSystem<Spec>> View<'a, System>
-	for ParabyzantineWorld<'a, Spec, System>
+impl<'a, Spec: ParabyzantineSpec<Data>, Data: ParabyzantineData<Spec>> View<'a, Data>
+	for ParabyzantineWorld<'a, Spec, Data>
 {
-	fn view(from: &'a System) -> Self {
+	fn view(from: &'a Data) -> Self {
 		from.parabyzantine_world()
 	}
 }

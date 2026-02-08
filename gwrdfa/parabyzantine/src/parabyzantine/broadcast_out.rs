@@ -1,31 +1,27 @@
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
 use crate::{Container, Factory, Member, Product, View};
 
-/// Specifies the entities and buffers for a parabyzantine broadcast out system.
+/// Specifies the entities and buffers for a parabyzantine broadcast out Data.
 ///
-/// A Parabyzantine broadcast out system is concerned with deriving broadcasts from tasks.
-pub trait ParabyzantineBroadcastOutSpec<System: ParabyzantineBroadcastOutSystem<Self>>:
-	Sized
-{
+/// A Parabyzantine broadcast out Data is concerned with deriving broadcasts from tasks.
+pub trait ParabyzantineBroadcastOutSpec<Data: ParabyzantineBroadcastOutData<Self>>: Sized {
 	/// The entity type for the task.
 	type TaskEntity: Sized;
 	/// The buffer type for the task.
-	type TaskBuffer: Bufferlike<Self::TaskEntity> + Member<System>;
+	type TaskBuffer: Bufferlike<Self::TaskEntity> + Member<Data>;
 	/// The draft buffer type for the task.
-	type TaskDraftBuffer: DraftBufferlike<Self::TaskEntity, Self::TaskBuffer> + Product<System>;
+	type TaskDraftBuffer: DraftBufferlike<Self::TaskEntity, Self::TaskBuffer> + Product<Data>;
 
 	/// The entity type for the broadcast.
 	type BroadcastEntity: Sized;
 	/// The buffer type for the broadcast.
-	type BroadcastBuffer: Bufferlike<Self::BroadcastEntity> + Member<System>;
+	type BroadcastBuffer: Bufferlike<Self::BroadcastEntity> + Member<Data>;
 	/// The draft buffer type for the broadcast.
 	type BroadcastDraftBuffer: DraftBufferlike<Self::BroadcastEntity, Self::BroadcastBuffer>
-		+ Product<System>;
+		+ Product<Data>;
 }
 
-pub trait ParabyzantineBroadcastOutSystem<Spec: ParabyzantineBroadcastOutSpec<Self>>:
-	Sized
-{
+pub trait ParabyzantineBroadcastOutData<Spec: ParabyzantineBroadcastOutSpec<Self>>: Sized {
 	fn parabyzantine_broadcast_out_world(&self) -> BroadcastOutWorld<Spec, Self> {
 		BroadcastOutWorld {
 			task_facts: self.member::<Spec::TaskBuffer>().into(),
@@ -36,11 +32,11 @@ pub trait ParabyzantineBroadcastOutSystem<Spec: ParabyzantineBroadcastOutSpec<Se
 	}
 }
 
-/// The world of the broadcast out step of a parabyzantine broadcast out system.
+/// The world of the broadcast out step of a parabyzantine broadcast out Data.
 pub struct BroadcastOutWorld<
 	'a,
-	Spec: ParabyzantineBroadcastOutSpec<System>,
-	System: ParabyzantineBroadcastOutSystem<Spec>,
+	Spec: ParabyzantineBroadcastOutSpec<Data>,
+	Data: ParabyzantineBroadcastOutData<Spec>,
 > {
 	pub task_facts: Facts<'a, Spec::TaskEntity, Spec::TaskBuffer>,
 	pub task_inferences: Inferences<Spec::TaskEntity, Spec::TaskBuffer, Spec::TaskDraftBuffer>,
@@ -49,16 +45,13 @@ pub struct BroadcastOutWorld<
 		Inferences<Spec::BroadcastEntity, Spec::BroadcastBuffer, Spec::BroadcastDraftBuffer>,
 }
 
-/// View the world of a parabyzantine broadcast out system.
+/// View the world of a parabyzantine broadcast out Data.
 ///
 /// This is implemented for ergonomics so that the user can write in the same style if they so choose.
-impl<
-		'a,
-		Spec: ParabyzantineBroadcastOutSpec<System>,
-		System: ParabyzantineBroadcastOutSystem<Spec>,
-	> View<'a, System> for BroadcastOutWorld<'a, Spec, System>
+impl<'a, Spec: ParabyzantineBroadcastOutSpec<Data>, Data: ParabyzantineBroadcastOutData<Spec>>
+	View<'a, Data> for BroadcastOutWorld<'a, Spec, Data>
 {
-	fn view(from: &'a System) -> Self {
+	fn view(from: &'a Data) -> Self {
 		from.parabyzantine_broadcast_out_world()
 	}
 }

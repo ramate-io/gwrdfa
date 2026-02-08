@@ -1,11 +1,11 @@
-use crate::parabyzantine::system::{ParabyzantineSpec, ParabyzantineSystem};
-use crate::parabyzantine::task::{ParabyzantineTaskSpec, ParabyzantineTaskSystem};
+use crate::parabyzantine::data::{ParabyzantineData, ParabyzantineSpec};
+use crate::parabyzantine::task::{ParabyzantineTaskData, ParabyzantineTaskSpec};
 
 /// Blanket implementation for the task spec.
 ///
 /// Downcasting the world to a task world.
-impl<Spec: ParabyzantineSpec<System>, System: ParabyzantineSystem<Spec>>
-	ParabyzantineTaskSpec<System> for Spec
+impl<Spec: ParabyzantineSpec<Data>, Data: ParabyzantineData<Spec>> ParabyzantineTaskSpec<Data>
+	for Spec
 {
 	type AgreementEntity = Spec::AgreementEntity;
 	type AgreementBuffer = Spec::AgreementBuffer;
@@ -18,8 +18,8 @@ impl<Spec: ParabyzantineSpec<System>, System: ParabyzantineSystem<Spec>>
 	type TaskDraftBuffer = Spec::TaskDraftBuffer;
 }
 
-/// Blanket implementation for the task system.
-impl<Spec: ParabyzantineSpec<System>, System: ParabyzantineSystem<Spec>>
-	ParabyzantineTaskSystem<Spec> for System
+/// Blanket implementation for the task Data.
+impl<Spec: ParabyzantineSpec<Data>, Data: ParabyzantineData<Spec>> ParabyzantineTaskData<Spec>
+	for Data
 {
 }

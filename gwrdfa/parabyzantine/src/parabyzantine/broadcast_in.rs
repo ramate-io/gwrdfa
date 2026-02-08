@@ -1,38 +1,36 @@
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
 use crate::{Container, Factory, Member, Product, View};
 
-/// Specifies the entities and buffers for a parabyzantine broadcast in system.
+/// Specifies the entities and buffers for a parabyzantine broadcast in Data.
 ///
-/// A Parabyzantine broadcast in system is concerned with deriving transactions and certificates from broadcasts.
-pub trait ParabyzantineBroadcastInSpec<System: ParabyzantineBroadcastInSystem<Self>>:
-	Sized
-{
+/// A Parabyzantine broadcast in Data is concerned with deriving transactions and certificates from broadcasts.
+pub trait ParabyzantineBroadcastInSpec<Data: ParabyzantineBroadcastInData<Self>>: Sized {
 	/// The entity type for the broadcast.
 	type BroadcastEntity: Sized;
 	/// The buffer type for the broadcast.
-	type BroadcastBuffer: Bufferlike<Self::BroadcastEntity> + Member<System>;
+	type BroadcastBuffer: Bufferlike<Self::BroadcastEntity> + Member<Data>;
 	/// The draft buffer type for the broadcast.
 	type BroadcastDraftBuffer: DraftBufferlike<Self::BroadcastEntity, Self::BroadcastBuffer>
-		+ Product<System>;
+		+ Product<Data>;
 
 	/// The entity type for the transaction.
 	type TransactionEntity: Sized;
 	/// The buffer type for the transaction.
-	type TransactionBuffer: Bufferlike<Self::TransactionEntity> + Member<System>;
+	type TransactionBuffer: Bufferlike<Self::TransactionEntity> + Member<Data>;
 	/// The draft buffer type for the transaction.
 	type TransactionDraftBuffer: DraftBufferlike<Self::TransactionEntity, Self::TransactionBuffer>
-		+ Product<System>;
+		+ Product<Data>;
 
 	/// The entity type for the certificate.
 	type CertificateEntity: Sized;
 	/// The buffer type for the certificate.
-	type CertificateBuffer: Bufferlike<Self::CertificateEntity> + Member<System>;
+	type CertificateBuffer: Bufferlike<Self::CertificateEntity> + Member<Data>;
 	/// The draft buffer type for the certificate.
 	type CertificateDraftBuffer: DraftBufferlike<Self::CertificateEntity, Self::CertificateBuffer>
-		+ Product<System>;
+		+ Product<Data>;
 }
 
-pub trait ParabyzantineBroadcastInSystem<Spec: ParabyzantineBroadcastInSpec<Self>>: Sized {
+pub trait ParabyzantineBroadcastInData<Spec: ParabyzantineBroadcastInSpec<Self>>: Sized {
 	fn parabyzantine_broadcast_in_world(&self) -> BroadcastInWorld<Spec, Self> {
 		BroadcastInWorld {
 			broadcast_facts: self.member::<Spec::BroadcastBuffer>().into(),
@@ -45,11 +43,11 @@ pub trait ParabyzantineBroadcastInSystem<Spec: ParabyzantineBroadcastInSpec<Self
 	}
 }
 
-/// The world of the broadcast in step of a parabyzantine broadcast in system.
+/// The world of the broadcast in step of a parabyzantine broadcast in Data.
 pub struct BroadcastInWorld<
 	'a,
-	Spec: ParabyzantineBroadcastInSpec<System>,
-	System: ParabyzantineBroadcastInSystem<Spec>,
+	Spec: ParabyzantineBroadcastInSpec<Data>,
+	Data: ParabyzantineBroadcastInData<Spec>,
 > {
 	pub broadcast_facts: Facts<'a, Spec::BroadcastEntity, Spec::BroadcastBuffer>,
 	pub broadcast_inferences:
@@ -62,16 +60,13 @@ pub struct BroadcastInWorld<
 		Inferences<Spec::CertificateEntity, Spec::CertificateBuffer, Spec::CertificateDraftBuffer>,
 }
 
-/// View the world of a parabyzantine broadcast in system.
+/// View the world of a parabyzantine broadcast in Data.
 ///
 /// This is implemented for ergonomics so that the user can write in the same style if they so choose.
-impl<
-		'a,
-		Spec: ParabyzantineBroadcastInSpec<System>,
-		System: ParabyzantineBroadcastInSystem<Spec>,
-	> View<'a, System> for BroadcastInWorld<'a, Spec, System>
+impl<'a, Spec: ParabyzantineBroadcastInSpec<Data>, Data: ParabyzantineBroadcastInData<Spec>>
+	View<'a, Data> for BroadcastInWorld<'a, Spec, Data>
 {
-	fn view(from: &'a System) -> Self {
+	fn view(from: &'a Data) -> Self {
 		from.parabyzantine_broadcast_in_world()
 	}
 }

@@ -1,13 +1,13 @@
 use crate::parabyzantine::broadcast_in::{
-	ParabyzantineBroadcastInSpec, ParabyzantineBroadcastInSystem,
+	ParabyzantineBroadcastInData, ParabyzantineBroadcastInSpec,
 };
-use crate::parabyzantine::system::{ParabyzantineSpec, ParabyzantineSystem};
+use crate::parabyzantine::data::{ParabyzantineData, ParabyzantineSpec};
 
 /// Blanket implementation for the broadcast in spec.
 ///
 /// Downcasting the world to a broadcast in world.
-impl<Spec: ParabyzantineSpec<System>, System: ParabyzantineSystem<Spec>>
-	ParabyzantineBroadcastInSpec<System> for Spec
+impl<Spec: ParabyzantineSpec<Data>, Data: ParabyzantineData<Spec>>
+	ParabyzantineBroadcastInSpec<Data> for Spec
 {
 	type BroadcastEntity = Spec::BroadcastEntity;
 	type BroadcastBuffer = Spec::BroadcastBuffer;
@@ -20,8 +20,8 @@ impl<Spec: ParabyzantineSpec<System>, System: ParabyzantineSystem<Spec>>
 	type CertificateDraftBuffer = Spec::CertificateDraftBuffer;
 }
 
-/// Blanket implementation for the broadcast in system.
-impl<Spec: ParabyzantineSpec<System>, System: ParabyzantineSystem<Spec>>
-	ParabyzantineBroadcastInSystem<Spec> for System
+/// Blanket implementation for the broadcast in Data.
+impl<Spec: ParabyzantineSpec<Data>, Data: ParabyzantineData<Spec>>
+	ParabyzantineBroadcastInData<Spec> for Data
 {
 }

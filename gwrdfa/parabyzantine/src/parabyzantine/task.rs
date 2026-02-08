@@ -1,35 +1,35 @@
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
 use crate::{Container, Factory, Member, Product, View};
 
-/// Specifies the entities and buffers for a parabyzantine task system.
+/// Specifies the entities and buffers for a parabyzantine task Data.
 ///
-/// A Parabyzantine task system is concerned with deriving tasks from agreements and transactions.
-pub trait ParabyzantineTaskSpec<System: ParabyzantineTaskSystem<Self>>: Sized {
+/// A Parabyzantine task Data is concerned with deriving tasks from agreements and transactions.
+pub trait ParabyzantineTaskSpec<Data: ParabyzantineTaskData<Self>>: Sized {
 	/// The entity type for the agreement.
 	type AgreementEntity: Sized;
 	/// The buffer type for the agreement.
-	type AgreementBuffer: Bufferlike<Self::AgreementEntity> + Member<System>;
+	type AgreementBuffer: Bufferlike<Self::AgreementEntity> + Member<Data>;
 	/// The draft buffer type for the agreement.
 	type AgreementDraftBuffer: DraftBufferlike<Self::AgreementEntity, Self::AgreementBuffer>
-		+ Product<System>;
+		+ Product<Data>;
 
 	/// The entity type for the transaction.
 	type TransactionEntity: Sized;
 	/// The buffer type for the transaction.
-	type TransactionBuffer: Bufferlike<Self::TransactionEntity> + Member<System>;
+	type TransactionBuffer: Bufferlike<Self::TransactionEntity> + Member<Data>;
 	/// The draft buffer type for the transaction.
 	type TransactionDraftBuffer: DraftBufferlike<Self::TransactionEntity, Self::TransactionBuffer>
-		+ Product<System>;
+		+ Product<Data>;
 
 	/// The entity type for the task.
 	type TaskEntity: Sized;
 	/// The buffer type for the task.
-	type TaskBuffer: Bufferlike<Self::TaskEntity> + Member<System>;
+	type TaskBuffer: Bufferlike<Self::TaskEntity> + Member<Data>;
 	/// The draft buffer type for the task.
-	type TaskDraftBuffer: DraftBufferlike<Self::TaskEntity, Self::TaskBuffer> + Product<System>;
+	type TaskDraftBuffer: DraftBufferlike<Self::TaskEntity, Self::TaskBuffer> + Product<Data>;
 }
 
-pub trait ParabyzantineTaskSystem<Spec: ParabyzantineTaskSpec<Self>>: Sized {
+pub trait ParabyzantineTaskData<Spec: ParabyzantineTaskSpec<Self>>: Sized {
 	fn parabyzantine_task_world(&self) -> TaskWorld<Spec, Self> {
 		TaskWorld {
 			agreement_facts: self.member::<Spec::AgreementBuffer>().into(),
@@ -42,9 +42,8 @@ pub trait ParabyzantineTaskSystem<Spec: ParabyzantineTaskSpec<Self>>: Sized {
 	}
 }
 
-/// The world of the task step of a parabyzantine task system.
-pub struct TaskWorld<'a, Spec: ParabyzantineTaskSpec<System>, System: ParabyzantineTaskSystem<Spec>>
-{
+/// The world of the task step of a parabyzantine task Data.
+pub struct TaskWorld<'a, Spec: ParabyzantineTaskSpec<Data>, Data: ParabyzantineTaskData<Spec>> {
 	pub agreement_facts: Facts<'a, Spec::AgreementEntity, Spec::AgreementBuffer>,
 	pub agreement_inferences:
 		Inferences<Spec::AgreementEntity, Spec::AgreementBuffer, Spec::AgreementDraftBuffer>,
@@ -55,13 +54,13 @@ pub struct TaskWorld<'a, Spec: ParabyzantineTaskSpec<System>, System: Parabyzant
 	pub task_inferences: Inferences<Spec::TaskEntity, Spec::TaskBuffer, Spec::TaskDraftBuffer>,
 }
 
-/// View the world of a parabyzantine task system.
+/// View the world of a parabyzantine task Data.
 ///
 /// This is implemented for ergonomics so that the user can write in the same style if they so choose.
-impl<'a, Spec: ParabyzantineTaskSpec<System>, System: ParabyzantineTaskSystem<Spec>>
-	View<'a, System> for TaskWorld<'a, Spec, System>
+impl<'a, Spec: ParabyzantineTaskSpec<Data>, Data: ParabyzantineTaskData<Spec>> View<'a, Data>
+	for TaskWorld<'a, Spec, Data>
 {
-	fn view(from: &'a System) -> Self {
+	fn view(from: &'a Data) -> Self {
 		from.parabyzantine_task_world()
 	}
 }
