@@ -9,7 +9,9 @@ use parabyzantine::{
 	Container, Member,
 };
 
-pub trait ResampleSpec<Binding: ResampleBinding>: Sized {
+pub trait ResampleSpec<Binding: ParabyzantineAgreementBinding, Data: ResampleData<Binding, Self>>:
+	Sized
+{
 	/// The type of the index.
 	type Index: Eq;
 
@@ -25,9 +27,7 @@ pub trait ResampleSpec<Binding: ResampleBinding>: Sized {
 	/// The type of the index subcommittee agreement.
 	type IndexSubcommitteeAgreement: IndexSubcommitteeAgreement<Self::Index, Self::Sender, Self::Subcommittee>
 		+ From<(
-			<<Binding::ParabyzantineAgreementBinding as ParabyzantineAgreementBinding>::Spec as ParabyzantineAgreementSpec<
-				Binding::ParabyzantineAgreementBinding,
-			>>::AgreementEntity,
+			<Binding::Spec as ParabyzantineAgreementSpec<Binding::Data>>::AgreementEntity,
 			Self::IndexSubcommitteeAgreementBundle,
 		)>;
 
@@ -40,9 +40,7 @@ pub trait ResampleSpec<Binding: ResampleBinding>: Sized {
 	/// The type of the certificate.
 	type Certificate: Certificate<Self::Index, Self::Value, Self::Sender>
 		+ From<(
-			<<Binding::ParabyzantineAgreementBinding as ParabyzantineAgreementBinding>::Spec as ParabyzantineAgreementSpec<
-				Binding::ParabyzantineAgreementBinding,
-			>>::CertificateEntity,
+			<Binding::Spec as ParabyzantineAgreementSpec<Binding::Data>>::CertificateEntity,
 			Self::CertificateBundle,
 		)>;
 
@@ -53,7 +51,7 @@ pub trait ResampleSpec<Binding: ResampleBinding>: Sized {
 			Self::Sender,
 			Self::Certificate,
 			Self::Subcommittee,
-		> + Member<Binding::ResampleData>;
+		> + Member<Data>;
 }
 
 pub trait Subcommittee<Sender: Eq>: Eq {
@@ -134,42 +132,51 @@ pub trait Sampler<
 	fn subcommittee(&self, value: &Value, agreement: &SubAgree) -> Sub;
 }
 
-pub trait ResampleData<Binding: ResampleBinding>: Sized {
+pub trait ResampleData<Binding: ParabyzantineAgreementBinding, Spec: ResampleSpec<Binding, Self>>:
+	Sized
+{
 	/// A [Resample] data must be able to provide a [CertificateSet]
-	fn certificate_set(&self) -> &<Binding::ResampleSpec as ResampleSpec<Binding>>::CertificateSet;
+	fn certificate_set(&self) -> &Spec::CertificateSet;
 
 	/// A [Resample] data must be able to provide a mutable [CertificateSet]
-	fn certificate_set_mut(
-		&mut self,
-	) -> &mut <Binding::ResampleSpec as ResampleSpec<Binding>>::CertificateSet;
+	fn certificate_set_mut(&mut self) -> &mut Spec::CertificateSet;
 }
 
-impl<Binding: ResampleBinding> ResampleData<Binding> for Binding::ResampleData {
-	fn certificate_set(&self) -> &<Binding::ResampleSpec as ResampleSpec<Binding>>::CertificateSet {
-		self.member::<<Binding::ResampleSpec as ResampleSpec<Binding>>::CertificateSet>()
+impl<
+		Binding: ParabyzantineAgreementBinding,
+		Spec: ResampleSpec<Binding, Self>,
+		Data: ResampleData<Binding, Spec>,
+	> ResampleData<Binding, Spec> for Data
+{
+	fn certificate_set(&self) -> &Spec::CertificateSet {
+		self.member::<Spec::CertificateSet>()
 	}
 
-	fn certificate_set_mut(
-		&mut self,
-	) -> &mut <Binding::ResampleSpec as ResampleSpec<Binding>>::CertificateSet {
-		self.member_mut::<<Binding::ResampleSpec as ResampleSpec<Binding>>::CertificateSet>()
+	fn certificate_set_mut(&mut self) -> &mut Spec::CertificateSet {
+		self.member_mut::<Spec::CertificateSet>()
 	}
 }
 
 pub trait ResampleBinding: Sized {
 	type ParabyzantineAgreementBinding: ParabyzantineAgreementBinding;
-	type ResampleSpec: ResampleSpec<Self>;
-	type ResampleData: ResampleData<Self>;
+	type ResampleSpec: ResampleSpec<Self::ParabyzantineAgreementBinding, Self::ResampleData>;
+	type ResampleData: ResampleData<Self::ParabyzantineAgreementBinding, Self::ResampleSpec>;
 }
 
 pub struct Resample<Binding: ResampleBinding>(pub Binding);
 
-impl<Binding: ResampleBinding> ParabyzantineAgreement<Binding::ParabyzantineAgreementBinding>
-	for Resample<Binding>
+impl<Binding: ResampleBinding>
+	ParabyzantineAgreement<
+		<Binding::ParabyzantineAgreementBinding as ParabyzantineAgreementBinding>::Spec,
+		<Binding::ParabyzantineAgreementBinding as ParabyzantineAgreementBinding>::Data,
+	> for Resample<Binding>
 {
 	fn update_parabyzantine_agreement(
 		&mut self,
-		_data: &mut AgreementWorld<Binding::ParabyzantineAgreementBinding>,
+		_data: &mut AgreementWorld<
+			<Binding::ParabyzantineAgreementBinding as ParabyzantineAgreementBinding>::Spec,
+			<Binding::ParabyzantineAgreementBinding as ParabyzantineAgreementBinding>::Data,
+		>,
 	) {
 		todo!()
 	}

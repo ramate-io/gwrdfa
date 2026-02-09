@@ -1,4 +1,3 @@
-use crate::parabyzantine::agreement::ParabyzantineAgreementBinding;
 use crate::parabyzantine::agreement::ParabyzantineAgreementSpec;
 use crate::parabyzantine::data::{ParabyzantineData, ParabyzantineSpec};
 
@@ -8,8 +7,8 @@ use crate::parabyzantine::data::{ParabyzantineData, ParabyzantineSpec};
 ///
 /// Note that because of blanket implementations on the Data,
 /// we don't also have blanket implementations here.
-impl<Binding: ParabyzantineAgreementBinding, Spec: ParabyzantineSpec<Binding::Data>>
-	ParabyzantineAgreementSpec<Binding> for Spec
+impl<Spec: ParabyzantineSpec<Data>, Data: ParabyzantineData<Spec>> ParabyzantineAgreementSpec<Data>
+	for Spec
 {
 	type CertificateEntity = Spec::CertificateEntity;
 	type CertificateBuffer = Spec::CertificateBuffer;
