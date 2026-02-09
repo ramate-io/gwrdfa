@@ -83,3 +83,25 @@ pub trait Comember<R, C> {
 }
 
 impl<C> Cocontainer for C where C: Sized {}
+
+pub trait Tasker: Sized {
+	fn task<'a, Referrant, ScheduleVisitor, Container, Data>(&mut self, container: &'a Container)
+	where
+		ScheduleVisitor: Comember<Referrant, Self> + Visitor<Data> + Sized,
+		Data: View<'a, Container>;
+}
+
+impl<S> Tasker for S
+where
+	S: Sized,
+{
+	fn task<'a, Referrant, ScheduleVisitor, Container, Data>(&mut self, container: &'a Container)
+	where
+		ScheduleVisitor: Comember<Referrant, Self> + Visitor<Data> + Sized,
+		Data: View<'a, Container>,
+	{
+		let schedule_visitor = self.comember_mut::<Referrant, ScheduleVisitor>();
+		let mut data = container.view::<'a, Data>();
+		schedule_visitor.visit(&mut data);
+	}
+}

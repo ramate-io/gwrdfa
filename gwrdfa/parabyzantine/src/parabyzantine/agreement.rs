@@ -1,5 +1,17 @@
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
-use crate::{Comember, Container, Factory, Member, Product, View, Visitor};
+use crate::{Container, Factory, Member, Product, View};
+
+/// The schedule for the prepare step of the parabyzantine agreement.
+#[derive(Debug, Clone, Copy)]
+pub struct PrepareParabyzantineAgreement;
+
+/// The schedule for the compute step of the parabyzantine agreement.
+#[derive(Debug, Clone, Copy)]
+pub struct ComputeParabyzantineAgreement;
+
+/// The schedule for the commit step of the parabyzantine agreement.
+#[derive(Debug, Clone, Copy)]
+pub struct CommitParabyzantineAgreement;
 
 /// Specifies the entities and buffers for a parabyzantine agreement Data.
 ///
@@ -76,19 +88,17 @@ impl<'a, Spec: ParabyzantineAgreementSpec<Data>, Data: ParabyzantineAgreementDat
 	}
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct ParabyzantineAgreement;
-
-pub trait ParabyzantineAgreementScheduleSpec<
+pub trait ParabyzantineAgreement<
 	Spec: ParabyzantineAgreementSpec<Data>,
 	Data: ParabyzantineAgreementData<Spec>,
-	Scheduler: Sized,
 >: Sized
 {
-	/// The visitor for the agreement step of the Parabyzantine agreement Data.
-	///
-	/// This visitor is responsible for visiting the [AgreementWorld] and
-	/// making inferences from the available facts.
-	type AgreementVisitor: for<'a> Visitor<AgreementWorld<'a, Spec, Data>>
-		+ Comember<ParabyzantineAgreement, Scheduler>;
+	/// Prepare the parabyzantine agreement.
+	fn prepare_parabyzantine_agreement(&mut self, data: &mut Data);
+
+	/// Compute the parabyzantine agreement.
+	fn compute_parabyzantine_agreement(&mut self, data: &mut Data);
+
+	/// Commit the parabyzantine agreement.
+	fn commit_parabyzantine_agreement(&mut self, data: &mut Data);
 }
