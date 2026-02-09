@@ -94,11 +94,19 @@ pub trait ParabyzantineAgreement<
 >: Sized
 {
 	/// Prepare the parabyzantine agreement.
-	fn prepare_parabyzantine_agreement(&mut self, data: &mut Data);
+	fn prepare_parabyzantine_agreement(&mut self, data: &mut AgreementWorld<Spec, Data>);
 
 	/// Compute the parabyzantine agreement.
-	fn compute_parabyzantine_agreement(&mut self, data: &mut Data);
+	fn compute_parabyzantine_agreement(&mut self, data: &mut AgreementWorld<Spec, Data>);
 
 	/// Commit the parabyzantine agreement.
-	fn commit_parabyzantine_agreement(&mut self, data: &mut Data);
+	fn commit_parabyzantine_agreement(&mut self, data: &mut AgreementWorld<Spec, Data>);
+}
+
+pub trait ParabyzantineAgreementProtocol {
+	/// The spec for the parabyzantine agreement.
+	type Spec: ParabyzantineAgreementSpec<Self::Data>;
+
+	/// The data for the parabyzantine agreement.
+	type Data: ParabyzantineAgreementData<Self::Spec>;
 }

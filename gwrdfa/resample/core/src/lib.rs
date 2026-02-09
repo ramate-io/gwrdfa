@@ -3,12 +3,15 @@
 use parabyzantine::{
 	agreement::{
 		AgreementWorld, ParabyzantineAgreement, ParabyzantineAgreementData,
-		ParabyzantineAgreementSpec,
+		ParabyzantineAgreementProtocol, ParabyzantineAgreementSpec,
 	},
 	buffer::Bundle,
+	Container, Member,
 };
 
-pub trait ResampleSpec: Sized {
+pub trait ResampleSpec<Protocol: ParabyzantineAgreementProtocol, Data: ResampleData<Protocol, Self>>:
+	Sized
+{
 	/// The type of the index.
 	type Index: Eq;
 
@@ -18,28 +21,37 @@ pub trait ResampleSpec: Sized {
 	/// The type of the sender of a certificate.
 	type Sender: Eq;
 
-	/// The entity of the agreement
-	type AgreementEntity: Sized;
-
 	/// The bundle of the agreement in the buffer.
 	type IndexSubcommitteeAgreementBundle: Bundle;
 
 	/// The type of the index subcommittee agreement.
-	type IndexSubcommitteeAgreement: IndexAgreement<Self::Index>
-		+ From<(Self::AgreementEntity, Self::IndexSubcommitteeAgreementBundle)>;
+	type IndexSubcommitteeAgreement: IndexSubcommitteeAgreement<Self::Index, Self::Sender, Self::Subcommittee>
+		+ From<(
+			<Protocol::Spec as ParabyzantineAgreementSpec<Protocol::Data>>::AgreementEntity,
+			Self::IndexSubcommitteeAgreementBundle,
+		)>;
 
 	/// The type of the subcommittee.
 	type Subcommittee: Subcommittee<Self::Sender>;
-
-	/// The entity of the agreement.
-	type CertificateEntity: Sized;
 
 	/// The bundle of the message in the buffer.
 	type CertificateBundle: Bundle;
 
 	/// The type of the certificate.
 	type Certificate: Certificate<Self::Index, Self::Value, Self::Sender>
-		+ From<(Self::CertificateEntity, Self::CertificateBundle)>;
+		+ From<(
+			<Protocol::Spec as ParabyzantineAgreementSpec<Protocol::Data>>::CertificateEntity,
+			Self::CertificateBundle,
+		)>;
+
+	/// The type of the certificate set.
+	type CertificateSet: CertificateSet<
+			Self::Index,
+			Self::Value,
+			Self::Sender,
+			Self::Certificate,
+			Self::Subcommittee,
+		> + Member<Data>;
 }
 
 pub trait Subcommittee<Sender: Eq>: Eq {
@@ -56,7 +68,7 @@ pub trait Subcommittee<Sender: Eq>: Eq {
 	fn len(&self) -> usize;
 }
 
-pub trait IndexAgreement<Index: Eq, Sender: Eq, Sub: Subcommittee<Sender>>: Eq {
+pub trait IndexSubcommitteeAgreement<Index: Eq, Sender: Eq, Sub: Subcommittee<Sender>>: Eq {
 	/// The index of the agreement.
 	fn index(&self) -> Index;
 
@@ -89,10 +101,6 @@ pub trait CertificateSet<
 
 	fn remove(&mut self, item: Item);
 
-	fn iter<'a>(&'a self) -> impl Iterator<Item = &'a Item> + 'a
-	where
-		Item: 'a;
-
 	fn partial_subcommittees_for_index<'a>(
 		&'a self,
 		index: &Index,
@@ -109,10 +117,89 @@ pub trait CertificateSet<
 		Self: 'a;
 }
 
-pub trait Sampler<Index: Eq, Value: Eq, Sender: Eq, Cert: Certificate<Index, Value, Sender>>:
-	Sized
+pub trait Sampler<
+	Index: Eq,
+	Value: Eq,
+	Sender: Eq,
+	Sub: Subcommittee<Sender>,
+	SubAgree: IndexSubcommitteeAgreement<Index, Sender, Sub>,
+>: Sized
 {
-	fn subcommittee(&self, message: &Cert) -> impl Iterator<Item = Sender>;
+	/// Given a value and the subcommittee agreeement which
+	///
+	/// Note, this does not internally validate whether the subcommittee voted on the value.
+	/// It assumes that has already been checked.
+	fn subcommittee(&self, value: &Value, agreement: &SubAgree) -> Sub;
 }
 
-pub trait Resample: Sized {}
+pub trait ResampleData<Protocol: ParabyzantineAgreementProtocol, Spec: ResampleSpec<Protocol, Self>>:
+	Sized
+{
+	/// A [Resample] environment must be able to provide a [CertificateSet]
+	fn certificate_set(&self) -> &Spec::CertificateSet;
+
+	/// A [Resample] environment must be able to provide a mutable [CertificateSet]
+	fn certificate_set_mut(&mut self) -> &mut Spec::CertificateSet;
+}
+
+impl<
+		Protocol: ParabyzantineAgreementProtocol,
+		Spec: ResampleSpec<Protocol, Data>,
+		Data: ResampleData<Protocol, Spec>,
+	> ResampleData<Protocol, Spec> for Data
+where
+	Spec::CertificateSet: Member<Data>,
+{
+	fn certificate_set(&self) -> &Spec::CertificateSet {
+		self.member::<Spec::CertificateSet>()
+	}
+
+	fn certificate_set_mut(&mut self) -> &mut Spec::CertificateSet {
+		self.member_mut::<Spec::CertificateSet>()
+	}
+}
+
+pub trait ResampleProtocol {
+	type ParabyzantineAgreementProtocol: ParabyzantineAgreementProtocol;
+	type ResampleSpec: ResampleSpec<Self::ParabyzantineAgreementProtocol, Self::ResampleData>;
+	type ResampleData: ResampleData<Self::ParabyzantineAgreementProtocol, Self::ResampleSpec>;
+}
+
+pub struct ResampleProtocolWrapper<Protocol: ResampleProtocol>(pub Protocol);
+
+impl<Protocol: ResampleProtocol>
+	ParabyzantineAgreement<
+		<Protocol::ParabyzantineAgreementProtocol as ParabyzantineAgreementProtocol>::Spec,
+		<Protocol::ParabyzantineAgreementProtocol as ParabyzantineAgreementProtocol>::Data,
+	> for ResampleProtocolWrapper<Protocol>
+{
+	fn prepare_parabyzantine_agreement(
+		&mut self,
+		data: &mut AgreementWorld<
+			<Protocol::ParabyzantineAgreementProtocol as ParabyzantineAgreementProtocol>::Spec,
+			<Protocol::ParabyzantineAgreementProtocol as ParabyzantineAgreementProtocol>::Data,
+		>,
+	) {
+		todo!()
+	}
+
+	fn compute_parabyzantine_agreement(
+		&mut self,
+		data: &mut AgreementWorld<
+			<Protocol::ParabyzantineAgreementProtocol as ParabyzantineAgreementProtocol>::Spec,
+			<Protocol::ParabyzantineAgreementProtocol as ParabyzantineAgreementProtocol>::Data,
+		>,
+	) {
+		todo!()
+	}
+
+	fn commit_parabyzantine_agreement(
+		&mut self,
+		data: &mut AgreementWorld<
+			<Protocol::ParabyzantineAgreementProtocol as ParabyzantineAgreementProtocol>::Spec,
+			<Protocol::ParabyzantineAgreementProtocol as ParabyzantineAgreementProtocol>::Data,
+		>,
+	) {
+		todo!()
+	}
+}
