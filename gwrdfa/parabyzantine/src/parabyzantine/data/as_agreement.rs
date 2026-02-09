@@ -17,3 +17,6 @@ impl<Spec: ParabyzantineSpec<Data>, Data: ParabyzantineData<Spec>> Parabyzantine
 	type AgreementBuffer = Spec::AgreementBuffer;
 	type AgreementDraftBuffer = Spec::AgreementDraftBuffer;
 }
+
+// We get a blanket implementation for free because we know that the spec
+// which ParabyzantineData satisfies is valid as a ParabyzantineAgreementSpec.
