@@ -3,7 +3,7 @@
 use parabyzantine::{
 	agreement::{
 		AgreementWorld, ParabyzantineAgreement, ParabyzantineAgreementBinding,
-		ParabyzantineAgreementSpec,
+		ParabyzantineAgreementData, ParabyzantineAgreementSpec,
 	},
 	buffer::Bundle,
 	Container, Member,
@@ -163,7 +163,10 @@ pub trait ResampleBinding: Sized {
 	type ResampleData: ResampleData<Self::ParabyzantineAgreementBinding, Self::ResampleSpec>;
 }
 
-pub struct Resample<Binding: ResampleBinding>(pub Binding);
+/// Resample wraps around the resample data indicated by the binding.
+///
+/// This is mainly used s.t. we can implement the foreign trait.
+pub struct Resample<Binding: ResampleBinding>(pub Binding::ResampleData);
 
 impl<Binding: ResampleBinding>
 	ParabyzantineAgreement<
@@ -178,6 +181,22 @@ impl<Binding: ResampleBinding>
 			<Binding::ParabyzantineAgreementBinding as ParabyzantineAgreementBinding>::Data,
 		>,
 	) {
+		let mut certificate_set = self.0.certificate_set_mut();
+
 		todo!()
+	}
+}
+
+impl<Binding: ResampleBinding> Resample<Binding> {
+	/// A direct implementation of resampling on an agreement world.
+	///
+	/// This is most useful for experimenting.
+	pub fn resample(
+		&mut self,
+		agreement_data: &<Binding::ParabyzantineAgreementBinding as ParabyzantineAgreementBinding>::Data,
+	) {
+		let mut agreement_world = agreement_data.parabyzantine_agreement_world();
+
+		self.update_parabyzantine_agreement(&mut agreement_world);
 	}
 }
