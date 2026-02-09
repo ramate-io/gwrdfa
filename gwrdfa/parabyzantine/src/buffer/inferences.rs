@@ -19,11 +19,11 @@ impl<Entity: Sized, Buffer: Bufferlike<Entity>, D: DraftBufferlike<Entity, Buffe
 		Self { inner, __phantom: PhantomData }
 	}
 
-	pub fn insert<B: Bundle<Entity>>(&mut self, entity: Option<Entity>, bundle: B) {
+	pub fn insert<B: Bundle>(&mut self, entity: Option<Entity>, bundle: B) {
 		self.inner.draft_insert(entity, bundle);
 	}
 
-	pub fn remove<B: Bundle<Entity>>(&mut self, entity: Entity, bundle: B) {
+	pub fn remove<B: Bundle>(&mut self, entity: Entity, bundle: B) {
 		self.inner.draft_remove(entity, bundle);
 	}
 

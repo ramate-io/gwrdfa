@@ -5,12 +5,7 @@ pub use facts::Facts;
 pub use inferences::Inferences;
 
 /// Bundles are entities plus metadata that exist in the buffer.
-pub trait Bundle<T> {
-	/// Gets the entity of the bundle.
-	///
-	/// Entites should be ownable, global references.
-	fn entity(&self) -> T;
-}
+pub trait Bundle {}
 
 /// Buffers store entities and components associated with those entities.
 /// They are the ultimate source of truth for the system.
@@ -23,9 +18,9 @@ pub trait Bundle<T> {
 ///
 /// Using them should mostly be encapsulated behind [Facts]
 pub trait Bufferlike<Entity: Sized>: Sized {
-	fn insert<B: Bundle<Entity>>(&mut self, entity: Option<Entity>, bundle: B);
+	fn insert<B: Bundle>(&mut self, entity: Option<Entity>, bundle: B);
 
-	fn remove<B: Bundle<Entity>>(&mut self, entity: Entity, bundle: B);
+	fn remove<B: Bundle>(&mut self, entity: Entity, bundle: B);
 
 	fn remove_entity(&mut self, entity: Entity);
 }
@@ -34,7 +29,7 @@ pub trait Bufferlike<Entity: Sized>: Sized {
 /// They can also perform logical optimizations w.r.t. the buffer and the intended types or values.
 ///
 /// They are constructed from indexes and contain bespoke ways to work with the buffer.
-pub trait Querylike<Entity: Sized, Buffer: Bufferlike<Entity>, B: Bundle<Entity>> {
+pub trait Querylike<Entity: Sized, Buffer: Bufferlike<Entity>, B: Bundle> {
 	fn next(&mut self, buffer: &Buffer) -> Option<(Entity, B)>;
 
 	fn get(&self, buffer: &Buffer, entity: Entity) -> Option<B>;
@@ -57,10 +52,10 @@ pub trait DraftBufferlike<Entity: Sized, Buffer: Bufferlike<Entity>>: Sized {
 	/// Canonically, inserting Self::Entity as a bundle is equivalent to upserting the entity itself.
 	/// Systems which are not capable of complex bundle semantics may use this pattern to achieve
 	/// data augmentation.
-	fn draft_insert<B: Bundle<Entity>>(&mut self, entity: Option<Entity>, bundle: B);
+	fn draft_insert<B: Bundle>(&mut self, entity: Option<Entity>, bundle: B);
 
 	/// Removes a bundle from the draft buffer.
-	fn draft_remove<B: Bundle<Entity>>(&mut self, entity: Entity, bundle: B);
+	fn draft_remove<B: Bundle>(&mut self, entity: Entity, bundle: B);
 
 	/// Removes an entity from the draft buffer.
 	fn draft_remove_entity(&mut self, entity: Entity);

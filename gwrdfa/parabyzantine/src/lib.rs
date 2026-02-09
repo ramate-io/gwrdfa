@@ -2,6 +2,7 @@
 
 pub mod buffer;
 pub mod parabyzantine;
+pub use parabyzantine::*;
 
 pub trait Container: Sized {
 	fn member<M: Member<Self>>(&self) -> &M {

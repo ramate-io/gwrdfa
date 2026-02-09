@@ -3,7 +3,8 @@
 resolver = "2"
 
 members = [
-  "gwrdfa/parabyzantine"
+  "gwrdfa/parabyzantine",
+  "gwrdfa/resample/core"
 ]
 
 [workspace.package]
@@ -37,6 +38,8 @@ orfile = { git = "https://github.com/movementlabsxyz/orfile.git", rev = "d022992
 orfile-util = { git = "https://github.com/movementlabsxyz/orfile.git", rev = "d02299214e5aa202130cd1eb9593ce8064d1ec69" }
 orfile-macro = { git = "https://github.com/movementlabsxyz/orfile.git", rev = "d02299214e5aa202130cd1eb9593ce8064d1ec69" }
 clap-markdown-ext = { git = "https://github.com/movementlabsxyz/clap-markdown-ext.git", rev = "8f54fe424504bf37fb01dc69aaed8166e429fe6a"}
+
+parabyzantine = { path = "gwrdfa/parabyzantine" }
 
 [workspace.lints.clippy]
 debug_assert_with_mut_call = "deny"
