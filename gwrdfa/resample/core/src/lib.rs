@@ -142,6 +142,16 @@ pub trait ResampleData<Binding: ParabyzantineAgreementBinding, Spec: ResampleSpe
 	fn certificate_set_mut(&mut self) -> &mut Spec::CertificateSet;
 }
 
+/// The membership requirements and blanket might be a bit overkill,
+/// as they are mainly useful when downcasting.
+/// But, in theory, if someone writes membership for the satisfying type for some other reason,
+/// they will get the trait bound for free here.
+///
+/// This means that if they choose, they can use a [Resample] object
+/// and get a [ParabyzantineAgreement] implementation for free as well.
+///
+/// Importantly, this does not force them into a particular implementation of [ParabyzantineAgreement],
+/// they would still need to intentionally use the [Resample] object.
 impl<
 		Binding: ParabyzantineAgreementBinding,
 		Spec: ResampleSpec<Binding, Self>,
