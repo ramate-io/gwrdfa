@@ -1,6 +1,18 @@
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
 use crate::{Container, Factory, Member, Product, View};
 
+/// The schedule for the prepare step of the parabyzantine broadcast in.
+#[derive(Debug, Clone, Copy)]
+pub struct PrepareParabyzantineBroadcastIn;
+
+/// The schedule for the compute step of the parabyzantine broadcast in.
+#[derive(Debug, Clone, Copy)]
+pub struct ComputeParabyzantineBroadcastIn;
+
+/// The schedule for the commit step of the parabyzantine broadcast in.
+#[derive(Debug, Clone, Copy)]
+pub struct CommitParabyzantineBroadcastIn;
+
 /// Specifies the entities and buffers for a parabyzantine broadcast in Data.
 ///
 /// A Parabyzantine broadcast in Data is concerned with deriving transactions and certificates from broadcasts.
@@ -83,4 +95,19 @@ impl<'a, Spec: ParabyzantineBroadcastInSpec<Data>, Data: ParabyzantineBroadcastI
 	fn view(from: &'a Data) -> Self {
 		from.parabyzantine_broadcast_in_world()
 	}
+}
+
+pub trait ParabyzantineBroadcastIn<
+	Spec: ParabyzantineBroadcastInSpec<Data>,
+	Data: ParabyzantineBroadcastInData<Spec>,
+>: Sized
+{
+	/// Prepare the parabyzantine broadcast in.
+	fn prepare_parabyzantine_broadcast_in(&mut self, data: &mut Data);
+
+	/// Compute the parabyzantine broadcast in.
+	fn compute_parabyzantine_broadcast_in(&mut self, data: &mut Data);
+
+	/// Commit the parabyzantine broadcast in.
+	fn commit_parabyzantine_broadcast_in(&mut self, data: &mut Data);
 }
