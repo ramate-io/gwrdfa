@@ -38,6 +38,16 @@ pub trait ResampleAgreementBinding: Sized {
 #[derive(Debug, Clone)]
 pub struct ResampleAgreement<Binding: ResampleAgreementBinding>(pub Binding::ResampleAgreementData);
 
+impl<Binding: ResampleAgreementBinding> ResampleAgreement<Binding> {
+	pub fn data(&self) -> &Binding::ResampleAgreementData {
+		&self.0
+	}
+
+	pub fn data_mut(&mut self) -> &mut Binding::ResampleAgreementData {
+		&mut self.0
+	}
+}
+
 impl<Binding: ResampleAgreementBinding>
 	ParabyzantineAgreement<
 		<Binding::ParabyzantineAgreementBinding as ParabyzantineAgreementBinding>::Spec,
@@ -50,37 +60,39 @@ impl<Binding: ResampleAgreementBinding>
 		>,
 	) {
 		// over all the index subcommittee agreements
-		let index_query = self.0.index_subcommittee_agreement_query();
+		let index_query = self.data_mut().index_subcommittee_agreement_query();
 		for index_bundle in agreement_world.agreement_facts.query(index_query) {
 			let index: <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
 				Binding::ParabyzantineAgreementBinding,
 			>>::IndexSubcommitteeAgreement = (&index_bundle).into();
 
 			// insert all of the certificates for this index into the certificate set
-			let certificate_query = self.0.certificate_query(&index_bundle);
+			let certificate_query = self.data_mut().certificate_query(&index_bundle);
 			for certificate_bundle in agreement_world.certificate_facts.query(certificate_query) {
 				let certificate: <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
 					Binding::ParabyzantineAgreementBinding,
 				>>::Certificate = (&certificate_bundle).into();
 
-				self.0.certificate_set_mut().insert(certificate);
+				self.data_mut().certificate_set_mut().insert(certificate);
 			}
 
 			// check the subcommittee condition
 			let subcommittee_condition = index.subcommittee().condition(
-				self.0.certificate_set().partial_subcommittees_for_index(&index.index()),
+				self.data_mut()
+					.certificate_set()
+					.partial_subcommittees_for_index(&index.index()),
 			);
 			match subcommittee_condition {
 				Condition::Consensus(value) => {
 					// Elect the subcommittees from the consensus value
-					self.0.sampler_mut().elect_subcommittees_from_consensus_value(
+					self.data_mut().sampler_mut().elect_subcommittees_from_consensus_value(
 						&value,
 						&index,
 						&mut agreement_world.agreement_inferences,
 					);
 
 					// Insert the ResampleAgreement consensus agreement
-					self.0
+					self.data_mut()
 						.resample_agreement_consensus_update_mut()
 						.insert_resample_agreement_consensus_agreement(
 							&index.index(),
@@ -90,7 +102,7 @@ impl<Binding: ResampleAgreementBinding>
 				}
 				Condition::Hung => {
 					// Elect the subcommittees from the hung value
-					self.0.sampler_mut().elect_subcommittees_from_hung_value(
+					self.data_mut().sampler_mut().elect_subcommittees_from_hung_value(
 						&index,
 						&mut agreement_world.agreement_inferences,
 					);
