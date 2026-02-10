@@ -170,8 +170,8 @@
               # chafa --size 30x30 --animate false --colors 8 --center true ./assets/ramate-transparent.png
 
               echo ""
-              echo "Fuste"
-              echo "A pluggable virtual machine for constrained environments."
+              echo "Gwrdfa"
+              echo "Parabyzantine agreement in Rust."
             '';
           };
         };
