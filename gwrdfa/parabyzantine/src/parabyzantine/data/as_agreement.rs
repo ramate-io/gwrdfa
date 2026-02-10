@@ -1,4 +1,4 @@
-use crate::parabyzantine::agreement::ParabyzantineAgreementSpec;
+use crate::parabyzantine::agreement::{ParabyzantineAgreementData, ParabyzantineAgreementSpec};
 use crate::parabyzantine::data::{ParabyzantineData, ParabyzantineSpec};
 
 /// Blanket implementation for the agreement spec.
@@ -7,9 +7,7 @@ use crate::parabyzantine::data::{ParabyzantineData, ParabyzantineSpec};
 ///
 /// Note that because of blanket implementations on the Data,
 /// we don't also have blanket implementations here.
-impl<Spec: ParabyzantineSpec<Data>, Data: ParabyzantineData<Spec>> ParabyzantineAgreementSpec<Data>
-	for Spec
-{
+impl<Spec: ParabyzantineSpec> ParabyzantineAgreementSpec for Spec {
 	type CertificateEntity = Spec::CertificateEntity;
 	type CertificateBuffer = Spec::CertificateBuffer;
 	type CertificateDraftBuffer = Spec::CertificateDraftBuffer;
@@ -18,5 +16,20 @@ impl<Spec: ParabyzantineSpec<Data>, Data: ParabyzantineData<Spec>> Parabyzantine
 	type AgreementDraftBuffer = Spec::AgreementDraftBuffer;
 }
 
-// We get a blanket implementation for free because we know that the spec
-// which ParabyzantineData satisfies is valid as a ParabyzantineAgreementSpec.
+/// Blanket implementation for the agreement data.
+impl<Spec: ParabyzantineSpec, Data: ParabyzantineData<Spec>> ParabyzantineAgreementData<Spec>
+	for Data
+{
+	fn parabyzantine_agreement_certificate_buffer(&self) -> &Spec::CertificateBuffer {
+		self.parabyzantine_certificate_buffer()
+	}
+	fn parabyzantine_agreement_certificate_draft_buffer(&self) -> Spec::CertificateDraftBuffer {
+		self.parabyzantine_certificate_draft_buffer()
+	}
+	fn parabyzantine_agreement_agreement_buffer(&self) -> &Spec::AgreementBuffer {
+		self.parabyzantine_agreement_buffer()
+	}
+	fn parabyzantine_agreement_agreement_draft_buffer(&self) -> Spec::AgreementDraftBuffer {
+		self.parabyzantine_agreement_draft_buffer()
+	}
+}
