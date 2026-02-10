@@ -85,3 +85,11 @@ pub trait ParabyzantineBroadcastIn<Spec: ParabyzantineBroadcastInSpec>: Sized {
 	/// Compute the parabyzantine broadcast in.
 	fn compute_parabyzantine_broadcast_in(&mut self, data: &mut BroadcastInWorld<Spec>);
 }
+
+/// A [ParabyzantineBroadcastInBinding] is a binding for the [ParabyzantineBroadcastIn] protocol.
+///
+/// It binds between the [ParabyzantineBroadcastInSpec] and the [ParabyzantineBroadcastInData].
+pub trait ParabyzantineBroadcastInBinding {
+	type Spec: ParabyzantineBroadcastInSpec;
+	type Data: ParabyzantineBroadcastInData<Self::Spec>;
+}

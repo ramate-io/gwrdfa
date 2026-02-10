@@ -65,3 +65,11 @@ pub trait ParabyzantineBroadcastOut<Spec: ParabyzantineBroadcastOutSpec>: Sized 
 	/// Compute the parabyzantine broadcast out.
 	fn compute_parabyzantine_broadcast_out(&mut self, data: &mut BroadcastOutWorld<Spec>);
 }
+
+/// A [ParabyzantineBroadcastOutBinding] is a binding for the [ParabyzantineBroadcastOut] protocol.
+///
+/// It binds between the [ParabyzantineBroadcastOutSpec] and the [ParabyzantineBroadcastOutData].
+pub trait ParabyzantineBroadcastOutBinding {
+	type Spec: ParabyzantineBroadcastOutSpec;
+	type Data: ParabyzantineBroadcastOutData<Self::Spec>;
+}
