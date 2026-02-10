@@ -6,8 +6,8 @@ use parabyzantine::{
 	buffer::{Bundle, Inferences, Querylike},
 };
 
-/// A [ResampleSpec] is a specification for resample consensus.
-pub trait ResampleSpec<Binding: ParabyzantineAgreementBinding>: Sized {
+/// A [ResampleAgreementSpec] is a specification for ResampleAgreement consensus.
+pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementBinding>: Sized {
 	/// The type of the index.
 	type Index: Eq;
 
@@ -73,8 +73,8 @@ pub trait ResampleSpec<Binding: ParabyzantineAgreementBinding>: Sized {
 		Binding,
 	>;
 
-	/// The type of the resample consensus update.
-	type ResampleConsensusUpdate: ResampleConsensusUpdate<
+	/// The type of the ResampleAgreement consensus update.
+	type ResampleAgreementConsensusUpdate: ResampleAgreementConsensusUpdate<
 		Self::Index,
 		Self::Value,
 		Self::Sender,
@@ -190,14 +190,14 @@ pub trait Sampler<
 	);
 }
 
-pub trait ResampleConsensusUpdate<
+pub trait ResampleAgreementConsensusUpdate<
 	Index: Eq,
 	Value: Eq,
 	Sender: Eq,
 	Binding: ParabyzantineAgreementBinding,
 >: Sized
 {
-	fn insert_resample_consensus_agreement(
+	fn insert_resample_agreement_consensus_agreement(
 		&mut self,
 		index: &Index,
 		value: &Value,
@@ -209,31 +209,35 @@ pub trait ResampleConsensusUpdate<
 	);
 }
 
-pub trait ResampleData<Binding: ParabyzantineAgreementBinding, Spec: ResampleSpec<Binding>>:
-	Sized
+pub trait ResampleAgreementData<
+	Binding: ParabyzantineAgreementBinding,
+	Spec: ResampleAgreementSpec<Binding>,
+>: Sized
 {
-	/// A [Resample] data must be able to provide a [CertificateSet]
+	/// A [ResampleAgreement] data must be able to provide a [CertificateSet]
 	fn certificate_set(&self) -> &Spec::CertificateSet;
 
-	/// A [Resample] data must be able to provide a mutable [CertificateSet]
+	/// A [ResampleAgreement] data must be able to provide a mutable [CertificateSet]
 	fn certificate_set_mut(&mut self) -> &mut Spec::CertificateSet;
 
-	/// Resample data must be able to provide a [Sampler]
+	/// ResampleAgreement data must be able to provide a [Sampler]
 	fn sampler(&self) -> &Spec::Sampler;
 
-	/// Resample data must be able to provide a mutable [Sampler]
+	/// ResampleAgreement data must be able to provide a mutable [Sampler]
 	fn sampler_mut(&mut self) -> &mut Spec::Sampler;
 
-	/// Resample data must be able to produce a [Spec::ResampleConsensusUpdate]
-	fn resample_consensus_update(&self) -> &Spec::ResampleConsensusUpdate;
+	/// ResampleAgreement data must be able to produce a [Spec::ResampleAgreementConsensusUpdate]
+	fn resample_agreement_consensus_update(&self) -> &Spec::ResampleAgreementConsensusUpdate;
 
-	/// Resample data must be able to produce a mutable [Spec::ResampleConsensusUpdate]
-	fn resample_consensus_update_mut(&mut self) -> &mut Spec::ResampleConsensusUpdate;
+	/// ResampleAgreement data must be able to produce a mutable [Spec::ResampleAgreementConsensusUpdate]
+	fn resample_agreement_consensus_update_mut(
+		&mut self,
+	) -> &mut Spec::ResampleAgreementConsensusUpdate;
 
-	/// Resample data must be able to prduce a [Spec::IndexSubcommitteeAgreementQuery]
+	/// ResampleAgreement data must be able to prduce a [Spec::IndexSubcommitteeAgreementQuery]
 	fn index_subcommittee_agreement_query(&mut self) -> Spec::IndexSubcommitteeAgreementQuery;
 
-	/// Resample data must be able to produce a [Spec::CertificateQuery]
+	/// ResampleAgreement data must be able to produce a [Spec::CertificateQuery]
 	fn certificate_query(
 		&mut self,
 		index: &(
@@ -243,25 +247,28 @@ pub trait ResampleData<Binding: ParabyzantineAgreementBinding, Spec: ResampleSpe
 	) -> Spec::CertificateQuery;
 }
 
-pub trait ResampleBinding: Sized {
+pub trait ResampleAgreementBinding: Sized {
 	type ParabyzantineAgreementBinding: ParabyzantineAgreementBinding;
-	type ResampleSpec: ResampleSpec<Self::ParabyzantineAgreementBinding>;
-	type ResampleData: ResampleData<Self::ParabyzantineAgreementBinding, Self::ResampleSpec>;
+	type ResampleAgreementSpec: ResampleAgreementSpec<Self::ParabyzantineAgreementBinding>;
+	type ResampleAgreementData: ResampleAgreementData<
+		Self::ParabyzantineAgreementBinding,
+		Self::ResampleAgreementSpec,
+	>;
 }
 
-/// [Resample] wraps around the resample data indicated by the binding.
+/// [ResampleAgreement] wraps around the ResampleAgreement data indicated by the binding.
 ///
 /// This is mainly used s.t. we can implement the foreign trait for [ParabyzantineAgreement].
 ///
-/// [Resample] does not enforce countability restrictions on the [Sampler].
-/// Hence, it is sort of an abstraction that exists before the more common [CountableResample] implementation.
+/// [ResampleAgreement] does not enforce countability restrictions on the [Sampler].
+/// Hence, it is sort of an abstraction that exists before the more common [CountableResampleAgreement] implementation.
 #[derive(Debug, Clone)]
-pub struct Resample<Binding: ResampleBinding>(pub Binding::ResampleData);
+pub struct ResampleAgreement<Binding: ResampleAgreementBinding>(pub Binding::ResampleAgreementData);
 
-impl<Binding: ResampleBinding>
+impl<Binding: ResampleAgreementBinding>
 	ParabyzantineAgreement<
 		<Binding::ParabyzantineAgreementBinding as ParabyzantineAgreementBinding>::Spec,
-	> for Resample<Binding>
+	> for ResampleAgreement<Binding>
 {
 	fn update_parabyzantine_agreement(
 		&mut self,
@@ -272,14 +279,14 @@ impl<Binding: ResampleBinding>
 		// over all the index subcommittee agreements
 		let index_query = self.0.index_subcommittee_agreement_query();
 		for index_bundle in agreement_world.agreement_facts.query(index_query) {
-			let index: <Binding::ResampleSpec as ResampleSpec<
+			let index: <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
 				Binding::ParabyzantineAgreementBinding,
 			>>::IndexSubcommitteeAgreement = (&index_bundle).into();
 
 			// insert all of the certificates for this index into the certificate set
 			let certificate_query = self.0.certificate_query(&index_bundle);
 			for certificate_bundle in agreement_world.certificate_facts.query(certificate_query) {
-				let certificate: <Binding::ResampleSpec as ResampleSpec<
+				let certificate: <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
 					Binding::ParabyzantineAgreementBinding,
 				>>::Certificate = (&certificate_bundle).into();
 
@@ -299,12 +306,14 @@ impl<Binding: ResampleBinding>
 						&mut agreement_world.agreement_inferences,
 					);
 
-					// Insert the resample consensus agreement
-					self.0.resample_consensus_update_mut().insert_resample_consensus_agreement(
-						&index.index(),
-						&value,
-						&mut agreement_world.agreement_inferences,
-					);
+					// Insert the ResampleAgreement consensus agreement
+					self.0
+						.resample_agreement_consensus_update_mut()
+						.insert_resample_agreement_consensus_agreement(
+							&index.index(),
+							&value,
+							&mut agreement_world.agreement_inferences,
+						);
 				}
 				Condition::Hung => {
 					// Elect the subcommittees from the hung value
@@ -323,11 +332,11 @@ impl<Binding: ResampleBinding>
 	}
 }
 
-impl<Binding: ResampleBinding> Resample<Binding> {
+impl<Binding: ResampleAgreementBinding> ResampleAgreement<Binding> {
 	/// A direct implementation of resampling on an agreement world.
 	///
 	/// This is most useful for experimenting and testing.
-	pub fn resample(
+	pub fn resample_agreement(
 		&mut self,
 		agreement_data: &<Binding::ParabyzantineAgreementBinding as ParabyzantineAgreementBinding>::Data,
 	) {
