@@ -5,6 +5,7 @@ pub mod as_task;
 
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
 
+/// A [ParabyzantineSpec] is a specification for the parabyzantine protocol.
 pub trait ParabyzantineSpec: Sized {
 	/// The entity type for the certificate.
 	type CertificateEntity: Sized;
