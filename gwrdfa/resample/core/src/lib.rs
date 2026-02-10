@@ -5,7 +5,7 @@ use parabyzantine::{
 		AgreementWorld, ParabyzantineAgreement, ParabyzantineAgreementBinding,
 		ParabyzantineAgreementData, ParabyzantineAgreementSpec,
 	},
-	buffer::{Bundle, Inferences},
+	buffer::{Bundle, Inferences, Querylike},
 };
 
 pub trait ResampleSpec<Binding: ParabyzantineAgreementBinding>: Sized {
@@ -24,19 +24,33 @@ pub trait ResampleSpec<Binding: ParabyzantineAgreementBinding>: Sized {
 	/// The bundle of the agreement in the buffer.
 	type IndexSubcommitteeAgreementBundle: Bundle;
 
+	/// The query for the index subcommittee agreement.
+	type IndexSubcommitteeAgreementQuery: Querylike<
+		<Binding::Spec as ParabyzantineAgreementSpec>::AgreementEntity,
+		<Binding::Spec as ParabyzantineAgreementSpec>::AgreementBuffer,
+		Self::IndexSubcommitteeAgreementBundle,
+	>;
+
 	/// The type of the index subcommittee agreement.
 	type IndexSubcommitteeAgreement: IndexSubcommitteeAgreement<Self::Index, Self::Sender, Self::Subcommittee>
-		+ From<(
+		+ for<'a> From<&'a (
 			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementEntity,
 			Self::IndexSubcommitteeAgreementBundle,
 		)>;
 
-	/// The bundle of the message in the buffer.
+	/// The bundle of the certificate in the buffer.
 	type CertificateBundle: Bundle;
+
+	/// The query for the certificate.
+	type CertificateQuery: Querylike<
+		<Binding::Spec as ParabyzantineAgreementSpec>::CertificateEntity,
+		<Binding::Spec as ParabyzantineAgreementSpec>::CertificateBuffer,
+		Self::CertificateBundle,
+	>;
 
 	/// The type of the certificate.
 	type Certificate: Certificate<Self::Index, Self::Value, Self::Sender>
-		+ From<(
+		+ for<'a> From<&'a (
 			<Binding::Spec as ParabyzantineAgreementSpec>::CertificateEntity,
 			Self::CertificateBundle,
 		)>;
@@ -61,18 +75,18 @@ pub trait ResampleSpec<Binding: ParabyzantineAgreementBinding>: Sized {
 	>;
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum Condition<Value: Eq> {
+	Consensus(Value),
+	Hung,
+	InProgress,
+}
+
 pub trait Subcommittee<Sender: Eq>: Eq {
-	/// Adds a member to the subcommittee.
-	fn add(&mut self, member: Sender);
-
-	/// Removes a member from the subcommittee.
-	fn remove(&mut self, member: Sender);
-
-	/// Checks if a member is in the subcommittee.
-	fn contains(&self, member: &Sender) -> bool;
-
-	/// The length of the subcommittee.
-	fn len(&self) -> usize;
+	fn condition<'a, Value: 'a + Eq>(
+		&'a self,
+		partials: impl Iterator<Item = (&'a Self, &'a Value)> + 'a,
+	) -> Condition<Value>;
 }
 
 pub trait IndexSubcommitteeAgreement<Index: Eq, Sender: Eq, Sub: Subcommittee<Sender>>: Eq {
@@ -111,17 +125,21 @@ pub trait CertificateSet<
 	fn partial_subcommittees_for_index<'a>(
 		&'a self,
 		index: &Index,
-	) -> impl Iterator<Item = Sub> + 'a
+	) -> impl Iterator<Item = (&'a Sub, &'a Value)> + 'a
 	where
-		Self: 'a;
+		Self: 'a,
+		Sub: 'a,
+		Value: 'a;
 
-	fn partial_subcommittees_for_value<'a>(
+	fn partial_subcommittee_for_value<'a>(
 		&'a self,
 		index: &Index,
 		value: &Value,
-	) -> impl Iterator<Item = Sub> + 'a
+	) -> Option<(&'a Sub, &'a Value)>
 	where
-		Self: 'a;
+		Self: 'a,
+		Sub: 'a,
+		Value: 'a;
 }
 
 pub trait Sampler<
@@ -152,6 +170,17 @@ pub trait Sampler<
 			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementDraftBuffer,
 		>,
 	);
+
+	/// Given a hung subcommittee agreement, the sampler has the option to insert agreements into the buffer.
+	fn elect_subcommittees_from_hung_value(
+		&mut self,
+		agreement: &SubAgree,
+		agreement_inferences: &mut Inferences<
+			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementEntity,
+			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementBuffer,
+			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementDraftBuffer,
+		>,
+	);
 }
 
 pub trait ResampleData<Binding: ParabyzantineAgreementBinding, Spec: ResampleSpec<Binding>>:
@@ -168,6 +197,18 @@ pub trait ResampleData<Binding: ParabyzantineAgreementBinding, Spec: ResampleSpe
 
 	/// Resample data must be able to provide a mutable [Sampler]
 	fn sampler_mut(&mut self) -> &mut Spec::Sampler;
+
+	/// Resample data must be able to prduce a [Spec::IndexSubcommitteeAgreementQuery]
+	fn index_subcommittee_agreement_query(&mut self) -> Spec::IndexSubcommitteeAgreementQuery;
+
+	/// Resample data must be able to produce a [Spec::CertificateQuery]
+	fn certificate_query(
+		&mut self,
+		index: &(
+			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementEntity,
+			Spec::IndexSubcommitteeAgreementBundle,
+		),
+	) -> Spec::CertificateQuery;
 }
 
 pub trait ResampleBinding: Sized {
@@ -188,13 +229,48 @@ impl<Binding: ResampleBinding>
 {
 	fn update_parabyzantine_agreement(
 		&mut self,
-		_data: &mut AgreementWorld<
+		agreement_world: &mut AgreementWorld<
 			<Binding::ParabyzantineAgreementBinding as ParabyzantineAgreementBinding>::Spec,
 		>,
 	) {
-		let mut certificate_set = self.0.certificate_set_mut();
+		// over all the index subcommittee agreements
+		let index_query = self.0.index_subcommittee_agreement_query();
+		for index_bundle in agreement_world.agreement_facts.query(index_query) {
+			let index: <Binding::ResampleSpec as ResampleSpec<
+				Binding::ParabyzantineAgreementBinding,
+			>>::IndexSubcommitteeAgreement = (&index_bundle).into();
 
-		todo!()
+			// insert all of the certificates for this index into the certificate set
+			let certificate_query = self.0.certificate_query(&index_bundle);
+			for certificate_bundle in agreement_world.certificate_facts.query(certificate_query) {
+				let certificate: <Binding::ResampleSpec as ResampleSpec<
+					Binding::ParabyzantineAgreementBinding,
+				>>::Certificate = (&certificate_bundle).into();
+
+				self.0.certificate_set_mut().insert(certificate);
+			}
+
+			// check the subcommittee condition
+			let subcommittee_condition = index.subcommittee().condition(
+				self.0.certificate_set().partial_subcommittees_for_index(&index.index()),
+			);
+			match subcommittee_condition {
+				Condition::Consensus(value) => {
+					self.0.sampler_mut().elect_subcommittees_from_consensus_value(
+						&value,
+						&index,
+						&mut agreement_world.agreement_inferences,
+					);
+				}
+				Condition::Hung => {
+					self.0.sampler_mut().elect_subcommittees_from_hung_value(
+						&index,
+						&mut agreement_world.agreement_inferences,
+					);
+				}
+				Condition::InProgress => {}
+			}
+		}
 	}
 }
 
