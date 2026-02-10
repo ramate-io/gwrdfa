@@ -6,12 +6,9 @@ use parabyzantine::{
 		ParabyzantineAgreementData, ParabyzantineAgreementSpec,
 	},
 	buffer::{Bundle, Inferences},
-	Container, Member,
 };
 
-pub trait ResampleSpec<Binding: ParabyzantineAgreementBinding, Data: ResampleData<Binding, Self>>:
-	Sized
-{
+pub trait ResampleSpec<Binding: ParabyzantineAgreementBinding>: Sized {
 	/// The type of the index.
 	type Index: Eq;
 
@@ -30,7 +27,7 @@ pub trait ResampleSpec<Binding: ParabyzantineAgreementBinding, Data: ResampleDat
 	/// The type of the index subcommittee agreement.
 	type IndexSubcommitteeAgreement: IndexSubcommitteeAgreement<Self::Index, Self::Sender, Self::Subcommittee>
 		+ From<(
-			<Binding::Spec as ParabyzantineAgreementSpec<Binding::Data>>::AgreementEntity,
+			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementEntity,
 			Self::IndexSubcommitteeAgreementBundle,
 		)>;
 
@@ -40,28 +37,28 @@ pub trait ResampleSpec<Binding: ParabyzantineAgreementBinding, Data: ResampleDat
 	/// The type of the certificate.
 	type Certificate: Certificate<Self::Index, Self::Value, Self::Sender>
 		+ From<(
-			<Binding::Spec as ParabyzantineAgreementSpec<Binding::Data>>::CertificateEntity,
+			<Binding::Spec as ParabyzantineAgreementSpec>::CertificateEntity,
 			Self::CertificateBundle,
 		)>;
 
 	/// The type of the certificate set.
 	type CertificateSet: CertificateSet<
-			Self::Index,
-			Self::Value,
-			Self::Sender,
-			Self::Certificate,
-			Self::Subcommittee,
-		> + Member<Data>;
+		Self::Index,
+		Self::Value,
+		Self::Sender,
+		Self::Certificate,
+		Self::Subcommittee,
+	>;
 
 	/// The type of the sampler.
 	type Sampler: Sampler<
-			Self::Index,
-			Self::Value,
-			Self::Sender,
-			Self::Subcommittee,
-			Self::IndexSubcommitteeAgreement,
-			Binding,
-		> + Member<Data>;
+		Self::Index,
+		Self::Value,
+		Self::Sender,
+		Self::Subcommittee,
+		Self::IndexSubcommitteeAgreement,
+		Binding,
+	>;
 }
 
 pub trait Subcommittee<Sender: Eq>: Eq {
@@ -150,14 +147,14 @@ pub trait Sampler<
 		value: &Value,
 		agreement: &SubAgree,
 		agreeement_inferences: &mut Inferences<
-			<Binding::Spec as ParabyzantineAgreementSpec<Binding::Data>>::AgreementEntity,
-			<Binding::Spec as ParabyzantineAgreementSpec<Binding::Data>>::AgreementBuffer,
-			<Binding::Spec as ParabyzantineAgreementSpec<Binding::Data>>::AgreementDraftBuffer,
+			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementEntity,
+			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementBuffer,
+			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementDraftBuffer,
 		>,
 	);
 }
 
-pub trait ResampleData<Binding: ParabyzantineAgreementBinding, Spec: ResampleSpec<Binding, Self>>:
+pub trait ResampleData<Binding: ParabyzantineAgreementBinding, Spec: ResampleSpec<Binding>>:
 	Sized
 {
 	/// A [Resample] data must be able to provide a [CertificateSet]
@@ -173,42 +170,9 @@ pub trait ResampleData<Binding: ParabyzantineAgreementBinding, Spec: ResampleSpe
 	fn sampler_mut(&mut self) -> &mut Spec::Sampler;
 }
 
-/// The membership requirements and blanket might be a bit overkill,
-/// as they are mainly useful when downcasting.
-/// But, in theory, if someone writes membership for the satisfying type for some other reason,
-/// they will get the trait bound for free here.
-///
-/// This means that if they choose, they can use a [Resample] object
-/// and get a [ParabyzantineAgreement] implementation for free as well.
-///
-/// Importantly, this does not force them into a particular implementation of [ParabyzantineAgreement],
-/// they would still need to intentionally use the [Resample] object.
-impl<
-		Binding: ParabyzantineAgreementBinding,
-		Spec: ResampleSpec<Binding, Self>,
-		Data: ResampleData<Binding, Spec>,
-	> ResampleData<Binding, Spec> for Data
-{
-	fn certificate_set(&self) -> &Spec::CertificateSet {
-		self.member::<Spec::CertificateSet>()
-	}
-
-	fn certificate_set_mut(&mut self) -> &mut Spec::CertificateSet {
-		self.member_mut::<Spec::CertificateSet>()
-	}
-
-	fn sampler(&self) -> &Spec::Sampler {
-		self.member::<Spec::Sampler>()
-	}
-
-	fn sampler_mut(&mut self) -> &mut Spec::Sampler {
-		self.member_mut::<Spec::Sampler>()
-	}
-}
-
 pub trait ResampleBinding: Sized {
 	type ParabyzantineAgreementBinding: ParabyzantineAgreementBinding;
-	type ResampleSpec: ResampleSpec<Self::ParabyzantineAgreementBinding, Self::ResampleData>;
+	type ResampleSpec: ResampleSpec<Self::ParabyzantineAgreementBinding>;
 	type ResampleData: ResampleData<Self::ParabyzantineAgreementBinding, Self::ResampleSpec>;
 }
 
@@ -220,14 +184,12 @@ pub struct Resample<Binding: ResampleBinding>(pub Binding::ResampleData);
 impl<Binding: ResampleBinding>
 	ParabyzantineAgreement<
 		<Binding::ParabyzantineAgreementBinding as ParabyzantineAgreementBinding>::Spec,
-		<Binding::ParabyzantineAgreementBinding as ParabyzantineAgreementBinding>::Data,
 	> for Resample<Binding>
 {
 	fn update_parabyzantine_agreement(
 		&mut self,
 		_data: &mut AgreementWorld<
 			<Binding::ParabyzantineAgreementBinding as ParabyzantineAgreementBinding>::Spec,
-			<Binding::ParabyzantineAgreementBinding as ParabyzantineAgreementBinding>::Data,
 		>,
 	) {
 		let mut certificate_set = self.0.certificate_set_mut();
