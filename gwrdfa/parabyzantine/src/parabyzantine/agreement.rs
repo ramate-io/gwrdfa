@@ -52,6 +52,9 @@ pub trait ParabyzantineAgreementData<Spec: ParabyzantineAgreementSpec>: Sized {
 	}
 }
 
+/// A [ParabyzantineAgreementBinding] is a binding for the [ParabyzantineAgreement] protocol.
+///
+/// It binds between the [ParabyzantineAgreementSpec] and the [ParabyzantineAgreementData].
 pub trait ParabyzantineAgreementBinding {
 	type Spec: ParabyzantineAgreementSpec;
 	type Data: ParabyzantineAgreementData<Self::Spec>;
