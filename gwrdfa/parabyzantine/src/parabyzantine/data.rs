@@ -113,3 +113,11 @@ pub struct ParabyzantineWorld<'a, Spec: ParabyzantineSpec> {
 	pub broadcast_inferences:
 		Inferences<Spec::BroadcastEntity, Spec::BroadcastBuffer, Spec::BroadcastDraftBuffer>,
 }
+
+/// A [ParabyzantineBinding] is a binding for the [Parabyzantine] protocol.
+///
+/// It binds between the [ParabyzantineSpec] and the [ParabyzantineData].
+pub trait ParabyzantineBinding {
+	type Spec: ParabyzantineSpec;
+	type Data: ParabyzantineData<Self::Spec>;
+}
