@@ -19,14 +19,17 @@ impl<Entity: Sized, Buffer: Bufferlike<Entity>, D: DraftBufferlike<Entity, Buffe
 		Self { inner, __phantom: PhantomData }
 	}
 
+	/// Inserts an entity and a bundle into the inferences.
 	pub fn insert<B: Bundle>(&mut self, entity: Option<Entity>, bundle: B) {
 		self.inner.draft_insert(entity, bundle);
 	}
 
+	/// Removes an entity and a bundle from the inferences.
 	pub fn remove<B: Bundle>(&mut self, entity: Entity, bundle: B) {
 		self.inner.draft_remove(entity, bundle);
 	}
 
+	/// Removes an entity from the inferences.
 	pub fn remove_entity(&mut self, entity: Entity) {
 		self.inner.draft_remove_entity(entity);
 	}

@@ -7,6 +7,19 @@ pub use inferences::Inferences;
 /// Bundles are entities plus metadata that exist in the buffer.
 pub trait Bundle {}
 
+/// Marks when a bundle is just an entity.
+///
+/// This is the canonical way to:
+/// 1. Query a buffer for only entities.
+/// 2. Handle ignorant buffers (buffers that don't support extended bundle semantics).
+///
+/// Ignorant buffers are a useful pattern for simple or highly constrained systems,
+/// wherein implementing bundle arenas is not worthwhile or tractable.
+///
+/// The struct itself does not carry meaninful data. It is simply a marker type.
+#[derive(Debug, Clone, Copy)]
+pub struct JustEntity;
+
 /// Buffers store entities and components associated with those entities.
 /// They are the ultimate source of truth for the system.
 ///
