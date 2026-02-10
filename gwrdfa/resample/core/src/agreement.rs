@@ -51,6 +51,7 @@ impl<Binding: ResampleAgreementBinding> ResampleAgreement<Binding> {
 impl<Binding: ResampleAgreementBinding>
 	ParabyzantineAgreement<
 		<Binding::ParabyzantineAgreementBinding as ParabyzantineAgreementBinding>::Spec,
+		<Binding::ParabyzantineAgreementBinding as ParabyzantineAgreementBinding>::Data,
 	> for ResampleAgreement<Binding>
 {
 	fn update_parabyzantine_agreement(

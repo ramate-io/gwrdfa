@@ -47,9 +47,13 @@ pub trait ParabyzantineData<Spec: ParabyzantineSpec>: Sized {
 	/// The buffer for the certificate.
 	fn parabyzantine_certificate_buffer(&self) -> &Spec::CertificateBuffer;
 	/// The draft buffer for the certificate.
+	fn parabyzantine_certificate_buffer_mut(&mut self) -> &mut Spec::CertificateBuffer;
+	/// The draft buffer for the certificate.
 	fn parabyzantine_certificate_draft_buffer(&self) -> Spec::CertificateDraftBuffer;
 	/// The buffer for the agreement.
 	fn parabyzantine_agreement_buffer(&self) -> &Spec::AgreementBuffer;
+	/// The draft buffer for the agreement.
+	fn parabyzantine_agreement_buffer_mut(&mut self) -> &mut Spec::AgreementBuffer;
 	/// The draft buffer for the agreement.
 	fn parabyzantine_agreement_draft_buffer(&self) -> Spec::AgreementDraftBuffer;
 

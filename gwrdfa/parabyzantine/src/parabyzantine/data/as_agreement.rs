@@ -23,11 +23,17 @@ impl<Spec: ParabyzantineSpec, Data: ParabyzantineData<Spec>> ParabyzantineAgreem
 	fn parabyzantine_agreement_certificate_buffer(&self) -> &Spec::CertificateBuffer {
 		self.parabyzantine_certificate_buffer()
 	}
+	fn parabyzantine_agreement_certificate_buffer_mut(&mut self) -> &mut Spec::CertificateBuffer {
+		self.parabyzantine_certificate_buffer_mut()
+	}
 	fn parabyzantine_agreement_certificate_draft_buffer(&self) -> Spec::CertificateDraftBuffer {
 		self.parabyzantine_certificate_draft_buffer()
 	}
 	fn parabyzantine_agreement_agreement_buffer(&self) -> &Spec::AgreementBuffer {
 		self.parabyzantine_agreement_buffer()
+	}
+	fn parabyzantine_agreement_agreement_buffer_mut(&mut self) -> &mut Spec::AgreementBuffer {
+		self.parabyzantine_agreement_buffer_mut()
 	}
 	fn parabyzantine_agreement_agreement_draft_buffer(&self) -> Spec::AgreementDraftBuffer {
 		self.parabyzantine_agreement_draft_buffer()

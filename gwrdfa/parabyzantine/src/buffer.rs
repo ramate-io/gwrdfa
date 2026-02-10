@@ -36,6 +36,14 @@ pub trait Bufferlike<Entity: Sized>: Sized {
 	fn remove<B: Bundle>(&mut self, entity: Entity, bundle: B);
 
 	fn remove_entity(&mut self, entity: Entity);
+
+	fn commit_inferences<D: DraftBufferlike<Entity, Self>>(
+		&mut self,
+		inferences: Inferences<Entity, Self, D>,
+	) {
+		let mut draft_buffer = inferences.into_inner();
+		draft_buffer.commit(self);
+	}
 }
 
 /// Queries are view helpers that are used to look at values in the buffer.

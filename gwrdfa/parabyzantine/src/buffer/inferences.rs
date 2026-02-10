@@ -33,6 +33,10 @@ impl<Entity: Sized, Buffer: Bufferlike<Entity>, D: DraftBufferlike<Entity, Buffe
 	pub fn remove_entity(&mut self, entity: Entity) {
 		self.inner.draft_remove_entity(entity);
 	}
+
+	pub(crate) fn into_inner(self) -> D {
+		self.inner
+	}
 }
 
 impl<Entity: Sized, Buffer: Bufferlike<Entity>, D: DraftBufferlike<Entity, Buffer>> From<D>
