@@ -5,7 +5,7 @@ use parabyzantine::{
 		AgreementWorld, ParabyzantineAgreement, ParabyzantineAgreementBinding,
 		ParabyzantineAgreementData, ParabyzantineAgreementSpec,
 	},
-	buffer::Bundle,
+	buffer::{Bundle, Inferences},
 	Container, Member,
 };
 
@@ -21,6 +21,9 @@ pub trait ResampleSpec<Binding: ParabyzantineAgreementBinding, Data: ResampleDat
 	/// The type of the sender of a certificate.
 	type Sender: Eq;
 
+	/// The type of the subcommittee.
+	type Subcommittee: Subcommittee<Self::Sender>;
+
 	/// The bundle of the agreement in the buffer.
 	type IndexSubcommitteeAgreementBundle: Bundle;
 
@@ -30,9 +33,6 @@ pub trait ResampleSpec<Binding: ParabyzantineAgreementBinding, Data: ResampleDat
 			<Binding::Spec as ParabyzantineAgreementSpec<Binding::Data>>::AgreementEntity,
 			Self::IndexSubcommitteeAgreementBundle,
 		)>;
-
-	/// The type of the subcommittee.
-	type Subcommittee: Subcommittee<Self::Sender>;
 
 	/// The bundle of the message in the buffer.
 	type CertificateBundle: Bundle;
@@ -51,6 +51,16 @@ pub trait ResampleSpec<Binding: ParabyzantineAgreementBinding, Data: ResampleDat
 			Self::Sender,
 			Self::Certificate,
 			Self::Subcommittee,
+		> + Member<Data>;
+
+	/// The type of the sampler.
+	type Sampler: Sampler<
+			Self::Index,
+			Self::Value,
+			Self::Sender,
+			Self::Subcommittee,
+			Self::IndexSubcommitteeAgreement,
+			Binding,
 		> + Member<Data>;
 }
 
@@ -123,13 +133,28 @@ pub trait Sampler<
 	Sender: Eq,
 	Sub: Subcommittee<Sender>,
 	SubAgree: IndexSubcommitteeAgreement<Index, Sender, Sub>,
+	Binding: ParabyzantineAgreementBinding,
 >: Sized
 {
-	/// Given a value and the subcommittee agreeement which
+	/// Given a value and the subcommittee agreeement which gave that value,
+	/// the sampler has the option to insert agreements into the buffer.
 	///
-	/// Note, this does not internally validate whether the subcommittee voted on the value.
-	/// It assumes that has already been checked.
-	fn subcommittee(&self, value: &Value, agreement: &SubAgree) -> Sub;
+	/// Note, that this is an offline rule set,
+	/// so it does not depend on a consensus value itself.
+	/// If you want to write a protocol which changes the rule set based on a consensus value,
+	/// there are two major patterns:
+	/// 1. Write your [Sampler] so that values themselves can effectively update the sampler to reflect the new rule set.
+	/// 2. Write your [Sampler] so that it inserts agreements which defer the actual subcommittee election to a later stage, e.g., ParabyzantineTask.
+	fn elect_subcommittees_from_consensus_value(
+		&mut self,
+		value: &Value,
+		agreement: &SubAgree,
+		agreeement_inferences: &mut Inferences<
+			<Binding::Spec as ParabyzantineAgreementSpec<Binding::Data>>::AgreementEntity,
+			<Binding::Spec as ParabyzantineAgreementSpec<Binding::Data>>::AgreementBuffer,
+			<Binding::Spec as ParabyzantineAgreementSpec<Binding::Data>>::AgreementDraftBuffer,
+		>,
+	);
 }
 
 pub trait ResampleData<Binding: ParabyzantineAgreementBinding, Spec: ResampleSpec<Binding, Self>>:
@@ -140,6 +165,12 @@ pub trait ResampleData<Binding: ParabyzantineAgreementBinding, Spec: ResampleSpe
 
 	/// A [Resample] data must be able to provide a mutable [CertificateSet]
 	fn certificate_set_mut(&mut self) -> &mut Spec::CertificateSet;
+
+	/// Resample data must be able to provide a [Sampler]
+	fn sampler(&self) -> &Spec::Sampler;
+
+	/// Resample data must be able to provide a mutable [Sampler]
+	fn sampler_mut(&mut self) -> &mut Spec::Sampler;
 }
 
 /// The membership requirements and blanket might be a bit overkill,
@@ -164,6 +195,14 @@ impl<
 
 	fn certificate_set_mut(&mut self) -> &mut Spec::CertificateSet {
 		self.member_mut::<Spec::CertificateSet>()
+	}
+
+	fn sampler(&self) -> &Spec::Sampler {
+		self.member::<Spec::Sampler>()
+	}
+
+	fn sampler_mut(&mut self) -> &mut Spec::Sampler {
+		self.member_mut::<Spec::Sampler>()
 	}
 }
 
