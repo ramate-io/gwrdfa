@@ -1,5 +1,4 @@
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
-use crate::{Container, Factory, Member, Product, View};
 
 /// The schedule for the prepare step of the parabyzantine agreement.
 #[derive(Debug, Clone, Copy)]
@@ -16,64 +15,50 @@ pub struct PostParabyzantineAgreement;
 /// Specifies the entities and buffers for a parabyzantine agreement Data.
 ///
 /// A Parabyzantine agreement Data is concerned with deriving agreements from certificates.
-pub trait ParabyzantineAgreementSpec<Data: ParabyzantineAgreementData<Self>>: Sized {
+pub trait ParabyzantineAgreementSpec: Sized {
 	/// The entity type for the certificate.
 	type CertificateEntity: Sized;
 	/// The buffer type for the certificate.
-	type CertificateBuffer: Bufferlike<Self::CertificateEntity> + Member<Data>;
+	type CertificateBuffer: Bufferlike<Self::CertificateEntity>;
 	/// The draft buffer type for the certificate.
-	type CertificateDraftBuffer: DraftBufferlike<Self::CertificateEntity, Self::CertificateBuffer>
-		+ Product<Data>;
+	type CertificateDraftBuffer: DraftBufferlike<Self::CertificateEntity, Self::CertificateBuffer>;
 
 	/// The entity type for the agreement.
 	type AgreementEntity: Sized;
 	/// The buffer type for the agreement.
-	type AgreementBuffer: Bufferlike<Self::AgreementEntity> + Member<Data>;
+	type AgreementBuffer: Bufferlike<Self::AgreementEntity>;
 	/// The draft buffer type for the agreement.
-	type AgreementDraftBuffer: DraftBufferlike<Self::AgreementEntity, Self::AgreementBuffer>
-		+ Product<Data>;
+	type AgreementDraftBuffer: DraftBufferlike<Self::AgreementEntity, Self::AgreementBuffer>;
 }
 
-pub trait ParabyzantineAgreementData<Spec: ParabyzantineAgreementSpec<Self>>: Sized {
-	fn parabyzantine_agreement_world(&self) -> AgreementWorld<Spec, Self>;
-}
+pub trait ParabyzantineAgreementData<Spec: ParabyzantineAgreementSpec>: Sized {
+	/// The buffer for the certificate.
+	fn parabyzantine_agreement_certificate_buffer(&self) -> &Spec::CertificateBuffer;
+	/// The draft buffer for the certificate.
+	fn parabyzantine_agreement_certificate_draft_buffer(&self) -> Spec::CertificateDraftBuffer;
+	/// The buffer for the agreement.
+	fn parabyzantine_agreement_agreement_buffer(&self) -> &Spec::AgreementBuffer;
+	/// The draft buffer for the agreement.
+	fn parabyzantine_agreement_agreement_draft_buffer(&self) -> Spec::AgreementDraftBuffer;
 
-pub trait ParabyzantineAgreementBinding {
-	type Spec: ParabyzantineAgreementSpec<Self::Data>;
-	type Data: ParabyzantineAgreementData<Self::Spec>;
-}
-
-/// Blanket implementation for the agreement Data when members and products are available.
-///
-/// Currently, we're forcing this pattern by requiring the Spec to bound these fields as members and products of the Data.
-/// This is more of a developer awareness thing than a technical requirement.
-/// It's easier to debug where you're coming up short on members and products
-/// if it points to a particular field in the spec, as opposed to simply showing
-/// a failed trait bound.
-impl<'a, Spec: ParabyzantineAgreementSpec<Data>, Data> ParabyzantineAgreementData<Spec> for Data
-where
-	Data: Sized,
-	Spec::CertificateBuffer: Member<Data>,
-	Spec::CertificateDraftBuffer: Product<Data>,
-	Spec::AgreementBuffer: Member<Data>,
-	Spec::AgreementDraftBuffer: Product<Data>,
-{
-	fn parabyzantine_agreement_world(&self) -> AgreementWorld<Spec, Self> {
+	/// The world of the agreement.
+	fn parabyzantine_agreement_world(&self) -> AgreementWorld<Spec> {
 		AgreementWorld {
-			certificate_facts: self.member::<Spec::CertificateBuffer>().into(),
-			certificate_inferences: self.produce::<Spec::CertificateDraftBuffer>().into(),
-			agreement_facts: self.member::<Spec::AgreementBuffer>().into(),
-			agreement_inferences: self.produce::<Spec::AgreementDraftBuffer>().into(),
+			certificate_facts: self.parabyzantine_agreement_certificate_buffer().into(),
+			certificate_inferences: self.parabyzantine_agreement_certificate_draft_buffer().into(),
+			agreement_facts: self.parabyzantine_agreement_agreement_buffer().into(),
+			agreement_inferences: self.parabyzantine_agreement_agreement_draft_buffer().into(),
 		}
 	}
 }
 
+pub trait ParabyzantineAgreementBinding {
+	type Spec: ParabyzantineAgreementSpec;
+	type Data: ParabyzantineAgreementData<Self::Spec>;
+}
+
 /// The world of the agreement step of a parabyzantine agreement Data.
-pub struct AgreementWorld<
-	'a,
-	Spec: ParabyzantineAgreementSpec<Data>,
-	Data: ParabyzantineAgreementData<Spec>,
-> {
+pub struct AgreementWorld<'a, Spec: ParabyzantineAgreementSpec> {
 	pub certificate_facts: Facts<'a, Spec::CertificateEntity, Spec::CertificateBuffer>,
 	pub certificate_inferences:
 		Inferences<Spec::CertificateEntity, Spec::CertificateBuffer, Spec::CertificateDraftBuffer>,
@@ -82,22 +67,7 @@ pub struct AgreementWorld<
 		Inferences<Spec::AgreementEntity, Spec::AgreementBuffer, Spec::AgreementDraftBuffer>,
 }
 
-/// View the world of a parabyzantine agreement Data.
-///
-/// This is implemented for ergonomics so that the user can write in the same style if they so choose.
-impl<'a, Spec: ParabyzantineAgreementSpec<Data>, Data: ParabyzantineAgreementData<Spec>>
-	View<'a, Data> for AgreementWorld<'a, Spec, Data>
-{
-	fn view(from: &'a Data) -> Self {
-		from.parabyzantine_agreement_world()
-	}
-}
-
-pub trait ParabyzantineAgreement<
-	Spec: ParabyzantineAgreementSpec<Data>,
-	Data: ParabyzantineAgreementData<Spec>,
->: Sized
-{
+pub trait ParabyzantineAgreement<Spec: ParabyzantineAgreementSpec>: Sized {
 	/// Compute the parabyzantine agreement.
-	fn update_parabyzantine_agreement(&mut self, data: &mut AgreementWorld<Spec, Data>);
+	fn update_parabyzantine_agreement(&mut self, data: &mut AgreementWorld<Spec>);
 }

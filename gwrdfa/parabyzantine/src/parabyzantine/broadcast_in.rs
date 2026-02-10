@@ -1,5 +1,4 @@
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
-use crate::{Container, Factory, Member, Product, View};
 
 /// The schedule for the prepare step of the parabyzantine broadcast in.
 #[derive(Debug, Clone, Copy)]
@@ -16,65 +15,61 @@ pub struct CommitParabyzantineBroadcastIn;
 /// Specifies the entities and buffers for a parabyzantine broadcast in Data.
 ///
 /// A Parabyzantine broadcast in Data is concerned with deriving transactions and certificates from broadcasts.
-pub trait ParabyzantineBroadcastInSpec<Data: ParabyzantineBroadcastInData<Self>>: Sized {
+pub trait ParabyzantineBroadcastInSpec: Sized {
 	/// The entity type for the broadcast.
 	type BroadcastEntity: Sized;
 	/// The buffer type for the broadcast.
-	type BroadcastBuffer: Bufferlike<Self::BroadcastEntity> + Member<Data>;
+	type BroadcastBuffer: Bufferlike<Self::BroadcastEntity>;
 	/// The draft buffer type for the broadcast.
-	type BroadcastDraftBuffer: DraftBufferlike<Self::BroadcastEntity, Self::BroadcastBuffer>
-		+ Product<Data>;
+	type BroadcastDraftBuffer: DraftBufferlike<Self::BroadcastEntity, Self::BroadcastBuffer>;
 
 	/// The entity type for the transaction.
 	type TransactionEntity: Sized;
 	/// The buffer type for the transaction.
-	type TransactionBuffer: Bufferlike<Self::TransactionEntity> + Member<Data>;
+	type TransactionBuffer: Bufferlike<Self::TransactionEntity>;
 	/// The draft buffer type for the transaction.
-	type TransactionDraftBuffer: DraftBufferlike<Self::TransactionEntity, Self::TransactionBuffer>
-		+ Product<Data>;
+	type TransactionDraftBuffer: DraftBufferlike<Self::TransactionEntity, Self::TransactionBuffer>;
 
 	/// The entity type for the certificate.
 	type CertificateEntity: Sized;
 	/// The buffer type for the certificate.
-	type CertificateBuffer: Bufferlike<Self::CertificateEntity> + Member<Data>;
+	type CertificateBuffer: Bufferlike<Self::CertificateEntity>;
 	/// The draft buffer type for the certificate.
-	type CertificateDraftBuffer: DraftBufferlike<Self::CertificateEntity, Self::CertificateBuffer>
-		+ Product<Data>;
+	type CertificateDraftBuffer: DraftBufferlike<Self::CertificateEntity, Self::CertificateBuffer>;
 }
 
-pub trait ParabyzantineBroadcastInData<Spec: ParabyzantineBroadcastInSpec<Self>>: Sized {
-	fn parabyzantine_broadcast_in_world(&self) -> BroadcastInWorld<Spec, Self>;
-}
+pub trait ParabyzantineBroadcastInData<Spec: ParabyzantineBroadcastInSpec>: Sized {
+	/// The buffer for the broadcast.
+	fn parabyzantine_broadcast_in_broadcast_buffer(&self) -> &Spec::BroadcastBuffer;
+	/// The draft buffer for the broadcast.
+	fn parabyzantine_broadcast_in_broadcast_draft_buffer(&self) -> Spec::BroadcastDraftBuffer;
+	/// The buffer for the transaction.
+	fn parabyzantine_broadcast_in_transaction_buffer(&self) -> &Spec::TransactionBuffer;
+	/// The draft buffer for the transaction.
+	fn parabyzantine_broadcast_in_transaction_draft_buffer(&self) -> Spec::TransactionDraftBuffer;
+	/// The buffer for the certificate.
+	fn parabyzantine_broadcast_in_certificate_buffer(&self) -> &Spec::CertificateBuffer;
+	/// The draft buffer for the certificate.
+	fn parabyzantine_broadcast_in_certificate_draft_buffer(&self) -> Spec::CertificateDraftBuffer;
 
-/// Blanket implementation for the broadcast in Data when members are available.
-impl<Spec: ParabyzantineBroadcastInSpec<Data>, Data> ParabyzantineBroadcastInData<Spec> for Data
-where
-	Data: Sized,
-	Spec::BroadcastBuffer: Member<Data>,
-	Spec::BroadcastDraftBuffer: Product<Data>,
-	Spec::TransactionBuffer: Member<Data>,
-	Spec::TransactionDraftBuffer: Product<Data>,
-	Spec::CertificateBuffer: Member<Data>,
-	Spec::CertificateDraftBuffer: Product<Data>,
-{
-	fn parabyzantine_broadcast_in_world(&self) -> BroadcastInWorld<Spec, Self> {
+	fn parabyzantine_broadcast_in_world(&self) -> BroadcastInWorld<Spec> {
 		BroadcastInWorld {
-			broadcast_facts: self.member::<Spec::BroadcastBuffer>().into(),
-			broadcast_inferences: self.produce::<Spec::BroadcastDraftBuffer>().into(),
-			transaction_facts: self.member::<Spec::TransactionBuffer>().into(),
-			transaction_inferences: self.produce::<Spec::TransactionDraftBuffer>().into(),
-			certificate_facts: self.member::<Spec::CertificateBuffer>().into(),
-			certificate_inferences: self.produce::<Spec::CertificateDraftBuffer>().into(),
+			broadcast_facts: self.parabyzantine_broadcast_in_broadcast_buffer().into(),
+			broadcast_inferences: self.parabyzantine_broadcast_in_broadcast_draft_buffer().into(),
+			transaction_facts: self.parabyzantine_broadcast_in_transaction_buffer().into(),
+			transaction_inferences: self
+				.parabyzantine_broadcast_in_transaction_draft_buffer()
+				.into(),
+			certificate_facts: self.parabyzantine_broadcast_in_certificate_buffer().into(),
+			certificate_inferences: self
+				.parabyzantine_broadcast_in_certificate_draft_buffer()
+				.into(),
 		}
 	}
 }
 
 /// The world of the broadcast in step of a parabyzantine broadcast in Data.
-pub struct BroadcastInWorld<
-	'a,
-	Spec: ParabyzantineBroadcastInSpec<Data>,
-	Data: ParabyzantineBroadcastInData<Spec>,
-> {
+pub struct BroadcastInWorld<'a, Spec: ParabyzantineBroadcastInSpec> {
 	pub broadcast_facts: Facts<'a, Spec::BroadcastEntity, Spec::BroadcastBuffer>,
 	pub broadcast_inferences:
 		Inferences<Spec::BroadcastEntity, Spec::BroadcastBuffer, Spec::BroadcastDraftBuffer>,
@@ -86,28 +81,7 @@ pub struct BroadcastInWorld<
 		Inferences<Spec::CertificateEntity, Spec::CertificateBuffer, Spec::CertificateDraftBuffer>,
 }
 
-/// View the world of a parabyzantine broadcast in Data.
-///
-/// This is implemented for ergonomics so that the user can write in the same style if they so choose.
-impl<'a, Spec: ParabyzantineBroadcastInSpec<Data>, Data: ParabyzantineBroadcastInData<Spec>>
-	View<'a, Data> for BroadcastInWorld<'a, Spec, Data>
-{
-	fn view(from: &'a Data) -> Self {
-		from.parabyzantine_broadcast_in_world()
-	}
-}
-
-pub trait ParabyzantineBroadcastIn<
-	Spec: ParabyzantineBroadcastInSpec<Data>,
-	Data: ParabyzantineBroadcastInData<Spec>,
->: Sized
-{
-	/// Prepare the parabyzantine broadcast in.
-	fn prepare_parabyzantine_broadcast_in(&mut self, data: &mut Data);
-
+pub trait ParabyzantineBroadcastIn<Spec: ParabyzantineBroadcastInSpec>: Sized {
 	/// Compute the parabyzantine broadcast in.
-	fn compute_parabyzantine_broadcast_in(&mut self, data: &mut Data);
-
-	/// Commit the parabyzantine broadcast in.
-	fn commit_parabyzantine_broadcast_in(&mut self, data: &mut Data);
+	fn compute_parabyzantine_broadcast_in(&mut self, data: &mut BroadcastInWorld<Spec>);
 }

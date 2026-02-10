@@ -16,60 +16,58 @@ pub struct CommitParabyzantineTask;
 /// Specifies the entities and buffers for a parabyzantine task Data.
 ///
 /// A Parabyzantine task Data is concerned with deriving tasks from agreements and transactions.
-pub trait ParabyzantineTaskSpec<Data: ParabyzantineTaskData<Self>>: Sized {
+pub trait ParabyzantineTaskSpec: Sized {
 	/// The entity type for the agreement.
 	type AgreementEntity: Sized;
 	/// The buffer type for the agreement.
-	type AgreementBuffer: Bufferlike<Self::AgreementEntity> + Member<Data>;
+	type AgreementBuffer: Bufferlike<Self::AgreementEntity>;
 	/// The draft buffer type for the agreement.
-	type AgreementDraftBuffer: DraftBufferlike<Self::AgreementEntity, Self::AgreementBuffer>
-		+ Product<Data>;
+	type AgreementDraftBuffer: DraftBufferlike<Self::AgreementEntity, Self::AgreementBuffer>;
 
 	/// The entity type for the transaction.
 	type TransactionEntity: Sized;
 	/// The buffer type for the transaction.
-	type TransactionBuffer: Bufferlike<Self::TransactionEntity> + Member<Data>;
+	type TransactionBuffer: Bufferlike<Self::TransactionEntity>;
 	/// The draft buffer type for the transaction.
-	type TransactionDraftBuffer: DraftBufferlike<Self::TransactionEntity, Self::TransactionBuffer>
-		+ Product<Data>;
+	type TransactionDraftBuffer: DraftBufferlike<Self::TransactionEntity, Self::TransactionBuffer>;
 
 	/// The entity type for the task.
 	type TaskEntity: Sized;
 	/// The buffer type for the task.
-	type TaskBuffer: Bufferlike<Self::TaskEntity> + Member<Data>;
+	type TaskBuffer: Bufferlike<Self::TaskEntity>;
 	/// The draft buffer type for the task.
-	type TaskDraftBuffer: DraftBufferlike<Self::TaskEntity, Self::TaskBuffer> + Product<Data>;
+	type TaskDraftBuffer: DraftBufferlike<Self::TaskEntity, Self::TaskBuffer>;
 }
 
-pub trait ParabyzantineTaskData<Spec: ParabyzantineTaskSpec<Self>>: Sized {
-	fn parabyzantine_task_world(&self) -> TaskWorld<Spec, Self>;
-}
+pub trait ParabyzantineTaskData<Spec: ParabyzantineTaskSpec>: Sized {
+	/// The buffer for the agreement.
+	fn parabyzantine_task_agreement_buffer(&self) -> &Spec::AgreementBuffer;
+	/// The draft buffer for the agreement.
+	fn parabyzantine_task_agreement_draft_buffer(&self) -> Spec::AgreementDraftBuffer;
+	/// The buffer for the transaction.
+	fn parabyzantine_task_transaction_buffer(&self) -> &Spec::TransactionBuffer;
+	/// The draft buffer for the transaction.
+	fn parabyzantine_task_transaction_draft_buffer(&self) -> Spec::TransactionDraftBuffer;
+	/// The buffer for the task.
+	fn parabyzantine_task_task_buffer(&self) -> &Spec::TaskBuffer;
+	/// The draft buffer for the task.
+	fn parabyzantine_task_task_draft_buffer(&self) -> Spec::TaskDraftBuffer;
 
-/// Blanket implementation for the task Data when members are available.
-impl<Spec: ParabyzantineTaskSpec<Data>, Data> ParabyzantineTaskData<Spec> for Data
-where
-	Data: Sized,
-	Spec::AgreementBuffer: Member<Data>,
-	Spec::AgreementDraftBuffer: Product<Data>,
-	Spec::TransactionBuffer: Member<Data>,
-	Spec::TransactionDraftBuffer: Product<Data>,
-	Spec::TaskBuffer: Member<Data>,
-	Spec::TaskDraftBuffer: Product<Data>,
-{
-	fn parabyzantine_task_world(&self) -> TaskWorld<Spec, Self> {
+	/// The world of the task.
+	fn parabyzantine_task_world(&self) -> TaskWorld<Spec> {
 		TaskWorld {
-			agreement_facts: self.member::<Spec::AgreementBuffer>().into(),
-			agreement_inferences: self.produce::<Spec::AgreementDraftBuffer>().into(),
-			transaction_facts: self.member::<Spec::TransactionBuffer>().into(),
-			transaction_inferences: self.produce::<Spec::TransactionDraftBuffer>().into(),
-			task_facts: self.member::<Spec::TaskBuffer>().into(),
-			task_inferences: self.produce::<Spec::TaskDraftBuffer>().into(),
+			agreement_facts: self.parabyzantine_task_agreement_buffer().into(),
+			agreement_inferences: self.parabyzantine_task_agreement_draft_buffer().into(),
+			transaction_facts: self.parabyzantine_task_transaction_buffer().into(),
+			transaction_inferences: self.parabyzantine_task_transaction_draft_buffer().into(),
+			task_facts: self.parabyzantine_task_task_buffer().into(),
+			task_inferences: self.parabyzantine_task_task_draft_buffer().into(),
 		}
 	}
 }
 
 /// The world of the task step of a parabyzantine task Data.
-pub struct TaskWorld<'a, Spec: ParabyzantineTaskSpec<Data>, Data: ParabyzantineTaskData<Spec>> {
+pub struct TaskWorld<'a, Spec: ParabyzantineTaskSpec> {
 	pub agreement_facts: Facts<'a, Spec::AgreementEntity, Spec::AgreementBuffer>,
 	pub agreement_inferences:
 		Inferences<Spec::AgreementEntity, Spec::AgreementBuffer, Spec::AgreementDraftBuffer>,
@@ -80,26 +78,7 @@ pub struct TaskWorld<'a, Spec: ParabyzantineTaskSpec<Data>, Data: ParabyzantineT
 	pub task_inferences: Inferences<Spec::TaskEntity, Spec::TaskBuffer, Spec::TaskDraftBuffer>,
 }
 
-/// View the world of a parabyzantine task Data.
-///
-/// This is implemented for ergonomics so that the user can write in the same style if they so choose.
-impl<'a, Spec: ParabyzantineTaskSpec<Data>, Data: ParabyzantineTaskData<Spec>> View<'a, Data>
-	for TaskWorld<'a, Spec, Data>
-{
-	fn view(from: &'a Data) -> Self {
-		from.parabyzantine_task_world()
-	}
-}
-
-pub trait ParabyzantineTask<Spec: ParabyzantineTaskSpec<Data>, Data: ParabyzantineTaskData<Spec>>:
-	Sized
-{
-	/// Prepare the parabyzantine task.
-	fn prepare_parabyzantine_task(&mut self, data: &mut Data);
-
+pub trait ParabyzantineTask<Spec: ParabyzantineTaskSpec>: Sized {
 	/// Compute the parabyzantine task.
-	fn compute_parabyzantine_task(&mut self, data: &mut Data);
-
-	/// Commit the parabyzantine task.
-	fn commit_parabyzantine_task(&mut self, data: &mut Data);
+	fn compute_parabyzantine_task(&mut self, data: &mut TaskWorld<Spec>);
 }
