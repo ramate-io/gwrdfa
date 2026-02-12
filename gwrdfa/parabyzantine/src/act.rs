@@ -27,3 +27,11 @@ where
 		l.act(action, r);
 	}
 }
+
+/// A [NoOp] is a no-op implementation of the [Act] trait.
+#[derive(Debug, Clone, Copy)]
+pub struct NoOp;
+
+impl<A, D: Sized> Act<A, D> for NoOp {
+	fn act(&mut self, _action: A, _data: &mut D) {}
+}
