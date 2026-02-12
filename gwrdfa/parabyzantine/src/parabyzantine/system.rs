@@ -52,7 +52,7 @@ pub trait ParabyzantineSystem: Sized {
 	);
 }
 
-/// A Parabyzantine system automaticall implements the Pair trait for the agreement action.
+/// A Parabyzantine system automatically implements the [Pair] trait for the agreement action.
 impl<Spec: ParabyzantineSystemSpec, System: ParabyzantineSystem<Spec = Spec>>
 	Pair<Spec::AgreementAction> for System
 {

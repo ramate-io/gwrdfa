@@ -1,7 +1,5 @@
-use crate::parabyzantine::agreement::{
-	ParabyzantineAgreementBinding, ParabyzantineAgreementData, ParabyzantineAgreementSpec,
-};
-use crate::parabyzantine::data::{ParabyzantineBinding, ParabyzantineData, ParabyzantineSpec};
+use crate::parabyzantine::agreement::{ParabyzantineAgreementData, ParabyzantineAgreementSpec};
+use crate::parabyzantine::data::{ParabyzantineData, ParabyzantineSpec};
 
 /// Blanket implementation for the agreement spec.
 ///

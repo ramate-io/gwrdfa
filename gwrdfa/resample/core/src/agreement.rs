@@ -48,12 +48,9 @@ impl<Binding: ResampleAgreementBinding> ResampleAgreement<Binding> {
 	}
 }
 
-impl<Binding: ResampleAgreementBinding>
-	ParabyzantineAgreement<
-		<Binding::ParabyzantineAgreementBinding as ParabyzantineAgreementBinding>::Spec,
-		<Binding::ParabyzantineAgreementBinding as ParabyzantineAgreementBinding>::Data,
-	> for ResampleAgreement<Binding>
-{
+impl<Binding: ResampleAgreementBinding> ParabyzantineAgreement for ResampleAgreement<Binding> {
+	type Binding = Binding::ParabyzantineAgreementBinding;
+
 	fn update_parabyzantine_agreement(
 		&mut self,
 		agreement_world: &mut AgreementWorld<
