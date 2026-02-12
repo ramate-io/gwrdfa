@@ -1,17 +1,5 @@
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
 
-/// The schedule for the prepare step of the parabyzantine agreement.
-#[derive(Debug, Clone, Copy)]
-pub struct PreParabyzantineAgreement;
-
-/// The schedule for the compute step of the parabyzantine agreement.
-#[derive(Debug, Clone, Copy)]
-pub struct UpdateParabyzantineAgreement;
-
-/// The schedule for the commit step of the parabyzantine agreement.
-#[derive(Debug, Clone, Copy)]
-pub struct PostParabyzantineAgreement;
-
 /// Specifies the entities and buffers for a parabyzantine agreement Data.
 ///
 /// A Parabyzantine agreement Data is concerned with deriving agreements from certificates.
@@ -145,3 +133,6 @@ pub trait ParabyzantineAgreement<
 		self.post_parabyzantine_agreement(data, agreement_inferences);
 	}
 }
+
+#[derive(Debug, Clone, Copy)]
+pub struct Agreement;

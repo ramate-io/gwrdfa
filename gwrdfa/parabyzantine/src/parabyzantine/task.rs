@@ -1,17 +1,5 @@
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
 
-/// The schedule for the prepare step of the parabyzantine task.
-#[derive(Debug, Clone, Copy)]
-pub struct PrepareParabyzantineTask;
-
-/// The schedule for the compute step of the parabyzantine task.
-#[derive(Debug, Clone, Copy)]
-pub struct ComputeParabyzantineTask;
-
-/// The schedule for the commit step of the parabyzantine task.
-#[derive(Debug, Clone, Copy)]
-pub struct CommitParabyzantineTask;
-
 /// Specifies the entities and buffers for a parabyzantine task Data.
 ///
 /// A Parabyzantine task Data is concerned with deriving tasks from agreements and transactions.

@@ -3,5 +3,4 @@
 pub mod buffer;
 pub mod parabyzantine;
 pub use parabyzantine::*;
-pub mod schedule;
-pub use schedule::*;
+pub mod act;
