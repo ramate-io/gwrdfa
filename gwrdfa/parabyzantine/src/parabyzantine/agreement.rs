@@ -97,6 +97,14 @@ impl<'a, Spec: ParabyzantineAgreementSpec> From<AgreementWorld<'a, Spec>>
 pub trait ParabyzantineAgreement: Sized {
 	type Binding: ParabyzantineAgreementBinding;
 
+	/// Gets the [AgreementWorld] for the parabyzantine agreement.
+	fn parabyzantine_agreement_world<'a>(
+		&mut self,
+		data: &'a mut <Self::Binding as ParabyzantineAgreementBinding>::Data,
+	) -> AgreementWorld<'a, <Self::Binding as ParabyzantineAgreementBinding>::Spec> {
+		data.parabyzantine_agreement_world()
+	}
+
 	/// Compute the parabyzantine agreement.
 	fn update_parabyzantine_agreement(
 		&mut self,
@@ -104,6 +112,17 @@ pub trait ParabyzantineAgreement: Sized {
 			<Self::Binding as ParabyzantineAgreementBinding>::Spec,
 		>,
 	);
+
+	/// Commits the inferences for the parabyzantine agreement.
+	fn commit_parabyzantine_agreement(
+		&mut self,
+		agreement_inferences: AgreementInferences<
+			<Self::Binding as ParabyzantineAgreementBinding>::Spec,
+		>,
+		data: &mut <Self::Binding as ParabyzantineAgreementBinding>::Data,
+	) {
+		data.commit_parabyzantine_agreement(agreement_inferences);
+	}
 }
 
 impl<
@@ -112,9 +131,9 @@ impl<
 	> Act<Agreement, Binding::Data> for AgreementHandler
 {
 	fn act(&mut self, _action: Agreement, data: &mut Binding::Data) {
-		let mut world = data.parabyzantine_agreement_world();
+		let mut world = self.parabyzantine_agreement_world(data);
 		self.update_parabyzantine_agreement(&mut world);
-		data.commit_parabyzantine_agreement(world.into());
+		self.commit_parabyzantine_agreement(world.into(), data);
 	}
 }
 
