@@ -13,6 +13,7 @@ use parabyzantine::agreement::{
 	AgreementWorld, ParabyzantineAgreement, ParabyzantineAgreementBinding,
 	ParabyzantineAgreementData,
 };
+use parabyzantine::{parabyzantine::system::Parabyzantine, NoOp, NoOpData};
 pub use sampler::Sampler;
 pub use spec::ResampleAgreementSpec;
 pub use subcommittee::{IndexSubcommitteeAgreement, Subcommittee};

@@ -4,6 +4,7 @@ pub mod as_broadcast_out;
 pub mod as_task;
 
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
+use crate::{NoOp, NoOpData};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Data;
@@ -128,4 +129,72 @@ pub struct ParabyzantineWorld<'a, Spec: ParabyzantineSpec> {
 pub trait ParabyzantineBinding {
 	type Spec: ParabyzantineSpec;
 	type Data: ParabyzantineData<Self::Spec>;
+}
+
+/// A [ParabyzantineSpec] for the [NoOp] struct.
+impl ParabyzantineSpec for NoOp {
+	type CertificateEntity = NoOp;
+	type CertificateBuffer = NoOp;
+	type CertificateDraftBuffer = NoOp;
+	type AgreementEntity = NoOp;
+	type AgreementBuffer = NoOp;
+	type AgreementDraftBuffer = NoOp;
+	type TransactionEntity = NoOp;
+	type TransactionBuffer = NoOp;
+	type TransactionDraftBuffer = NoOp;
+	type TaskEntity = NoOp;
+	type TaskBuffer = NoOp;
+	type TaskDraftBuffer = NoOp;
+	type BroadcastEntity = NoOp;
+	type BroadcastBuffer = NoOp;
+	type BroadcastDraftBuffer = NoOp;
+}
+
+/// A [ParabyzantineData] for the [NoOpData] struct.
+impl ParabyzantineData<NoOp> for NoOpData {
+	fn parabyzantine_certificate_buffer(&self) -> &NoOp {
+		&self.no_op
+	}
+	fn parabyzantine_certificate_buffer_mut(&mut self) -> &mut NoOp {
+		&mut self.no_op
+	}
+	fn parabyzantine_certificate_draft_buffer(&self) -> NoOp {
+		NoOp
+	}
+
+	fn parabyzantine_agreement_buffer(&self) -> &NoOp {
+		&self.no_op
+	}
+	fn parabyzantine_agreement_buffer_mut(&mut self) -> &mut NoOp {
+		&mut self.no_op
+	}
+	fn parabyzantine_agreement_draft_buffer(&self) -> NoOp {
+		NoOp
+	}
+
+	fn parabyzantine_transaction_buffer(&self) -> &NoOp {
+		&self.no_op
+	}
+	fn parabyzantine_transaction_draft_buffer(&self) -> NoOp {
+		NoOp
+	}
+
+	fn parabyzantine_task_buffer(&self) -> &NoOp {
+		&self.no_op
+	}
+	fn parabyzantine_task_draft_buffer(&self) -> NoOp {
+		NoOp
+	}
+
+	fn parabyzantine_broadcast_buffer(&self) -> &NoOp {
+		&self.no_op
+	}
+	fn parabyzantine_broadcast_draft_buffer(&self) -> NoOp {
+		NoOp
+	}
+}
+
+impl ParabyzantineBinding for NoOp {
+	type Spec = NoOp;
+	type Data = NoOpData;
 }
