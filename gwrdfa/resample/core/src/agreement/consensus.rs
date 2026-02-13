@@ -1,6 +1,7 @@
 use parabyzantine::{
 	agreement::{ParabyzantineAgreementBinding, ParabyzantineAgreementSpec},
 	buffer::Inferences,
+	NoOp,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -27,4 +28,14 @@ pub trait ResampleAgreementConsensusUpdate<
 			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementDraftBuffer,
 		>,
 	);
+}
+
+impl ResampleAgreementConsensusUpdate<NoOp, NoOp, NoOp, NoOp> for NoOp {
+	fn insert_resample_agreement_consensus_agreement(
+		&mut self,
+		_index: &NoOp,
+		_value: &NoOp,
+		_agreement_inferences: &mut Inferences<NoOp, NoOp, NoOp>,
+	) {
+	}
 }

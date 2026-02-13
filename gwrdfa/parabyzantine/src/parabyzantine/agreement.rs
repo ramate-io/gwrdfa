@@ -1,5 +1,6 @@
 use crate::act::Act;
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
+use crate::{NoOp, NoOpData};
 
 /// Specifies the entities and buffers for a parabyzantine agreement Data.
 ///
@@ -139,3 +140,8 @@ impl<
 
 #[derive(Debug, Clone, Copy)]
 pub struct Agreement;
+
+impl ParabyzantineAgreementBinding for NoOp {
+	type Spec = NoOp;
+	type Data = NoOpData;
+}

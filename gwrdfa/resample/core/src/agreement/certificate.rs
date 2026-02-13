@@ -1,4 +1,5 @@
 use super::Subcommittee;
+use parabyzantine::NoOp;
 
 pub trait Certificate<Index: Eq, Value: Eq, Sender: Eq>: Eq + Sized {
 	/// The index of the message.
@@ -43,4 +44,48 @@ pub trait CertificateSet<
 		Self: 'a,
 		Sub: 'a,
 		Value: 'a;
+}
+
+/// A [Certificate] for the [NoOp] struct.
+impl Certificate<NoOp, NoOp, NoOp> for NoOp {
+	fn index(&self) -> NoOp {
+		NoOp
+	}
+	fn value(&self) -> NoOp {
+		NoOp
+	}
+	fn sender(&self) -> NoOp {
+		NoOp
+	}
+}
+
+/// A [CertificateSet] for the [NoOp] struct.
+impl CertificateSet<NoOp, NoOp, NoOp, NoOp, NoOp> for NoOp {
+	fn contains(&self, _item: &NoOp) -> bool {
+		false
+	}
+	fn insert(&mut self, _item: NoOp) {}
+	fn remove(&mut self, _item: NoOp) {}
+	fn partial_subcommittees_for_index<'a>(
+		&'a self,
+		_index: &NoOp,
+	) -> impl Iterator<Item = (&'a NoOp, &'a NoOp)> + 'a
+	where
+		Self: 'a,
+		NoOp: 'a,
+	{
+		[].into_iter()
+	}
+
+	fn partial_subcommittee_for_value<'a>(
+		&'a self,
+		_index: &NoOp,
+		_value: &NoOp,
+	) -> Option<(&'a NoOp, &'a NoOp)>
+	where
+		Self: 'a,
+		NoOp: 'a,
+	{
+		None
+	}
 }

@@ -6,7 +6,7 @@ pub use parabyzantine::*;
 pub mod act;
 
 /// A [NoOp] is a no-op implementation of the [Act] trait.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct NoOp;
 
 /// A [NoOpData] is a container for the [NoOp] struct.
@@ -18,5 +18,17 @@ pub struct NoOpData {
 impl NoOpData {
 	pub fn new() -> Self {
 		Self { no_op: NoOp }
+	}
+}
+
+impl From<&NoOp> for NoOp {
+	fn from(_: &NoOp) -> Self {
+		NoOp
+	}
+}
+
+impl From<&(NoOp, NoOp)> for NoOp {
+	fn from((_entity, _bundle): &(NoOp, NoOp)) -> Self {
+		NoOp
 	}
 }

@@ -129,3 +129,16 @@ impl<Binding: ResampleAgreementBinding> ResampleAgreement<Binding> {
 		self.update_parabyzantine_agreement(&mut agreement_world);
 	}
 }
+
+/// A [ResampleAgreementBinding] for the [NoOp] struct.
+impl ResampleAgreementBinding for NoOp {
+	type ParabyzantineAgreementBinding = NoOp;
+	type ResampleAgreementSpec = NoOp;
+	type ResampleAgreementData = NoOpData;
+}
+
+fn main() {
+	let resample_agreement = ResampleAgreement::<NoOp>(NoOpData::new());
+	let parabyzantine: Parabyzantine<_> =
+		Parabyzantine { data: NoOpData::new(), agreement_handler: resample_agreement };
+}

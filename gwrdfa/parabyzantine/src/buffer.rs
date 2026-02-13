@@ -114,3 +114,5 @@ impl<Entity: Sized, Buffer: Bufferlike<Entity>, B: Bundle> Querylike<Entity, Buf
 		None
 	}
 }
+
+impl Bundle for NoOp {}

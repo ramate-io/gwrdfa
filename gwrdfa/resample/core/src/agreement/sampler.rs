@@ -2,6 +2,7 @@ use super::{IndexSubcommitteeAgreement, Subcommittee};
 use parabyzantine::{
 	agreement::{ParabyzantineAgreementBinding, ParabyzantineAgreementSpec},
 	buffer::Inferences,
+	NoOp,
 };
 
 pub trait Sampler<
@@ -43,4 +44,20 @@ pub trait Sampler<
 			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementDraftBuffer,
 		>,
 	);
+}
+
+impl Sampler<NoOp, NoOp, NoOp, NoOp, NoOp, NoOp> for NoOp {
+	fn elect_subcommittees_from_consensus_value(
+		&mut self,
+		_value: &NoOp,
+		_agreement: &NoOp,
+		_agreement_inferences: &mut Inferences<NoOp, NoOp, NoOp>,
+	) {
+	}
+	fn elect_subcommittees_from_hung_value(
+		&mut self,
+		_agreement: &NoOp,
+		_agreement_inferences: &mut Inferences<NoOp, NoOp, NoOp>,
+	) {
+	}
 }
