@@ -1,5 +1,5 @@
 use parabyzantine::{
-	agreement::{ParabyzantineAgreementBinding, ParabyzantineAgreementSpec},
+	agreement::{ParabyzantineAgreementBinding, ParabyzantineAgreementDataSpec},
 	buffer::Inferences,
 	NoOp,
 };
@@ -23,9 +23,9 @@ pub trait ResampleAgreementConsensusUpdate<
 		index: &Index,
 		value: &Value,
 		agreement_inferences: &mut Inferences<
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementEntity,
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementBuffer,
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementDraftBuffer,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementDraftBuffer,
 		>,
 	);
 }
@@ -38,9 +38,9 @@ impl<Index: Eq, Value: Eq, Sender: Eq, Binding: ParabyzantineAgreementBinding>
 		_index: &Index,
 		_value: &Value,
 		_agreement_inferences: &mut Inferences<
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementEntity,
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementBuffer,
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementDraftBuffer,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementDraftBuffer,
 		>,
 	) {
 	}

@@ -1,10 +1,10 @@
-use crate::broadcast_in::{ParabyzantineBroadcastInData, ParabyzantineBroadcastInSpec};
+use crate::broadcast_in::{ParabyzantineBroadcastInData, ParabyzantineBroadcastInDataSpec};
 use crate::hart::{ParabyzantineData, ParabyzantineSpec};
 
 /// Blanket implementation for the broadcast in spec.
 ///
 /// Downcasting the world to a broadcast in world.
-impl<Spec: ParabyzantineSpec> ParabyzantineBroadcastInSpec for Spec {
+impl<Spec: ParabyzantineSpec> ParabyzantineBroadcastInDataSpec for Spec {
 	type BroadcastEntity = Spec::BroadcastEntity;
 	type BroadcastBuffer = Spec::BroadcastBuffer;
 	type BroadcastDraftBuffer = Spec::BroadcastDraftBuffer;

@@ -6,7 +6,7 @@ pub struct BroadcastIn;
 /// Specifies the entities and buffers for a parabyzantine broadcast in Data.
 ///
 /// A Parabyzantine broadcast in Data is concerned with deriving transactions and certificates from broadcasts.
-pub trait ParabyzantineBroadcastInSpec: Sized {
+pub trait ParabyzantineBroadcastInDataSpec: Sized {
 	/// The entity type for the broadcast.
 	type BroadcastEntity: Sized;
 	/// The buffer type for the broadcast.
@@ -29,7 +29,7 @@ pub trait ParabyzantineBroadcastInSpec: Sized {
 	type CertificateDraftBuffer: DraftBufferlike<Self::CertificateEntity, Self::CertificateBuffer>;
 }
 
-pub trait ParabyzantineBroadcastInData<Spec: ParabyzantineBroadcastInSpec>: Sized {
+pub trait ParabyzantineBroadcastInData<Spec: ParabyzantineBroadcastInDataSpec>: Sized {
 	/// The buffer for the broadcast.
 	fn parabyzantine_broadcast_in_broadcast_buffer(&self) -> &Spec::BroadcastBuffer;
 	/// The draft buffer for the broadcast.
@@ -60,7 +60,7 @@ pub trait ParabyzantineBroadcastInData<Spec: ParabyzantineBroadcastInSpec>: Size
 }
 
 /// The world of the broadcast in step of a parabyzantine broadcast in Data.
-pub struct BroadcastInWorld<'a, Spec: ParabyzantineBroadcastInSpec> {
+pub struct BroadcastInWorld<'a, Spec: ParabyzantineBroadcastInDataSpec> {
 	pub broadcast_facts: Facts<'a, Spec::BroadcastEntity, Spec::BroadcastBuffer>,
 	pub broadcast_inferences:
 		Inferences<Spec::BroadcastEntity, Spec::BroadcastBuffer, Spec::BroadcastDraftBuffer>,
@@ -72,15 +72,15 @@ pub struct BroadcastInWorld<'a, Spec: ParabyzantineBroadcastInSpec> {
 		Inferences<Spec::CertificateEntity, Spec::CertificateBuffer, Spec::CertificateDraftBuffer>,
 }
 
-pub trait ParabyzantineBroadcastIn<Spec: ParabyzantineBroadcastInSpec>: Sized {
+pub trait ParabyzantineBroadcastIn<Spec: ParabyzantineBroadcastInDataSpec>: Sized {
 	/// Compute the parabyzantine broadcast in.
 	fn compute_parabyzantine_broadcast_in(&mut self, data: &mut BroadcastInWorld<Spec>);
 }
 
 /// A [ParabyzantineBroadcastInBinding] is a binding for the [ParabyzantineBroadcastIn] protocol.
 ///
-/// It binds between the [ParabyzantineBroadcastInSpec] and the [ParabyzantineBroadcastInData].
+/// It binds between the [ParabyzantineBroadcastInDataSpec] and the [ParabyzantineBroadcastInData].
 pub trait ParabyzantineBroadcastInBinding {
-	type Spec: ParabyzantineBroadcastInSpec;
+	type Spec: ParabyzantineBroadcastInDataSpec;
 	type Data: ParabyzantineBroadcastInData<Self::Spec>;
 }

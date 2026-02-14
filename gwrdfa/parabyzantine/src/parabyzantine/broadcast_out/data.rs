@@ -6,7 +6,7 @@ pub struct BroadcastOut;
 /// Specifies the entities and buffers for a parabyzantine broadcast out Data.
 ///
 /// A Parabyzantine broadcast out Data is concerned with deriving broadcasts from tasks.
-pub trait ParabyzantineBroadcastOutSpec: Sized {
+pub trait ParabyzantineBroadcastOutDataSpec: Sized {
 	/// The entity type for the task.
 	type TaskEntity: Sized;
 	/// The buffer type for the task.
@@ -22,7 +22,7 @@ pub trait ParabyzantineBroadcastOutSpec: Sized {
 	type BroadcastDraftBuffer: DraftBufferlike<Self::BroadcastEntity, Self::BroadcastBuffer>;
 }
 
-pub trait ParabyzantineBroadcastOutData<Spec: ParabyzantineBroadcastOutSpec>: Sized {
+pub trait ParabyzantineBroadcastOutData<Spec: ParabyzantineBroadcastOutDataSpec>: Sized {
 	/// The buffer for the task.
 	fn parabyzantine_broadcast_out_task_buffer(&self) -> &Spec::TaskBuffer;
 	/// The draft buffer for the task.
@@ -43,7 +43,7 @@ pub trait ParabyzantineBroadcastOutData<Spec: ParabyzantineBroadcastOutSpec>: Si
 	}
 }
 /// The world of the broadcast out step of a parabyzantine broadcast out Data.
-pub struct BroadcastOutWorld<'a, Spec: ParabyzantineBroadcastOutSpec> {
+pub struct BroadcastOutWorld<'a, Spec: ParabyzantineBroadcastOutDataSpec> {
 	pub task_facts: Facts<'a, Spec::TaskEntity, Spec::TaskBuffer>,
 	pub task_inferences: Inferences<Spec::TaskEntity, Spec::TaskBuffer, Spec::TaskDraftBuffer>,
 	pub broadcast_facts: Facts<'a, Spec::BroadcastEntity, Spec::BroadcastBuffer>,
@@ -51,15 +51,15 @@ pub struct BroadcastOutWorld<'a, Spec: ParabyzantineBroadcastOutSpec> {
 		Inferences<Spec::BroadcastEntity, Spec::BroadcastBuffer, Spec::BroadcastDraftBuffer>,
 }
 
-pub trait ParabyzantineBroadcastOut<Spec: ParabyzantineBroadcastOutSpec>: Sized {
+pub trait ParabyzantineBroadcastOut<Spec: ParabyzantineBroadcastOutDataSpec>: Sized {
 	/// Compute the parabyzantine broadcast out.
 	fn compute_parabyzantine_broadcast_out(&mut self, data: &mut BroadcastOutWorld<Spec>);
 }
 
 /// A [ParabyzantineBroadcastOutBinding] is a binding for the [ParabyzantineBroadcastOut] protocol.
 ///
-/// It binds between the [ParabyzantineBroadcastOutSpec] and the [ParabyzantineBroadcastOutData].
+/// It binds between the [ParabyzantineBroadcastOutDataSpec] and the [ParabyzantineBroadcastOutData].
 pub trait ParabyzantineBroadcastOutBinding {
-	type Spec: ParabyzantineBroadcastOutSpec;
+	type Spec: ParabyzantineBroadcastOutDataSpec;
 	type Data: ParabyzantineBroadcastOutData<Self::Spec>;
 }

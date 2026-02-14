@@ -1,10 +1,10 @@
-use crate::broadcast_out::{ParabyzantineBroadcastOutData, ParabyzantineBroadcastOutSpec};
+use crate::broadcast_out::{ParabyzantineBroadcastOutData, ParabyzantineBroadcastOutDataSpec};
 use crate::hart::{ParabyzantineData, ParabyzantineSpec};
 
 /// Blanket implementation for the broadcast out spec.
 ///
 /// Downcasting the world to a broadcast out world.
-impl<Spec: ParabyzantineSpec> ParabyzantineBroadcastOutSpec for Spec {
+impl<Spec: ParabyzantineSpec> ParabyzantineBroadcastOutDataSpec for Spec {
 	type TaskEntity = Spec::TaskEntity;
 	type TaskBuffer = Spec::TaskBuffer;
 	type TaskDraftBuffer = Spec::TaskDraftBuffer;

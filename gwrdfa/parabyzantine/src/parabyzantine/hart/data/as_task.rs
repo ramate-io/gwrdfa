@@ -1,10 +1,10 @@
 use crate::hart::{ParabyzantineData, ParabyzantineSpec};
-use crate::task::{ParabyzantineTaskData, ParabyzantineTaskSpec};
+use crate::task::{ParabyzantineTaskData, ParabyzantineTaskDataSpec};
 
 /// Blanket implementation for the task spec.
 ///
 /// Downcasting the world to a task world.
-impl<Spec: ParabyzantineSpec> ParabyzantineTaskSpec for Spec {
+impl<Spec: ParabyzantineSpec> ParabyzantineTaskDataSpec for Spec {
 	type AgreementEntity = Spec::AgreementEntity;
 	type AgreementBuffer = Spec::AgreementBuffer;
 	type AgreementDraftBuffer = Spec::AgreementDraftBuffer;

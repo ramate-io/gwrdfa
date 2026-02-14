@@ -6,7 +6,7 @@ pub struct Task;
 /// Specifies the entities and buffers for a parabyzantine task Data.
 ///
 /// A Parabyzantine task Data is concerned with deriving tasks from agreements and transactions.
-pub trait ParabyzantineTaskSpec: Sized {
+pub trait ParabyzantineTaskDataSpec: Sized {
 	/// The entity type for the agreement.
 	type AgreementEntity: Sized;
 	/// The buffer type for the agreement.
@@ -29,7 +29,7 @@ pub trait ParabyzantineTaskSpec: Sized {
 	type TaskDraftBuffer: DraftBufferlike<Self::TaskEntity, Self::TaskBuffer>;
 }
 
-pub trait ParabyzantineTaskData<Spec: ParabyzantineTaskSpec>: Sized {
+pub trait ParabyzantineTaskData<Spec: ParabyzantineTaskDataSpec>: Sized {
 	/// The buffer for the agreement.
 	fn parabyzantine_task_agreement_buffer(&self) -> &Spec::AgreementBuffer;
 	/// The draft buffer for the agreement.
@@ -57,7 +57,7 @@ pub trait ParabyzantineTaskData<Spec: ParabyzantineTaskSpec>: Sized {
 }
 
 /// The world of the task step of a parabyzantine task Data.
-pub struct TaskWorld<'a, Spec: ParabyzantineTaskSpec> {
+pub struct TaskWorld<'a, Spec: ParabyzantineTaskDataSpec> {
 	pub agreement_facts: Facts<'a, Spec::AgreementEntity, Spec::AgreementBuffer>,
 	pub agreement_inferences:
 		Inferences<Spec::AgreementEntity, Spec::AgreementBuffer, Spec::AgreementDraftBuffer>,
@@ -68,15 +68,15 @@ pub struct TaskWorld<'a, Spec: ParabyzantineTaskSpec> {
 	pub task_inferences: Inferences<Spec::TaskEntity, Spec::TaskBuffer, Spec::TaskDraftBuffer>,
 }
 
-pub trait ParabyzantineTask<Spec: ParabyzantineTaskSpec>: Sized {
+pub trait ParabyzantineTask<Spec: ParabyzantineTaskDataSpec>: Sized {
 	/// Compute the parabyzantine task.
 	fn compute_parabyzantine_task(&mut self, data: &mut TaskWorld<Spec>);
 }
 
 /// A [ParabyzantineTaskBinding] is a binding for the [ParabyzantineTask] protocol.
 ///
-/// It binds between the [ParabyzantineTaskSpec] and the [ParabyzantineTaskData].
+/// It binds between the [ParabyzantineTaskDataSpec] and the [ParabyzantineTaskData].
 pub trait ParabyzantineTaskBinding {
-	type Spec: ParabyzantineTaskSpec;
+	type Spec: ParabyzantineTaskDataSpec;
 	type Data: ParabyzantineTaskData<Self::Spec>;
 }

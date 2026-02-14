@@ -8,7 +8,7 @@ pub struct Agreement;
 /// Specifies the entities and buffers for a parabyzantine agreement Data.
 ///
 /// A Parabyzantine agreement Data is concerned with deriving agreements from certificates.
-pub trait ParabyzantineAgreementSpec: Sized {
+pub trait ParabyzantineAgreementDataSpec: Sized {
 	/// The entity type for the certificate.
 	type CertificateEntity: Sized;
 	/// The buffer type for the certificate.
@@ -24,7 +24,7 @@ pub trait ParabyzantineAgreementSpec: Sized {
 	type AgreementDraftBuffer: DraftBufferlike<Self::AgreementEntity, Self::AgreementBuffer>;
 }
 
-pub trait ParabyzantineAgreementData<Spec: ParabyzantineAgreementSpec>: Sized {
+pub trait ParabyzantineAgreementData<Spec: ParabyzantineAgreementDataSpec>: Sized {
 	/// The buffer for the certificate.
 	fn parabyzantine_agreement_certificate_buffer(&self) -> &Spec::CertificateBuffer;
 
@@ -63,14 +63,14 @@ pub trait ParabyzantineAgreementData<Spec: ParabyzantineAgreementSpec>: Sized {
 
 /// A [ParabyzantineAgreementBinding] is a binding for the [ParabyzantineAgreement] protocol.
 ///
-/// It binds between the [ParabyzantineAgreementSpec] and the [ParabyzantineAgreementData].
+/// It binds between the [ParabyzantineAgreementDataSpec] and the [ParabyzantineAgreementData].
 pub trait ParabyzantineAgreementBinding {
-	type Spec: ParabyzantineAgreementSpec;
+	type Spec: ParabyzantineAgreementDataSpec;
 	type Data: ParabyzantineAgreementData<Self::Spec>;
 }
 
 /// The world of the agreement step of a parabyzantine agreement Data.
-pub struct AgreementWorld<'a, Spec: ParabyzantineAgreementSpec> {
+pub struct AgreementWorld<'a, Spec: ParabyzantineAgreementDataSpec> {
 	pub certificate_facts: Facts<'a, Spec::CertificateEntity, Spec::CertificateBuffer>,
 	pub certificate_inferences:
 		Inferences<Spec::CertificateEntity, Spec::CertificateBuffer, Spec::CertificateDraftBuffer>,
@@ -80,14 +80,14 @@ pub struct AgreementWorld<'a, Spec: ParabyzantineAgreementSpec> {
 }
 
 /// The inferences for the agreement step of a parabyzantine agreement Data.
-pub struct AgreementInferences<Spec: ParabyzantineAgreementSpec> {
+pub struct AgreementInferences<Spec: ParabyzantineAgreementDataSpec> {
 	pub certificate_inferences:
 		Inferences<Spec::CertificateEntity, Spec::CertificateBuffer, Spec::CertificateDraftBuffer>,
 	pub agreement_inferences:
 		Inferences<Spec::AgreementEntity, Spec::AgreementBuffer, Spec::AgreementDraftBuffer>,
 }
 
-impl<'a, Spec: ParabyzantineAgreementSpec> From<AgreementWorld<'a, Spec>>
+impl<'a, Spec: ParabyzantineAgreementDataSpec> From<AgreementWorld<'a, Spec>>
 	for AgreementInferences<Spec>
 {
 	fn from(world: AgreementWorld<'a, Spec>) -> Self {

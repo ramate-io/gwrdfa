@@ -1,6 +1,6 @@
 use super::{IndexSubcommitteeAgreement, Subcommittee};
 use parabyzantine::{
-	agreement::{ParabyzantineAgreementBinding, ParabyzantineAgreementSpec},
+	agreement::{ParabyzantineAgreementBinding, ParabyzantineAgreementDataSpec},
 	buffer::Inferences,
 	NoOp,
 };
@@ -28,9 +28,9 @@ pub trait Sampler<
 		value: &Value,
 		agreement: &SubAgree,
 		agreeement_inferences: &mut Inferences<
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementEntity,
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementBuffer,
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementDraftBuffer,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementDraftBuffer,
 		>,
 	);
 
@@ -39,9 +39,9 @@ pub trait Sampler<
 		&mut self,
 		agreement: &SubAgree,
 		agreement_inferences: &mut Inferences<
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementEntity,
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementBuffer,
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementDraftBuffer,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementDraftBuffer,
 		>,
 	);
 }
@@ -60,9 +60,9 @@ impl<
 		_value: &Value,
 		_agreement: &SubAgree,
 		_agreement_inferences: &mut Inferences<
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementEntity,
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementBuffer,
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementDraftBuffer,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementDraftBuffer,
 		>,
 	) {
 	}
@@ -70,9 +70,9 @@ impl<
 		&mut self,
 		_agreement: &SubAgree,
 		_agreement_inferences: &mut Inferences<
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementEntity,
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementBuffer,
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementDraftBuffer,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementDraftBuffer,
 		>,
 	) {
 	}

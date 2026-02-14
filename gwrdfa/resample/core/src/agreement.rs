@@ -11,7 +11,7 @@ pub use consensus::{Condition, ResampleAgreementConsensusUpdate};
 pub use data::ResampleAgreementData;
 use parabyzantine::agreement::{
 	AgreementWorld, ParabyzantineAgreement, ParabyzantineAgreementBinding,
-	ParabyzantineAgreementData, ParabyzantineAgreementSpec,
+	ParabyzantineAgreementData, ParabyzantineAgreementDataSpec,
 };
 use parabyzantine::{NoOp, NoOpData};
 pub use sampler::Sampler;
@@ -120,7 +120,7 @@ impl<Binding: ResampleAgreementBinding>
 	fn certificate_query(
 		&mut self,
 		index: &(
-			<<Binding::ParabyzantineAgreementBinding as ParabyzantineAgreementBinding>::Spec as ParabyzantineAgreementSpec>::AgreementEntity,
+			<<Binding::ParabyzantineAgreementBinding as ParabyzantineAgreementBinding>::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
 			<Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementBinding>>::IndexSubcommitteeAgreementBundle,
 		),
 	) -> <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
