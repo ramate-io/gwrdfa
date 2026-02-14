@@ -1,5 +1,5 @@
-use crate::data::broadcast_in::{ParabyzantineBroadcastInData, ParabyzantineBroadcastInSpec};
-use crate::data::hart::{ParabyzantineData, ParabyzantineSpec};
+use crate::broadcast_in::{ParabyzantineBroadcastInData, ParabyzantineBroadcastInSpec};
+use crate::hart::{ParabyzantineData, ParabyzantineSpec};
 
 /// Blanket implementation for the broadcast in spec.
 ///

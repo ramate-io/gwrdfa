@@ -223,7 +223,7 @@ mod tests {
 	use super::*;
 	use parabyzantine::parabyzantine::{
 		agreement::Agreement,
-		system::{Parabyzantine, SystemSpec},
+		hart::{Parabyzantine, SystemSpec},
 	};
 
 	#[test]

@@ -1,5 +1,5 @@
-use crate::data::hart::{ParabyzantineData, ParabyzantineSpec};
-use crate::data::task::{ParabyzantineTaskData, ParabyzantineTaskSpec};
+use crate::hart::{ParabyzantineData, ParabyzantineSpec};
+use crate::task::{ParabyzantineTaskData, ParabyzantineTaskSpec};
 
 /// Blanket implementation for the task spec.
 ///
