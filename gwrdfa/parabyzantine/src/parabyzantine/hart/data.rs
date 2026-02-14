@@ -123,6 +123,14 @@ pub struct ParabyzantineWorld<'a, Spec: ParabyzantineSpec> {
 		Inferences<Spec::BroadcastEntity, Spec::BroadcastBuffer, Spec::BroadcastDraftBuffer>,
 }
 
+/// A [ParabyzantineHart] trait describes operations on the parabyzantine hart.
+pub trait ParabyzantineHart: Sized {
+	type Spec: ParabyzantineSpec;
+
+	/// Compute the parabyzantine hart.
+	fn update_parabyzantine_hart(&mut self, data: &mut ParabyzantineWorld<Self::Spec>);
+}
+
 /// A [ParabyzantineBinding] is a binding for the [Parabyzantine] protocol.
 ///
 /// It binds between the [ParabyzantineSpec] and the [ParabyzantineData].

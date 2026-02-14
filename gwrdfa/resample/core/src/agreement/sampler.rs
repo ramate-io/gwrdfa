@@ -1,6 +1,6 @@
 use super::{IndexSubcommitteeAgreement, Subcommittee};
 use parabyzantine::{
-	agreement::{ParabyzantineAgreementBinding, ParabyzantineAgreementDataSpec},
+	agreement::{ParabyzantineAgreementDataBinding, ParabyzantineAgreementDataSpec},
 	buffer::Inferences,
 	NoOp,
 };
@@ -11,7 +11,7 @@ pub trait Sampler<
 	Sender: Eq,
 	Sub: Subcommittee<Sender>,
 	SubAgree: IndexSubcommitteeAgreement<Index, Sender, Sub>,
-	Binding: ParabyzantineAgreementBinding,
+	Binding: ParabyzantineAgreementDataBinding,
 >: Sized
 {
 	/// Given a value and the subcommittee agreeement which gave that value,
@@ -52,7 +52,7 @@ impl<
 		Sender: Eq,
 		Sub: Subcommittee<Sender>,
 		SubAgree: IndexSubcommitteeAgreement<Index, Sender, Sub>,
-		Binding: ParabyzantineAgreementBinding,
+		Binding: ParabyzantineAgreementDataBinding,
 	> Sampler<Index, Value, Sender, Sub, SubAgree, Binding> for NoOp
 {
 	fn elect_subcommittees_from_consensus_value(

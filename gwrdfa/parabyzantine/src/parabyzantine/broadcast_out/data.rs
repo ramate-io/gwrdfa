@@ -51,15 +51,17 @@ pub struct BroadcastOutWorld<'a, Spec: ParabyzantineBroadcastOutDataSpec> {
 		Inferences<Spec::BroadcastEntity, Spec::BroadcastBuffer, Spec::BroadcastDraftBuffer>,
 }
 
-pub trait ParabyzantineBroadcastOut<Spec: ParabyzantineBroadcastOutDataSpec>: Sized {
+pub trait ParabyzantineBroadcastOut: Sized {
+	type Spec: ParabyzantineBroadcastOutDataSpec;
+
 	/// Compute the parabyzantine broadcast out.
-	fn compute_parabyzantine_broadcast_out(&mut self, data: &mut BroadcastOutWorld<Spec>);
+	fn compute_parabyzantine_broadcast_out(&mut self, data: &mut BroadcastOutWorld<Self::Spec>);
 }
 
-/// A [ParabyzantineBroadcastOutBinding] is a binding for the [ParabyzantineBroadcastOut] protocol.
+/// A [ParabyzantineBroadcastOutDataBinding] is a binding for the [ParabyzantineBroadcastOut] protocol.
 ///
 /// It binds between the [ParabyzantineBroadcastOutDataSpec] and the [ParabyzantineBroadcastOutData].
-pub trait ParabyzantineBroadcastOutBinding {
+pub trait ParabyzantineBroadcastOutDataBinding {
 	type Spec: ParabyzantineBroadcastOutDataSpec;
 	type Data: ParabyzantineBroadcastOutData<Self::Spec>;
 }

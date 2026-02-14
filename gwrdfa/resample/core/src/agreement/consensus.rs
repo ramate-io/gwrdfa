@@ -1,5 +1,5 @@
 use parabyzantine::{
-	agreement::{ParabyzantineAgreementBinding, ParabyzantineAgreementDataSpec},
+	agreement::{ParabyzantineAgreementDataBinding, ParabyzantineAgreementDataSpec},
 	buffer::Inferences,
 	NoOp,
 };
@@ -15,7 +15,7 @@ pub trait ResampleAgreementConsensusUpdate<
 	Index: Eq,
 	Value: Eq,
 	Sender: Eq,
-	Binding: ParabyzantineAgreementBinding,
+	Binding: ParabyzantineAgreementDataBinding,
 >: Sized
 {
 	fn insert_resample_agreement_consensus_agreement(
@@ -30,7 +30,7 @@ pub trait ResampleAgreementConsensusUpdate<
 	);
 }
 
-impl<Index: Eq, Value: Eq, Sender: Eq, Binding: ParabyzantineAgreementBinding>
+impl<Index: Eq, Value: Eq, Sender: Eq, Binding: ParabyzantineAgreementDataBinding>
 	ResampleAgreementConsensusUpdate<Index, Value, Sender, Binding> for NoOp
 {
 	fn insert_resample_agreement_consensus_agreement(

@@ -72,15 +72,17 @@ pub struct BroadcastInWorld<'a, Spec: ParabyzantineBroadcastInDataSpec> {
 		Inferences<Spec::CertificateEntity, Spec::CertificateBuffer, Spec::CertificateDraftBuffer>,
 }
 
-pub trait ParabyzantineBroadcastIn<Spec: ParabyzantineBroadcastInDataSpec>: Sized {
+pub trait ParabyzantineBroadcastIn: Sized {
+	type Spec: ParabyzantineBroadcastInDataSpec;
+
 	/// Compute the parabyzantine broadcast in.
-	fn compute_parabyzantine_broadcast_in(&mut self, data: &mut BroadcastInWorld<Spec>);
+	fn compute_parabyzantine_broadcast_in(&mut self, data: &mut BroadcastInWorld<Self::Spec>);
 }
 
-/// A [ParabyzantineBroadcastInBinding] is a binding for the [ParabyzantineBroadcastIn] protocol.
+/// A [ParabyzantineBroadcastInDataBinding] is a binding for the [ParabyzantineBroadcastIn] protocol.
 ///
 /// It binds between the [ParabyzantineBroadcastInDataSpec] and the [ParabyzantineBroadcastInData].
-pub trait ParabyzantineBroadcastInBinding {
+pub trait ParabyzantineBroadcastInDataBinding {
 	type Spec: ParabyzantineBroadcastInDataSpec;
 	type Data: ParabyzantineBroadcastInData<Self::Spec>;
 }

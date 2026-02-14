@@ -68,9 +68,11 @@ pub struct TaskWorld<'a, Spec: ParabyzantineTaskDataSpec> {
 	pub task_inferences: Inferences<Spec::TaskEntity, Spec::TaskBuffer, Spec::TaskDraftBuffer>,
 }
 
-pub trait ParabyzantineTask<Spec: ParabyzantineTaskDataSpec>: Sized {
+pub trait ParabyzantineTask: Sized {
+	type Spec: ParabyzantineTaskDataSpec;
+
 	/// Compute the parabyzantine task.
-	fn compute_parabyzantine_task(&mut self, data: &mut TaskWorld<Spec>);
+	fn compute_parabyzantine_task(&mut self, data: &mut TaskWorld<Self::Spec>);
 }
 
 /// A [ParabyzantineTaskBinding] is a binding for the [ParabyzantineTask] protocol.

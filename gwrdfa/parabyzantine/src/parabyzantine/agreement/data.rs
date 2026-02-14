@@ -61,10 +61,10 @@ pub trait ParabyzantineAgreementData<Spec: ParabyzantineAgreementDataSpec>: Size
 	}
 }
 
-/// A [ParabyzantineAgreementBinding] is a binding for the [ParabyzantineAgreement] protocol.
+/// A [ParabyzantineAgreementDataBinding] is a binding for the [ParabyzantineAgreement] protocol.
 ///
 /// It binds between the [ParabyzantineAgreementDataSpec] and the [ParabyzantineAgreementData].
-pub trait ParabyzantineAgreementBinding {
+pub trait ParabyzantineAgreementDataBinding {
 	type Spec: ParabyzantineAgreementDataSpec;
 	type Data: ParabyzantineAgreementData<Self::Spec>;
 }
@@ -99,13 +99,13 @@ impl<'a, Spec: ParabyzantineAgreementDataSpec> From<AgreementWorld<'a, Spec>>
 }
 
 pub trait ParabyzantineAgreement: Sized {
-	type Binding: ParabyzantineAgreementBinding;
+	type Binding: ParabyzantineAgreementDataBinding;
 
 	/// Gets the [AgreementWorld] for the parabyzantine agreement.
 	fn parabyzantine_agreement_world<'a>(
 		&mut self,
-		data: &'a mut <Self::Binding as ParabyzantineAgreementBinding>::Data,
-	) -> AgreementWorld<'a, <Self::Binding as ParabyzantineAgreementBinding>::Spec> {
+		data: &'a mut <Self::Binding as ParabyzantineAgreementDataBinding>::Data,
+	) -> AgreementWorld<'a, <Self::Binding as ParabyzantineAgreementDataBinding>::Spec> {
 		data.parabyzantine_agreement_world()
 	}
 
@@ -113,7 +113,7 @@ pub trait ParabyzantineAgreement: Sized {
 	fn update_parabyzantine_agreement(
 		&mut self,
 		agreement_world: &mut AgreementWorld<
-			<Self::Binding as ParabyzantineAgreementBinding>::Spec,
+			<Self::Binding as ParabyzantineAgreementDataBinding>::Spec,
 		>,
 	);
 
@@ -121,16 +121,16 @@ pub trait ParabyzantineAgreement: Sized {
 	fn commit_parabyzantine_agreement(
 		&mut self,
 		agreement_inferences: AgreementInferences<
-			<Self::Binding as ParabyzantineAgreementBinding>::Spec,
+			<Self::Binding as ParabyzantineAgreementDataBinding>::Spec,
 		>,
-		data: &mut <Self::Binding as ParabyzantineAgreementBinding>::Data,
+		data: &mut <Self::Binding as ParabyzantineAgreementDataBinding>::Data,
 	) {
 		data.commit_parabyzantine_agreement(agreement_inferences);
 	}
 }
 
 impl<
-		Binding: ParabyzantineAgreementBinding,
+		Binding: ParabyzantineAgreementDataBinding,
 		AgreementHandler: ParabyzantineAgreement<Binding = Binding>,
 	> Act<Agreement, Binding::Data> for AgreementHandler
 {
@@ -141,7 +141,7 @@ impl<
 	}
 }
 
-impl ParabyzantineAgreementBinding for NoOp {
+impl ParabyzantineAgreementDataBinding for NoOp {
 	type Spec = NoOp;
 	type Data = NoOpData;
 }

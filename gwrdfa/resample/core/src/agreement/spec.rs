@@ -4,12 +4,12 @@ use super::{
 };
 use parabyzantine::NoOp;
 use parabyzantine::{
-	agreement::{ParabyzantineAgreementBinding, ParabyzantineAgreementDataSpec},
+	agreement::{ParabyzantineAgreementDataBinding, ParabyzantineAgreementDataSpec},
 	buffer::{Bundle, Querylike},
 };
 
 /// A [ResampleAgreementSpec] is a specification for ResampleAgreement consensus.
-pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementBinding>: Sized {
+pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Sized {
 	/// The type of the index.
 	type Index: Eq;
 

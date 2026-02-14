@@ -1,10 +1,10 @@
 use super::ResampleAgreementSpec;
-use parabyzantine::agreement::{ParabyzantineAgreementBinding, ParabyzantineAgreementDataSpec};
+use parabyzantine::agreement::{ParabyzantineAgreementDataBinding, ParabyzantineAgreementDataSpec};
 use parabyzantine::NoOp;
 use parabyzantine::NoOpData;
 
 pub trait ResampleAgreementData<
-	Binding: ParabyzantineAgreementBinding,
+	Binding: ParabyzantineAgreementDataBinding,
 	Spec: ResampleAgreementSpec<Binding>,
 >: Sized
 {
