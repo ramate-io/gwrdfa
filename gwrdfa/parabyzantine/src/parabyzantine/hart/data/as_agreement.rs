@@ -1,5 +1,5 @@
 use crate::agreement::{ParabyzantineAgreementData, ParabyzantineAgreementDataSpec};
-use crate::hart::{ParabyzantineData, ParabyzantineSpec};
+use crate::hart::{ParabyzantineData, ParabyzantineDataSpec};
 
 /// Blanket implementation for the agreement spec.
 ///
@@ -7,7 +7,7 @@ use crate::hart::{ParabyzantineData, ParabyzantineSpec};
 ///
 /// Note that because of blanket implementations on the Data,
 /// we don't also have blanket implementations here.
-impl<Spec: ParabyzantineSpec> ParabyzantineAgreementDataSpec for Spec {
+impl<Spec: ParabyzantineDataSpec> ParabyzantineAgreementDataSpec for Spec {
 	type CertificateEntity = Spec::CertificateEntity;
 	type CertificateBuffer = Spec::CertificateBuffer;
 	type CertificateDraftBuffer = Spec::CertificateDraftBuffer;
@@ -17,7 +17,7 @@ impl<Spec: ParabyzantineSpec> ParabyzantineAgreementDataSpec for Spec {
 }
 
 /// Blanket implementation for the agreement data.
-impl<Spec: ParabyzantineSpec, Data: ParabyzantineData<Spec>> ParabyzantineAgreementData<Spec>
+impl<Spec: ParabyzantineDataSpec, Data: ParabyzantineData<Spec>> ParabyzantineAgreementData<Spec>
 	for Data
 {
 	fn parabyzantine_agreement_certificate_buffer(&self) -> &Spec::CertificateBuffer {

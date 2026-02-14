@@ -6,11 +6,15 @@ pub mod as_task;
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
 use crate::{NoOp, NoOpData};
 
+/// The [Hart] marker is used to indicate an act on the entirety of the parabyzantine system.
+///
+/// You'll note that the canonical naming for systems on the [Hart] is simply to omit
+/// the term "Hart". Hennce it is [ParabyzantineData] rather than [ParabyzantineHartData].
 #[derive(Debug, Clone, Copy)]
-pub struct Data;
+pub struct Hart;
 
-/// A [ParabyzantineSpec] is a specification for the parabyzantine protocol.
-pub trait ParabyzantineSpec: Sized {
+/// A [ParabyzantineDataSpec] is a specification for the parabyzantine protocol.
+pub trait ParabyzantineDataSpec: Sized {
 	/// The entity type for the certificate.
 	type CertificateEntity: Sized;
 	/// The buffer type for the certificate.
@@ -47,7 +51,7 @@ pub trait ParabyzantineSpec: Sized {
 	type BroadcastDraftBuffer: DraftBufferlike<Self::BroadcastEntity, Self::BroadcastBuffer>;
 }
 
-pub trait ParabyzantineData<Spec: ParabyzantineSpec>: Sized {
+pub trait ParabyzantineData<Spec: ParabyzantineDataSpec>: Sized {
 	/// The buffer for the certificate.
 	fn parabyzantine_certificate_buffer(&self) -> &Spec::CertificateBuffer;
 	/// The draft buffer for the certificate.
@@ -92,7 +96,7 @@ pub trait ParabyzantineData<Spec: ParabyzantineSpec>: Sized {
 	}
 }
 
-pub struct ParabyzantineWorld<'a, Spec: ParabyzantineSpec> {
+pub struct ParabyzantineWorld<'a, Spec: ParabyzantineDataSpec> {
 	/// The facts for the certificate.
 	pub certificate_facts: Facts<'a, Spec::CertificateEntity, Spec::CertificateBuffer>,
 	/// The inferences for the certificate.
@@ -125,22 +129,22 @@ pub struct ParabyzantineWorld<'a, Spec: ParabyzantineSpec> {
 
 /// A [ParabyzantineHart] trait describes operations on the parabyzantine hart.
 pub trait ParabyzantineHart: Sized {
-	type Spec: ParabyzantineSpec;
+	type Spec: ParabyzantineDataSpec;
 
 	/// Compute the parabyzantine hart.
 	fn update_parabyzantine_hart(&mut self, data: &mut ParabyzantineWorld<Self::Spec>);
 }
 
-/// A [ParabyzantineBinding] is a binding for the [Parabyzantine] protocol.
+/// A [ParabyzantineDataBinding] is a binding for the [Parabyzantine] protocol.
 ///
-/// It binds between the [ParabyzantineSpec] and the [ParabyzantineData].
-pub trait ParabyzantineBinding {
-	type Spec: ParabyzantineSpec;
+/// It binds between the [ParabyzantineDataSpec] and the [ParabyzantineData].
+pub trait ParabyzantineDataBinding {
+	type Spec: ParabyzantineDataSpec;
 	type Data: ParabyzantineData<Self::Spec>;
 }
 
-/// A [ParabyzantineSpec] for the [NoOp] struct.
-impl ParabyzantineSpec for NoOp {
+/// A [ParabyzantineDataSpec] for the [NoOp] struct.
+impl ParabyzantineDataSpec for NoOp {
 	type CertificateEntity = NoOp;
 	type CertificateBuffer = NoOp;
 	type CertificateDraftBuffer = NoOp;
@@ -202,7 +206,7 @@ impl ParabyzantineData<NoOp> for NoOpData {
 	}
 }
 
-impl ParabyzantineBinding for NoOp {
+impl ParabyzantineDataBinding for NoOp {
 	type Spec = NoOp;
 	type Data = NoOpData;
 }
