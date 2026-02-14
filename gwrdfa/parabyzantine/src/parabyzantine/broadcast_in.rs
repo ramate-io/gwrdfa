@@ -1,17 +1,5 @@
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
 
-/// The schedule for the prepare step of the parabyzantine broadcast in.
-#[derive(Debug, Clone, Copy)]
-pub struct PrepareParabyzantineBroadcastIn;
-
-/// The schedule for the compute step of the parabyzantine broadcast in.
-#[derive(Debug, Clone, Copy)]
-pub struct ComputeParabyzantineBroadcastIn;
-
-/// The schedule for the commit step of the parabyzantine broadcast in.
-#[derive(Debug, Clone, Copy)]
-pub struct CommitParabyzantineBroadcastIn;
-
 /// Specifies the entities and buffers for a parabyzantine broadcast in Data.
 ///
 /// A Parabyzantine broadcast in Data is concerned with deriving transactions and certificates from broadcasts.

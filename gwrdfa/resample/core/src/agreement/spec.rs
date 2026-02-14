@@ -2,6 +2,7 @@ use super::{
 	Certificate, CertificateSet, IndexSubcommitteeAgreement, ResampleAgreementConsensusUpdate,
 	Sampler, Subcommittee,
 };
+use parabyzantine::NoOp;
 use parabyzantine::{
 	agreement::{ParabyzantineAgreementBinding, ParabyzantineAgreementSpec},
 	buffer::{Bundle, Querylike},
@@ -81,4 +82,20 @@ pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementBinding>: Sized {
 		Self::Sender,
 		Binding,
 	>;
+}
+
+impl ResampleAgreementSpec<NoOp> for NoOp {
+	type Index = NoOp;
+	type Value = NoOp;
+	type Sender = NoOp;
+	type Subcommittee = NoOp;
+	type IndexSubcommitteeAgreementBundle = NoOp;
+	type IndexSubcommitteeAgreementQuery = NoOp;
+	type IndexSubcommitteeAgreement = NoOp;
+	type CertificateBundle = NoOp;
+	type CertificateQuery = NoOp;
+	type Certificate = NoOp;
+	type CertificateSet = NoOp;
+	type Sampler = NoOp;
+	type ResampleAgreementConsensusUpdate = NoOp;
 }

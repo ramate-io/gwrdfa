@@ -1,5 +1,7 @@
 use super::ResampleAgreementSpec;
 use parabyzantine::agreement::{ParabyzantineAgreementBinding, ParabyzantineAgreementSpec};
+use parabyzantine::NoOp;
+use parabyzantine::NoOpData;
 
 pub trait ResampleAgreementData<
 	Binding: ParabyzantineAgreementBinding,
@@ -37,4 +39,38 @@ pub trait ResampleAgreementData<
 			Spec::IndexSubcommitteeAgreementBundle,
 		),
 	) -> Spec::CertificateQuery;
+}
+
+impl ResampleAgreementData<NoOp, NoOp> for NoOpData {
+	fn certificate_set(&self) -> &NoOp {
+		&self.no_op
+	}
+	fn certificate_set_mut(&mut self) -> &mut NoOp {
+		&mut self.no_op
+	}
+	fn sampler(&self) -> &NoOp {
+		&self.no_op
+	}
+	fn sampler_mut(&mut self) -> &mut NoOp {
+		&mut self.no_op
+	}
+	fn resample_agreement_consensus_update(&self) -> &NoOp {
+		&self.no_op
+	}
+	fn resample_agreement_consensus_update_mut(&mut self) -> &mut NoOp {
+		&mut self.no_op
+	}
+	fn index_subcommittee_agreement_query(&mut self) -> NoOp {
+		NoOp
+	}
+
+	fn certificate_query(
+		&mut self,
+		_index: &(
+			<NoOp as ParabyzantineAgreementSpec>::AgreementEntity,
+			<NoOp as ResampleAgreementSpec<NoOp>>::IndexSubcommitteeAgreementBundle,
+		),
+	) -> <NoOp as ResampleAgreementSpec<NoOp>>::CertificateQuery {
+		NoOp
+	}
 }

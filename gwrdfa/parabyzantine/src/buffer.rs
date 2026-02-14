@@ -4,6 +4,8 @@ pub mod inferences;
 pub use facts::Facts;
 pub use inferences::Inferences;
 
+use crate::NoOp;
+
 /// Bundles are entities plus metadata that exist in the buffer.
 pub trait Bundle {}
 
@@ -84,3 +86,33 @@ pub trait DraftBufferlike<Entity: Sized, Buffer: Bufferlike<Entity>>: Sized {
 	/// Commits the draft buffer to the main buffer.
 	fn commit(&mut self, buffer: &mut Buffer);
 }
+
+impl<Entity: Sized> Bufferlike<Entity> for NoOp {
+	fn insert<B: Bundle>(&mut self, _entity: Option<Entity>, _bundle: B) {}
+
+	fn remove<B: Bundle>(&mut self, _entity: Entity, _bundle: B) {}
+
+	fn remove_entity(&mut self, _entity: Entity) {}
+}
+
+impl<Entity: Sized, Buffer: Bufferlike<Entity>> DraftBufferlike<Entity, Buffer> for NoOp {
+	fn draft_insert<B: Bundle>(&mut self, _entity: Option<Entity>, _bundle: B) {}
+
+	fn draft_remove<B: Bundle>(&mut self, _entity: Entity, _bundle: B) {}
+
+	fn draft_remove_entity(&mut self, _entity: Entity) {}
+
+	fn commit(&mut self, _buffer: &mut Buffer) {}
+}
+
+impl<Entity: Sized, Buffer: Bufferlike<Entity>, B: Bundle> Querylike<Entity, Buffer, B> for NoOp {
+	fn next(&mut self, _buffer: &Buffer) -> Option<(Entity, B)> {
+		None
+	}
+
+	fn get(&self, _buffer: &Buffer, _entity: Entity) -> Option<B> {
+		None
+	}
+}
+
+impl Bundle for NoOp {}
