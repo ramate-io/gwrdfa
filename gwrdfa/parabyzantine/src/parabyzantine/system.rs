@@ -1,5 +1,5 @@
 use crate::act::{Act, Invoke, Pair};
-use crate::parabyzantine::agreement::ParabyzantineAgreementBinding;
+use crate::data::agreement::ParabyzantineAgreementBinding;
 use core::marker::PhantomData;
 
 /// A [ParabyzantineSystemSpec] is a trait that defines the system of parabyzantine.

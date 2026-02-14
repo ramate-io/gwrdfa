@@ -1,5 +1,8 @@
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
 
+#[derive(Debug, Clone, Copy)]
+pub struct Task;
+
 /// Specifies the entities and buffers for a parabyzantine task Data.
 ///
 /// A Parabyzantine task Data is concerned with deriving tasks from agreements and transactions.

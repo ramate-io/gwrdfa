@@ -2,6 +2,9 @@ use crate::act::Act;
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
 use crate::{NoOp, NoOpData};
 
+#[derive(Debug, Clone, Copy)]
+pub struct Agreement;
+
 /// Specifies the entities and buffers for a parabyzantine agreement Data.
 ///
 /// A Parabyzantine agreement Data is concerned with deriving agreements from certificates.
@@ -137,9 +140,6 @@ impl<
 		self.commit_parabyzantine_agreement(world.into(), data);
 	}
 }
-
-#[derive(Debug, Clone, Copy)]
-pub struct Agreement;
 
 impl ParabyzantineAgreementBinding for NoOp {
 	type Spec = NoOp;

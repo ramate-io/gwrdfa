@@ -1,7 +1,5 @@
-use crate::parabyzantine::broadcast_out::{
-	ParabyzantineBroadcastOutData, ParabyzantineBroadcastOutSpec,
-};
-use crate::parabyzantine::data::{ParabyzantineData, ParabyzantineSpec};
+use crate::data::broadcast_out::{ParabyzantineBroadcastOutData, ParabyzantineBroadcastOutSpec};
+use crate::data::hart::{ParabyzantineData, ParabyzantineSpec};
 
 /// Blanket implementation for the broadcast out spec.
 ///

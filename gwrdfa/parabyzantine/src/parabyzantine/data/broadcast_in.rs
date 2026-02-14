@@ -1,5 +1,8 @@
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
 
+#[derive(Debug, Clone, Copy)]
+pub struct BroadcastIn;
+
 /// Specifies the entities and buffers for a parabyzantine broadcast in Data.
 ///
 /// A Parabyzantine broadcast in Data is concerned with deriving transactions and certificates from broadcasts.

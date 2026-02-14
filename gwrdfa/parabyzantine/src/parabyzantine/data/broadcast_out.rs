@@ -1,5 +1,8 @@
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
 
+#[derive(Debug, Clone, Copy)]
+pub struct BroadcastOut;
+
 /// Specifies the entities and buffers for a parabyzantine broadcast out Data.
 ///
 /// A Parabyzantine broadcast out Data is concerned with deriving broadcasts from tasks.
