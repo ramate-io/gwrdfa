@@ -6,6 +6,11 @@ pub struct BroadcastIn;
 /// Specifies the entities and buffers for a parabyzantine broadcast in Data.
 ///
 /// A Parabyzantine broadcast in Data is concerned with deriving transactions and certificates from broadcasts.
+///
+/// Mainly, what a system implemented on this kind of data will do is
+/// to look at all the broadcasts and determine which ones come from:
+/// 1. Outside the system, in which case they are transactions
+/// 2. Inside the system, in which case they are certificates
 pub trait ParabyzantineBroadcastInDataSpec: Sized {
 	/// The entity type for the broadcast.
 	type BroadcastEntity: Sized;
