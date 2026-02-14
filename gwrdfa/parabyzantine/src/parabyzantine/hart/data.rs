@@ -1,6 +1,6 @@
 pub mod as_agreement;
-pub mod as_broadcast_in;
-pub mod as_broadcast_out;
+pub mod as_message_in;
+pub mod as_message_out;
 pub mod as_task;
 
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
@@ -43,12 +43,12 @@ pub trait ParabyzantineDataSpec: Sized {
 	/// The draft buffer type for the task.
 	type TaskDraftBuffer: DraftBufferlike<Self::TaskEntity, Self::TaskBuffer>;
 
-	/// The entity type for the broadcast.
-	type BroadcastEntity: Sized;
-	/// The buffer type for the broadcast.
-	type BroadcastBuffer: Bufferlike<Self::BroadcastEntity>;
-	/// The draft buffer type for the broadcast.
-	type BroadcastDraftBuffer: DraftBufferlike<Self::BroadcastEntity, Self::BroadcastBuffer>;
+	/// The entity type for the message.
+	type MessageEntity: Sized;
+	/// The buffer type for the message.
+	type MessageBuffer: Bufferlike<Self::MessageEntity>;
+	/// The draft buffer type for the message.
+	type MessageDraftBuffer: DraftBufferlike<Self::MessageEntity, Self::MessageBuffer>;
 }
 
 pub trait ParabyzantineData<Spec: ParabyzantineDataSpec>: Sized {
@@ -74,10 +74,10 @@ pub trait ParabyzantineData<Spec: ParabyzantineDataSpec>: Sized {
 	/// The draft buffer for the task.
 	fn parabyzantine_task_draft_buffer(&self) -> Spec::TaskDraftBuffer;
 
-	/// The buffer for the broadcast.
-	fn parabyzantine_broadcast_buffer(&self) -> &Spec::BroadcastBuffer;
-	/// The draft buffer for the broadcast.
-	fn parabyzantine_broadcast_draft_buffer(&self) -> Spec::BroadcastDraftBuffer;
+	/// The buffer for the message.
+	fn parabyzantine_message_buffer(&self) -> &Spec::MessageBuffer;
+	/// The draft buffer for the message.
+	fn parabyzantine_message_draft_buffer(&self) -> Spec::MessageDraftBuffer;
 
 	/// The world of the parabyzantine.
 	fn parabyzantine_world(&self) -> ParabyzantineWorld<Spec> {
@@ -90,8 +90,8 @@ pub trait ParabyzantineData<Spec: ParabyzantineDataSpec>: Sized {
 			transaction_inferences: self.parabyzantine_transaction_draft_buffer().into(),
 			task_facts: self.parabyzantine_task_buffer().into(),
 			task_inferences: self.parabyzantine_task_draft_buffer().into(),
-			broadcast_facts: self.parabyzantine_broadcast_buffer().into(),
-			broadcast_inferences: self.parabyzantine_broadcast_draft_buffer().into(),
+			message_facts: self.parabyzantine_message_buffer().into(),
+			message_inferences: self.parabyzantine_message_draft_buffer().into(),
 		}
 	}
 }
@@ -120,11 +120,11 @@ pub struct ParabyzantineWorld<'a, Spec: ParabyzantineDataSpec> {
 	/// The inferences for the task.
 	pub task_inferences: Inferences<Spec::TaskEntity, Spec::TaskBuffer, Spec::TaskDraftBuffer>,
 
-	/// The facts for the broadcast.
-	pub broadcast_facts: Facts<'a, Spec::BroadcastEntity, Spec::BroadcastBuffer>,
-	/// The inferences for the broadcast.
-	pub broadcast_inferences:
-		Inferences<Spec::BroadcastEntity, Spec::BroadcastBuffer, Spec::BroadcastDraftBuffer>,
+	/// The facts for the message.
+	pub message_facts: Facts<'a, Spec::MessageEntity, Spec::MessageBuffer>,
+	/// The inferences for the message.
+	pub message_inferences:
+		Inferences<Spec::MessageEntity, Spec::MessageBuffer, Spec::MessageDraftBuffer>,
 }
 
 /// A [ParabyzantineHart] trait describes operations on the parabyzantine hart.
@@ -157,9 +157,9 @@ impl ParabyzantineDataSpec for NoOp {
 	type TaskEntity = NoOp;
 	type TaskBuffer = NoOp;
 	type TaskDraftBuffer = NoOp;
-	type BroadcastEntity = NoOp;
-	type BroadcastBuffer = NoOp;
-	type BroadcastDraftBuffer = NoOp;
+	type MessageEntity = NoOp;
+	type MessageBuffer = NoOp;
+	type MessageDraftBuffer = NoOp;
 }
 
 /// A [ParabyzantineData] for the [NoOpData] struct.
@@ -198,10 +198,10 @@ impl ParabyzantineData<NoOp> for NoOpData {
 		NoOp
 	}
 
-	fn parabyzantine_broadcast_buffer(&self) -> &NoOp {
+	fn parabyzantine_message_buffer(&self) -> &NoOp {
 		&self.no_op
 	}
-	fn parabyzantine_broadcast_draft_buffer(&self) -> NoOp {
+	fn parabyzantine_message_draft_buffer(&self) -> NoOp {
 		NoOp
 	}
 }
