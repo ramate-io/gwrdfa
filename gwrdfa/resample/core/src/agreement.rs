@@ -11,9 +11,9 @@ pub use consensus::{Condition, ResampleAgreementConsensusUpdate};
 pub use data::ResampleAgreementData;
 use parabyzantine::agreement::{
 	AgreementWorld, ParabyzantineAgreement, ParabyzantineAgreementBinding,
-	ParabyzantineAgreementData,
+	ParabyzantineAgreementData, ParabyzantineAgreementSpec,
 };
-use parabyzantine::{parabyzantine::system::Parabyzantine, NoOp, NoOpData};
+use parabyzantine::{NoOp, NoOpData};
 pub use sampler::Sampler;
 pub use spec::ResampleAgreementSpec;
 pub use subcommittee::{IndexSubcommitteeAgreement, Subcommittee};
@@ -46,6 +46,87 @@ impl<Binding: ResampleAgreementBinding> ResampleAgreement<Binding> {
 
 	pub fn data_mut(&mut self) -> &mut Binding::ResampleAgreementData {
 		&mut self.0
+	}
+}
+
+impl<Binding: ResampleAgreementBinding>
+	ResampleAgreementData<Binding::ParabyzantineAgreementBinding, Binding::ResampleAgreementSpec>
+	for ResampleAgreement<Binding>
+{
+	/// A [ResampleAgreement] data must be able to provide a [CertificateSet]
+	fn certificate_set(
+		&self,
+	) -> &<Binding::ResampleAgreementSpec as ResampleAgreementSpec<
+		Binding::ParabyzantineAgreementBinding,
+	>>::CertificateSet {
+		self.data().certificate_set()
+	}
+
+	/// A [ResampleAgreement] data must be able to provide a mutable [CertificateSet]
+	fn certificate_set_mut(
+		&mut self,
+	) -> &mut <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
+		Binding::ParabyzantineAgreementBinding,
+	>>::CertificateSet {
+		self.data_mut().certificate_set_mut()
+	}
+
+	/// A [ResampleAgreement] data must be able to provide a [Sampler]
+	fn sampler(
+		&self,
+	) -> &<Binding::ResampleAgreementSpec as ResampleAgreementSpec<
+		Binding::ParabyzantineAgreementBinding,
+	>>::Sampler {
+		self.data().sampler()
+	}
+
+	/// A [ResampleAgreement] data must be able to provide a mutable [Sampler]
+	fn sampler_mut(
+		&mut self,
+	) -> &mut <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
+		Binding::ParabyzantineAgreementBinding,
+	>>::Sampler {
+		self.data_mut().sampler_mut()
+	}
+
+	/// A [ResampleAgreement] data must be able to provide a [ResampleAgreementConsensusUpdate]
+	fn resample_agreement_consensus_update(
+		&self,
+	) -> &<Binding::ResampleAgreementSpec as ResampleAgreementSpec<
+		Binding::ParabyzantineAgreementBinding,
+	>>::ResampleAgreementConsensusUpdate {
+		self.data().resample_agreement_consensus_update()
+	}
+
+	/// A [ResampleAgreement] data must be able to provide a mutable [ResampleAgreementConsensusUpdate]
+	fn resample_agreement_consensus_update_mut(
+		&mut self,
+	) -> &mut <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
+		Binding::ParabyzantineAgreementBinding,
+	>>::ResampleAgreementConsensusUpdate {
+		self.data_mut().resample_agreement_consensus_update_mut()
+	}
+
+	/// A [ResampleAgreement] data must be able to provide a [IndexSubcommitteeAgreementQuery]
+	fn index_subcommittee_agreement_query(
+		&mut self,
+	) -> <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
+		Binding::ParabyzantineAgreementBinding,
+	>>::IndexSubcommitteeAgreementQuery {
+		self.data_mut().index_subcommittee_agreement_query()
+	}
+
+	/// A [ResampleAgreement] data must be able to provide a [CertificateQuery]
+	fn certificate_query(
+		&mut self,
+		index: &(
+			<<Binding::ParabyzantineAgreementBinding as ParabyzantineAgreementBinding>::Spec as ParabyzantineAgreementSpec>::AgreementEntity,
+			<Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementBinding>>::IndexSubcommitteeAgreementBundle,
+		),
+	) -> <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
+		Binding::ParabyzantineAgreementBinding,
+	>>::CertificateQuery {
+		self.0.certificate_query(index)
 	}
 }
 
@@ -137,8 +218,22 @@ impl ResampleAgreementBinding for NoOp {
 	type ResampleAgreementData = NoOpData;
 }
 
-fn main() {
-	let resample_agreement = ResampleAgreement::<NoOp>(NoOpData::new());
-	let parabyzantine: Parabyzantine<_> =
-		Parabyzantine { data: NoOpData::new(), agreement_handler: resample_agreement };
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use parabyzantine::{
+		act::Invoke,
+		parabyzantine::{
+			agreement::Agreement,
+			system::{Parabyzantine, SystemSpec},
+		},
+	};
+
+	#[test]
+	fn test_noop_resample_agreement_noops() {
+		let resample_agreement = ResampleAgreement::<NoOp>(NoOpData::new());
+		let mut parabyzantine: Parabyzantine<SystemSpec<Agreement, NoOp, ResampleAgreement<NoOp>>> =
+			Parabyzantine { data: NoOpData::new(), agreement_handler: resample_agreement };
+		parabyzantine.invoke(Agreement);
+	}
 }

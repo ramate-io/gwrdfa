@@ -46,18 +46,34 @@ pub trait Sampler<
 	);
 }
 
-impl Sampler<NoOp, NoOp, NoOp, NoOp, NoOp, NoOp> for NoOp {
+impl<
+		Index: Eq,
+		Value: Eq,
+		Sender: Eq,
+		Sub: Subcommittee<Sender>,
+		SubAgree: IndexSubcommitteeAgreement<Index, Sender, Sub>,
+		Binding: ParabyzantineAgreementBinding,
+	> Sampler<Index, Value, Sender, Sub, SubAgree, Binding> for NoOp
+{
 	fn elect_subcommittees_from_consensus_value(
 		&mut self,
-		_value: &NoOp,
-		_agreement: &NoOp,
-		_agreement_inferences: &mut Inferences<NoOp, NoOp, NoOp>,
+		_value: &Value,
+		_agreement: &SubAgree,
+		_agreement_inferences: &mut Inferences<
+			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementEntity,
+			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementBuffer,
+			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementDraftBuffer,
+		>,
 	) {
 	}
 	fn elect_subcommittees_from_hung_value(
 		&mut self,
-		_agreement: &NoOp,
-		_agreement_inferences: &mut Inferences<NoOp, NoOp, NoOp>,
+		_agreement: &SubAgree,
+		_agreement_inferences: &mut Inferences<
+			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementEntity,
+			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementBuffer,
+			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementDraftBuffer,
+		>,
 	) {
 	}
 }
