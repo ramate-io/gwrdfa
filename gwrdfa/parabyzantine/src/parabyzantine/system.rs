@@ -1,4 +1,4 @@
-use crate::act::{Act, Pair};
+use crate::act::{Act, Invoke, Pair};
 use crate::parabyzantine::agreement::ParabyzantineAgreementBinding;
 use core::marker::PhantomData;
 
@@ -121,5 +121,20 @@ impl<Spec: ParabyzantineSystemSpec> ParabyzantineSystem for Parabyzantine<Spec> 
 		&mut <<Self::Spec as ParabyzantineSystemSpec>::AgreementDataBinding as ParabyzantineAgreementBinding>::Data,
 	){
 		(&mut self.agreement_handler, &mut self.data)
+	}
+}
+
+impl<Spec: ParabyzantineSystemSpec> Parabyzantine<Spec> {
+	/// Allows invoking without adding the trait.
+	///
+	/// We use the term update because it is more specific
+	/// to what the ParabyzantineSystem is doing when invoking an action.
+	///
+	/// It is updating some number of worlds in the system.
+	pub fn update<A>(&mut self, action: A)
+	where
+		Self: Invoke<A>,
+	{
+		<Self as Invoke<A>>::invoke(self, action);
 	}
 }

@@ -221,12 +221,9 @@ impl ResampleAgreementBinding for NoOp {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use parabyzantine::{
-		act::Invoke,
-		parabyzantine::{
-			agreement::Agreement,
-			system::{Parabyzantine, SystemSpec},
-		},
+	use parabyzantine::parabyzantine::{
+		agreement::Agreement,
+		system::{Parabyzantine, SystemSpec},
 	};
 
 	#[test]
@@ -234,6 +231,6 @@ mod tests {
 		let resample_agreement = ResampleAgreement::<NoOp>(NoOpData::new());
 		let mut parabyzantine: Parabyzantine<SystemSpec<Agreement, NoOp, ResampleAgreement<NoOp>>> =
 			Parabyzantine { data: NoOpData::new(), agreement_handler: resample_agreement };
-		parabyzantine.invoke(Agreement);
+		parabyzantine.update(Agreement);
 	}
 }
