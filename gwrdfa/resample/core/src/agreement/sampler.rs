@@ -1,6 +1,6 @@
 use super::{IndexSubcommitteeAgreement, Subcommittee};
 use parabyzantine::{
-	agreement::{ParabyzantineAgreementBinding, ParabyzantineAgreementSpec},
+	agreement::{ParabyzantineAgreementDataBinding, ParabyzantineAgreementDataSpec},
 	buffer::Inferences,
 	NoOp,
 };
@@ -11,7 +11,7 @@ pub trait Sampler<
 	Sender: Eq,
 	Sub: Subcommittee<Sender>,
 	SubAgree: IndexSubcommitteeAgreement<Index, Sender, Sub>,
-	Binding: ParabyzantineAgreementBinding,
+	Binding: ParabyzantineAgreementDataBinding,
 >: Sized
 {
 	/// Given a value and the subcommittee agreeement which gave that value,
@@ -28,9 +28,9 @@ pub trait Sampler<
 		value: &Value,
 		agreement: &SubAgree,
 		agreeement_inferences: &mut Inferences<
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementEntity,
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementBuffer,
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementDraftBuffer,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementDraftBuffer,
 		>,
 	);
 
@@ -39,9 +39,9 @@ pub trait Sampler<
 		&mut self,
 		agreement: &SubAgree,
 		agreement_inferences: &mut Inferences<
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementEntity,
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementBuffer,
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementDraftBuffer,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementDraftBuffer,
 		>,
 	);
 }
@@ -52,7 +52,7 @@ impl<
 		Sender: Eq,
 		Sub: Subcommittee<Sender>,
 		SubAgree: IndexSubcommitteeAgreement<Index, Sender, Sub>,
-		Binding: ParabyzantineAgreementBinding,
+		Binding: ParabyzantineAgreementDataBinding,
 	> Sampler<Index, Value, Sender, Sub, SubAgree, Binding> for NoOp
 {
 	fn elect_subcommittees_from_consensus_value(
@@ -60,9 +60,9 @@ impl<
 		_value: &Value,
 		_agreement: &SubAgree,
 		_agreement_inferences: &mut Inferences<
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementEntity,
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementBuffer,
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementDraftBuffer,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementDraftBuffer,
 		>,
 	) {
 	}
@@ -70,9 +70,9 @@ impl<
 		&mut self,
 		_agreement: &SubAgree,
 		_agreement_inferences: &mut Inferences<
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementEntity,
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementBuffer,
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementDraftBuffer,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementDraftBuffer,
 		>,
 	) {
 	}

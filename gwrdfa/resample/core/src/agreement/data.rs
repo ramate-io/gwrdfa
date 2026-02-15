@@ -1,10 +1,10 @@
 use super::ResampleAgreementSpec;
-use parabyzantine::agreement::{ParabyzantineAgreementBinding, ParabyzantineAgreementSpec};
+use parabyzantine::agreement::{ParabyzantineAgreementDataBinding, ParabyzantineAgreementDataSpec};
 use parabyzantine::NoOp;
 use parabyzantine::NoOpData;
 
 pub trait ResampleAgreementData<
-	Binding: ParabyzantineAgreementBinding,
+	Binding: ParabyzantineAgreementDataBinding,
 	Spec: ResampleAgreementSpec<Binding>,
 >: Sized
 {
@@ -35,7 +35,7 @@ pub trait ResampleAgreementData<
 	fn certificate_query(
 		&mut self,
 		index: &(
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementEntity,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
 			Spec::IndexSubcommitteeAgreementBundle,
 		),
 	) -> Spec::CertificateQuery;
@@ -67,7 +67,7 @@ impl ResampleAgreementData<NoOp, NoOp> for NoOpData {
 	fn certificate_query(
 		&mut self,
 		_index: &(
-			<NoOp as ParabyzantineAgreementSpec>::AgreementEntity,
+			<NoOp as ParabyzantineAgreementDataSpec>::AgreementEntity,
 			<NoOp as ResampleAgreementSpec<NoOp>>::IndexSubcommitteeAgreementBundle,
 		),
 	) -> <NoOp as ResampleAgreementSpec<NoOp>>::CertificateQuery {

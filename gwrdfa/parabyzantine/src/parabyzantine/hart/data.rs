@@ -1,16 +1,20 @@
 pub mod as_agreement;
-pub mod as_broadcast_in;
-pub mod as_broadcast_out;
+pub mod as_message_in;
+pub mod as_message_out;
 pub mod as_task;
 
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
 use crate::{NoOp, NoOpData};
 
+/// The [Hart] marker is used to indicate an act on the entirety of the parabyzantine system.
+///
+/// You'll note that the canonical naming for systems on the [Hart] is simply to omit
+/// the term "Hart". Hennce it is [ParabyzantineData] rather than [ParabyzantineHartData].
 #[derive(Debug, Clone, Copy)]
-pub struct Data;
+pub struct Hart;
 
-/// A [ParabyzantineSpec] is a specification for the parabyzantine protocol.
-pub trait ParabyzantineSpec: Sized {
+/// A [ParabyzantineDataSpec] is a specification for the parabyzantine protocol.
+pub trait ParabyzantineDataSpec: Sized {
 	/// The entity type for the certificate.
 	type CertificateEntity: Sized;
 	/// The buffer type for the certificate.
@@ -39,15 +43,15 @@ pub trait ParabyzantineSpec: Sized {
 	/// The draft buffer type for the task.
 	type TaskDraftBuffer: DraftBufferlike<Self::TaskEntity, Self::TaskBuffer>;
 
-	/// The entity type for the broadcast.
-	type BroadcastEntity: Sized;
-	/// The buffer type for the broadcast.
-	type BroadcastBuffer: Bufferlike<Self::BroadcastEntity>;
-	/// The draft buffer type for the broadcast.
-	type BroadcastDraftBuffer: DraftBufferlike<Self::BroadcastEntity, Self::BroadcastBuffer>;
+	/// The entity type for the message.
+	type MessageEntity: Sized;
+	/// The buffer type for the message.
+	type MessageBuffer: Bufferlike<Self::MessageEntity>;
+	/// The draft buffer type for the message.
+	type MessageDraftBuffer: DraftBufferlike<Self::MessageEntity, Self::MessageBuffer>;
 }
 
-pub trait ParabyzantineData<Spec: ParabyzantineSpec>: Sized {
+pub trait ParabyzantineData<Spec: ParabyzantineDataSpec>: Sized {
 	/// The buffer for the certificate.
 	fn parabyzantine_certificate_buffer(&self) -> &Spec::CertificateBuffer;
 	/// The draft buffer for the certificate.
@@ -70,10 +74,10 @@ pub trait ParabyzantineData<Spec: ParabyzantineSpec>: Sized {
 	/// The draft buffer for the task.
 	fn parabyzantine_task_draft_buffer(&self) -> Spec::TaskDraftBuffer;
 
-	/// The buffer for the broadcast.
-	fn parabyzantine_broadcast_buffer(&self) -> &Spec::BroadcastBuffer;
-	/// The draft buffer for the broadcast.
-	fn parabyzantine_broadcast_draft_buffer(&self) -> Spec::BroadcastDraftBuffer;
+	/// The buffer for the message.
+	fn parabyzantine_message_buffer(&self) -> &Spec::MessageBuffer;
+	/// The draft buffer for the message.
+	fn parabyzantine_message_draft_buffer(&self) -> Spec::MessageDraftBuffer;
 
 	/// The world of the parabyzantine.
 	fn parabyzantine_world(&self) -> ParabyzantineWorld<Spec> {
@@ -86,13 +90,13 @@ pub trait ParabyzantineData<Spec: ParabyzantineSpec>: Sized {
 			transaction_inferences: self.parabyzantine_transaction_draft_buffer().into(),
 			task_facts: self.parabyzantine_task_buffer().into(),
 			task_inferences: self.parabyzantine_task_draft_buffer().into(),
-			broadcast_facts: self.parabyzantine_broadcast_buffer().into(),
-			broadcast_inferences: self.parabyzantine_broadcast_draft_buffer().into(),
+			message_facts: self.parabyzantine_message_buffer().into(),
+			message_inferences: self.parabyzantine_message_draft_buffer().into(),
 		}
 	}
 }
 
-pub struct ParabyzantineWorld<'a, Spec: ParabyzantineSpec> {
+pub struct ParabyzantineWorld<'a, Spec: ParabyzantineDataSpec> {
 	/// The facts for the certificate.
 	pub certificate_facts: Facts<'a, Spec::CertificateEntity, Spec::CertificateBuffer>,
 	/// The inferences for the certificate.
@@ -116,23 +120,31 @@ pub struct ParabyzantineWorld<'a, Spec: ParabyzantineSpec> {
 	/// The inferences for the task.
 	pub task_inferences: Inferences<Spec::TaskEntity, Spec::TaskBuffer, Spec::TaskDraftBuffer>,
 
-	/// The facts for the broadcast.
-	pub broadcast_facts: Facts<'a, Spec::BroadcastEntity, Spec::BroadcastBuffer>,
-	/// The inferences for the broadcast.
-	pub broadcast_inferences:
-		Inferences<Spec::BroadcastEntity, Spec::BroadcastBuffer, Spec::BroadcastDraftBuffer>,
+	/// The facts for the message.
+	pub message_facts: Facts<'a, Spec::MessageEntity, Spec::MessageBuffer>,
+	/// The inferences for the message.
+	pub message_inferences:
+		Inferences<Spec::MessageEntity, Spec::MessageBuffer, Spec::MessageDraftBuffer>,
 }
 
-/// A [ParabyzantineBinding] is a binding for the [Parabyzantine] protocol.
+/// A [ParabyzantineHart] trait describes operations on the parabyzantine hart.
+pub trait ParabyzantineHart: Sized {
+	type Spec: ParabyzantineDataSpec;
+
+	/// Compute the parabyzantine hart.
+	fn update_parabyzantine_hart(&mut self, data: &mut ParabyzantineWorld<Self::Spec>);
+}
+
+/// A [ParabyzantineDataBinding] is a binding for the [Parabyzantine] protocol.
 ///
-/// It binds between the [ParabyzantineSpec] and the [ParabyzantineData].
-pub trait ParabyzantineBinding {
-	type Spec: ParabyzantineSpec;
+/// It binds between the [ParabyzantineDataSpec] and the [ParabyzantineData].
+pub trait ParabyzantineDataBinding {
+	type Spec: ParabyzantineDataSpec;
 	type Data: ParabyzantineData<Self::Spec>;
 }
 
-/// A [ParabyzantineSpec] for the [NoOp] struct.
-impl ParabyzantineSpec for NoOp {
+/// A [ParabyzantineDataSpec] for the [NoOp] struct.
+impl ParabyzantineDataSpec for NoOp {
 	type CertificateEntity = NoOp;
 	type CertificateBuffer = NoOp;
 	type CertificateDraftBuffer = NoOp;
@@ -145,9 +157,9 @@ impl ParabyzantineSpec for NoOp {
 	type TaskEntity = NoOp;
 	type TaskBuffer = NoOp;
 	type TaskDraftBuffer = NoOp;
-	type BroadcastEntity = NoOp;
-	type BroadcastBuffer = NoOp;
-	type BroadcastDraftBuffer = NoOp;
+	type MessageEntity = NoOp;
+	type MessageBuffer = NoOp;
+	type MessageDraftBuffer = NoOp;
 }
 
 /// A [ParabyzantineData] for the [NoOpData] struct.
@@ -186,15 +198,15 @@ impl ParabyzantineData<NoOp> for NoOpData {
 		NoOp
 	}
 
-	fn parabyzantine_broadcast_buffer(&self) -> &NoOp {
+	fn parabyzantine_message_buffer(&self) -> &NoOp {
 		&self.no_op
 	}
-	fn parabyzantine_broadcast_draft_buffer(&self) -> NoOp {
+	fn parabyzantine_message_draft_buffer(&self) -> NoOp {
 		NoOp
 	}
 }
 
-impl ParabyzantineBinding for NoOp {
+impl ParabyzantineDataBinding for NoOp {
 	type Spec = NoOp;
 	type Data = NoOpData;
 }

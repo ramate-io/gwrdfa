@@ -4,12 +4,12 @@ use super::{
 };
 use parabyzantine::NoOp;
 use parabyzantine::{
-	agreement::{ParabyzantineAgreementBinding, ParabyzantineAgreementSpec},
+	agreement::{ParabyzantineAgreementDataBinding, ParabyzantineAgreementDataSpec},
 	buffer::{Bundle, Querylike},
 };
 
 /// A [ResampleAgreementSpec] is a specification for ResampleAgreement consensus.
-pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementBinding>: Sized {
+pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Sized {
 	/// The type of the index.
 	type Index: Eq;
 
@@ -27,15 +27,15 @@ pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementBinding>: Sized {
 
 	/// The query for the index subcommittee agreement.
 	type IndexSubcommitteeAgreementQuery: Querylike<
-		<Binding::Spec as ParabyzantineAgreementSpec>::AgreementEntity,
-		<Binding::Spec as ParabyzantineAgreementSpec>::AgreementBuffer,
+		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
+		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer,
 		Self::IndexSubcommitteeAgreementBundle,
 	>;
 
 	/// The type of the index subcommittee agreement.
 	type IndexSubcommitteeAgreement: IndexSubcommitteeAgreement<Self::Index, Self::Sender, Self::Subcommittee>
 		+ for<'a> From<&'a (
-			<Binding::Spec as ParabyzantineAgreementSpec>::AgreementEntity,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
 			Self::IndexSubcommitteeAgreementBundle,
 		)>;
 
@@ -44,15 +44,15 @@ pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementBinding>: Sized {
 
 	/// The query for the certificate.
 	type CertificateQuery: Querylike<
-		<Binding::Spec as ParabyzantineAgreementSpec>::CertificateEntity,
-		<Binding::Spec as ParabyzantineAgreementSpec>::CertificateBuffer,
+		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
+		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateBuffer,
 		Self::CertificateBundle,
 	>;
 
 	/// The type of the certificate.
 	type Certificate: Certificate<Self::Index, Self::Value, Self::Sender>
 		+ for<'a> From<&'a (
-			<Binding::Spec as ParabyzantineAgreementSpec>::CertificateEntity,
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
 			Self::CertificateBundle,
 		)>;
 
