@@ -7,7 +7,11 @@ pub use inferences::Inferences;
 use crate::NoOp;
 
 /// Bundles are entities plus metadata that exist in the buffer.
-pub trait Bundle {}
+pub trait Bundle<Entity, Buf: Bufferlike<Entity>> {
+	fn insert_into(self, buffer: &mut Buf, entity: Option<Entity>);
+
+	fn remove_from(self, buffer: &mut Buf, entity: Entity);
+}
 
 /// Marks when a bundle is just an entity.
 ///
@@ -33,9 +37,13 @@ pub struct JustEntity;
 ///
 /// Using them should mostly be encapsulated behind [Facts]
 pub trait Bufferlike<Entity: Sized>: Sized {
-	fn insert<B: Bundle>(&mut self, entity: Option<Entity>, bundle: B);
+	fn insert<B: Bundle<Entity, Self>>(&mut self, entity: Option<Entity>, bundle: B) {
+		bundle.insert_into(self, entity);
+	}
 
-	fn remove<B: Bundle>(&mut self, entity: Entity, bundle: B);
+	fn remove<B: Bundle<Entity, Self>>(&mut self, entity: Entity, bundle: B) {
+		bundle.remove_from(self, entity);
+	}
 
 	fn remove_entity(&mut self, entity: Entity);
 
@@ -52,7 +60,7 @@ pub trait Bufferlike<Entity: Sized>: Sized {
 /// They can also perform logical optimizations w.r.t. the buffer and the intended types or values.
 ///
 /// They are constructed from indexes and contain bespoke ways to work with the buffer.
-pub trait Querylike<Entity: Sized, Buffer: Bufferlike<Entity>, B: Bundle> {
+pub trait Querylike<Entity: Sized, Buffer: Bufferlike<Entity>, B: Bundle<Entity, Buffer>> {
 	fn next(&mut self, buffer: &Buffer) -> Option<(Entity, B)>;
 
 	fn get(&self, buffer: &Buffer, entity: Entity) -> Option<B>;
@@ -75,10 +83,10 @@ pub trait DraftBufferlike<Entity: Sized, Buffer: Bufferlike<Entity>>: Sized {
 	/// Canonically, inserting Self::Entity as a bundle is equivalent to upserting the entity itself.
 	/// Systems which are not capable of complex bundle semantics may use this pattern to achieve
 	/// data augmentation.
-	fn draft_insert<B: Bundle>(&mut self, entity: Option<Entity>, bundle: B);
+	fn draft_insert<B: Bundle<Entity, Buffer>>(&mut self, entity: Option<Entity>, bundle: B);
 
 	/// Removes a bundle from the draft buffer.
-	fn draft_remove<B: Bundle>(&mut self, entity: Entity, bundle: B);
+	fn draft_remove<B: Bundle<Entity, Buffer>>(&mut self, entity: Entity, bundle: B);
 
 	/// Removes an entity from the draft buffer.
 	fn draft_remove_entity(&mut self, entity: Entity);
@@ -88,24 +96,26 @@ pub trait DraftBufferlike<Entity: Sized, Buffer: Bufferlike<Entity>>: Sized {
 }
 
 impl<Entity: Sized> Bufferlike<Entity> for NoOp {
-	fn insert<B: Bundle>(&mut self, _entity: Option<Entity>, _bundle: B) {}
+	fn insert<B: Bundle<Entity, Self>>(&mut self, _entity: Option<Entity>, _bundle: B) {}
 
-	fn remove<B: Bundle>(&mut self, _entity: Entity, _bundle: B) {}
+	fn remove<B: Bundle<Entity, Self>>(&mut self, _entity: Entity, _bundle: B) {}
 
 	fn remove_entity(&mut self, _entity: Entity) {}
 }
 
 impl<Entity: Sized, Buffer: Bufferlike<Entity>> DraftBufferlike<Entity, Buffer> for NoOp {
-	fn draft_insert<B: Bundle>(&mut self, _entity: Option<Entity>, _bundle: B) {}
+	fn draft_insert<B: Bundle<Entity, Buffer>>(&mut self, _entity: Option<Entity>, _bundle: B) {}
 
-	fn draft_remove<B: Bundle>(&mut self, _entity: Entity, _bundle: B) {}
+	fn draft_remove<B: Bundle<Entity, Buffer>>(&mut self, _entity: Entity, _bundle: B) {}
 
 	fn draft_remove_entity(&mut self, _entity: Entity) {}
 
 	fn commit(&mut self, _buffer: &mut Buffer) {}
 }
 
-impl<Entity: Sized, Buffer: Bufferlike<Entity>, B: Bundle> Querylike<Entity, Buffer, B> for NoOp {
+impl<Entity: Sized, Buffer: Bufferlike<Entity>, B: Bundle<Entity, Buffer>>
+	Querylike<Entity, Buffer, B> for NoOp
+{
 	fn next(&mut self, _buffer: &Buffer) -> Option<(Entity, B)> {
 		None
 	}
@@ -115,4 +125,12 @@ impl<Entity: Sized, Buffer: Bufferlike<Entity>, B: Bundle> Querylike<Entity, Buf
 	}
 }
 
-impl Bundle for NoOp {}
+impl<Entity, Buffer: Bufferlike<Entity>> Bundle<Entity, Buffer> for NoOp {
+	fn insert_into(self, _buffer: &mut Buffer, _entity: Option<Entity>) {
+		// do nothing
+	}
+
+	fn remove_from(self, _buffer: &mut Buffer, _entity: Entity) {
+		// do nothing
+	}
+}

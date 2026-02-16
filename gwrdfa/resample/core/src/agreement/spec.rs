@@ -23,7 +23,10 @@ pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Siz
 	type Subcommittee: Subcommittee<Self::Sender>;
 
 	/// The bundle of the agreement in the buffer.
-	type IndexSubcommitteeAgreementBundle: Bundle;
+	type IndexSubcommitteeAgreementBundle: Bundle<
+		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
+		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer,
+	>;
 
 	/// The query for the index subcommittee agreement.
 	type IndexSubcommitteeAgreementQuery: Querylike<
@@ -40,7 +43,10 @@ pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Siz
 		)>;
 
 	/// The bundle of the certificate in the buffer.
-	type CertificateBundle: Bundle;
+	type CertificateBundle: Bundle<
+		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
+		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateBuffer,
+	>;
 
 	/// The query for the certificate.
 	type CertificateQuery: Querylike<
