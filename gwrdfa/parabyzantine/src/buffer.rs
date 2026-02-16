@@ -8,8 +8,10 @@ use crate::NoOp;
 
 /// Bundles are entities plus metadata that exist in the buffer.
 pub trait Bundle<Entity, Buf: Bufferlike<Entity>> {
+	/// Inserts a bundle into a buffer.
 	fn insert_into(self, buffer: &mut Buf, entity: Option<Entity>);
 
+	/// Removes a bundle from a buffer.
 	fn remove_from(self, buffer: &mut Buf, entity: Entity);
 }
 
