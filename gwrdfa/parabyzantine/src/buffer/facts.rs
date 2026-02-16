@@ -17,7 +17,7 @@ impl<'a, Entity: Sized, Buffer: Bufferlike<Entity>> Facts<'a, Entity, Buffer> {
 	pub fn query<
 		B: Bundle<Entity, Buffer> + 'a,
 		Query: Querylike<Entity, Buffer, B> + 'a,
-		QueryPlan: QueryPlanlike<Entity, Buffer, B, Query> + 'a,
+		QueryPlan: QueryPlanlike<'a, Entity, Buffer, B, Query>,
 	>(
 		&'a self,
 		query_plan: QueryPlan,
@@ -28,9 +28,9 @@ impl<'a, Entity: Sized, Buffer: Bufferlike<Entity>> Facts<'a, Entity, Buffer> {
 
 	/// Gets a bundle from the facts in the buffer.
 	pub fn get<
-		B: Bundle<Entity, Buffer>,
-		Query: Querylike<Entity, Buffer, B>,
-		QueryPlan: QueryPlanlike<Entity, Buffer, B, Query> + 'a,
+		B: Bundle<Entity, Buffer> + 'a,
+		Query: Querylike<Entity, Buffer, B> + 'a,
+		QueryPlan: QueryPlanlike<'a, Entity, Buffer, B, Query>,
 	>(
 		&self,
 		entity: Entity,
