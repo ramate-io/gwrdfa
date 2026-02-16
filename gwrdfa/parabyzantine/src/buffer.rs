@@ -58,14 +58,27 @@ pub trait Bufferlike<Entity: Sized>: Sized {
 	}
 }
 
+/// Query plans are used to build queries over the buffer.
+pub trait QueryPlanlike<
+	Entity: Sized,
+	Buffer: Bufferlike<Entity>,
+	B: Bundle<Entity, Buffer>,
+	Query: Querylike<Entity, Buffer, B>,
+>
+{
+	fn build<'a>(self, buffer: &'a Buffer) -> Query
+	where
+		Query: 'a;
+}
+
 /// Queries are view helpers that are used to look at values in the buffer.
 /// They can also perform logical optimizations w.r.t. the buffer and the intended types or values.
 ///
 /// They are constructed from indexes and contain bespoke ways to work with the buffer.
 pub trait Querylike<Entity: Sized, Buffer: Bufferlike<Entity>, B: Bundle<Entity, Buffer>> {
-	fn next(&mut self, buffer: &Buffer) -> Option<(Entity, B)>;
+	fn next(&mut self) -> Option<(Entity, B)>;
 
-	fn get(&self, buffer: &Buffer, entity: Entity) -> Option<B>;
+	fn get(&self, entity: Entity) -> Option<B>;
 }
 
 /// Draft buffers are buffers that are not yet committed to the main buffer.
@@ -118,12 +131,23 @@ impl<Entity: Sized, Buffer: Bufferlike<Entity>> DraftBufferlike<Entity, Buffer> 
 impl<Entity: Sized, Buffer: Bufferlike<Entity>, B: Bundle<Entity, Buffer>>
 	Querylike<Entity, Buffer, B> for NoOp
 {
-	fn next(&mut self, _buffer: &Buffer) -> Option<(Entity, B)> {
+	fn next(&mut self) -> Option<(Entity, B)> {
 		None
 	}
 
-	fn get(&self, _buffer: &Buffer, _entity: Entity) -> Option<B> {
+	fn get(&self, _entity: Entity) -> Option<B> {
 		None
+	}
+}
+
+impl<Entity: Sized, Buffer: Bufferlike<Entity>, B: Bundle<Entity, Buffer>>
+	QueryPlanlike<Entity, Buffer, B, NoOp> for NoOp
+{
+	fn build<'a>(self, _buffer: &'a Buffer) -> NoOp
+	where
+		NoOp: 'a,
+	{
+		NoOp
 	}
 }
 

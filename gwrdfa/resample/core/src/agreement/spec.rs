@@ -5,7 +5,7 @@ use super::{
 use parabyzantine::NoOp;
 use parabyzantine::{
 	agreement::{ParabyzantineAgreementDataBinding, ParabyzantineAgreementDataSpec},
-	buffer::{Bundle, Querylike},
+	buffer::{Bundle, QueryPlanlike, Querylike},
 };
 
 /// A [ResampleAgreementSpec] is a specification for ResampleAgreement consensus.
@@ -35,6 +35,14 @@ pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Siz
 		Self::IndexSubcommitteeAgreementBundle,
 	>;
 
+	/// The query plan for the index subcommittee agreement.
+	type IndexSubcommitteeAgreementQueryPlan: QueryPlanlike<
+		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
+		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer,
+		Self::IndexSubcommitteeAgreementBundle,
+		Self::IndexSubcommitteeAgreementQuery,
+	>;
+
 	/// The type of the index subcommittee agreement.
 	type IndexSubcommitteeAgreement: IndexSubcommitteeAgreement<Self::Index, Self::Sender, Self::Subcommittee>
 		+ for<'a> From<&'a (
@@ -53,6 +61,14 @@ pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Siz
 		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
 		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateBuffer,
 		Self::CertificateBundle,
+	>;
+
+	/// The query plan for the certificate.
+	type CertificateQueryPlan: QueryPlanlike<
+		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
+		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateBuffer,
+		Self::CertificateBundle,
+		Self::CertificateQuery,
 	>;
 
 	/// The type of the certificate.
@@ -97,9 +113,11 @@ impl ResampleAgreementSpec<NoOp> for NoOp {
 	type Subcommittee = NoOp;
 	type IndexSubcommitteeAgreementBundle = NoOp;
 	type IndexSubcommitteeAgreementQuery = NoOp;
+	type IndexSubcommitteeAgreementQueryPlan = NoOp;
 	type IndexSubcommitteeAgreement = NoOp;
 	type CertificateBundle = NoOp;
 	type CertificateQuery = NoOp;
+	type CertificateQueryPlan = NoOp;
 	type Certificate = NoOp;
 	type CertificateSet = NoOp;
 	type Sampler = NoOp;

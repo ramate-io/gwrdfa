@@ -29,7 +29,7 @@ pub trait ResampleAgreementData<
 	) -> &mut Spec::ResampleAgreementConsensusUpdate;
 
 	/// ResampleAgreement data must be able to prduce a [Spec::IndexSubcommitteeAgreementQuery]
-	fn index_subcommittee_agreement_query(&mut self) -> Spec::IndexSubcommitteeAgreementQuery;
+	fn index_subcommittee_agreement_query(&mut self) -> Spec::IndexSubcommitteeAgreementQueryPlan;
 
 	/// ResampleAgreement data must be able to produce a [Spec::CertificateQuery]
 	fn certificate_query(
@@ -38,7 +38,7 @@ pub trait ResampleAgreementData<
 			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
 			Spec::IndexSubcommitteeAgreementBundle,
 		),
-	) -> Spec::CertificateQuery;
+	) -> Spec::CertificateQueryPlan;
 }
 
 impl ResampleAgreementData<NoOp, NoOp> for NoOpData {
