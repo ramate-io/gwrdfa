@@ -64,11 +64,11 @@ where
 	fn insert_into(self, buffer: &mut ContainerEntityBuffer<T>, entity: Option<ContainerEntity>) {
 		match entity {
 			Some(entity) => match buffer.get_mut(entity) {
-				Some(data) => data.update_with_bundle(self.0),
-				None => buffer.upsert(entity, T::from_bundle(self.0)),
+				Some(entity) => entity.update_with_data(self.0),
+				None => buffer.upsert(entity, T::from_data(self.0)),
 			},
 			None => {
-				buffer.insert(T::from_bundle(self.0));
+				buffer.insert(T::from_data(self.0));
 			}
 		}
 	}
