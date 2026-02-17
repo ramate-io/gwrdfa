@@ -102,9 +102,13 @@ mod tests {
 	use super::*;
 
 	#[derive(Debug, Clone, Default, PartialEq, Eq)]
+	pub struct TestField(pub i32);
+
+	#[derive(Debug, Clone, Default, PartialEq, Eq)]
 	struct TestContainer {
 		num: i32,
 		slice: [i32; 10],
+		field: Option<TestField>,
 	}
 
 	impl OnContainer<'_, TestContainer> for i32 {
@@ -116,6 +120,12 @@ mod tests {
 	impl<'a> OnContainer<'a, TestContainer> for &'a [i32] {
 		fn container_as(container: &'a TestContainer) -> &'a [i32] {
 			&container.slice
+		}
+	}
+
+	impl<'a> OnContainer<'a, TestContainer> for Option<&'a TestField> {
+		fn container_as(container: &'a TestContainer) -> Option<&'a TestField> {
+			container.field.as_ref()
 		}
 	}
 
@@ -134,6 +144,27 @@ mod tests {
 
 		// Get the container itself
 		let container: &TestContainer = container.as_item();
-		assert_eq!(container, &TestContainer { num: 0, slice: [0; 10] });
+		assert_eq!(container, &TestContainer { num: 0, slice: [0; 10], field: None });
+	}
+
+	#[test]
+	fn test_container_giving_optional() {
+		// Allocate the container
+		let mut container = TestContainer::default();
+		container.field = Some(TestField(1));
+
+		let container = &container;
+
+		// Get the field from the container
+		let field: Option<&TestField> = container.as_item();
+		assert_eq!(field, Some(&TestField(1)));
+
+		// Get the num as an option
+		let num: Option<i32> = container.as_item();
+		assert_eq!(num, Some(0));
+
+		// Get the slice as an option
+		let slice: Option<&[i32]> = container.as_item();
+		assert_eq!(slice, Some(&container.slice[..]));
 	}
 }
