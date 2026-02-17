@@ -56,6 +56,17 @@ impl<'a, T: Sized, B: OnContainer<'a, T>> ContainerGiving<'a, B> for &'a T {
 	}
 }
 
+/// All container types that have a container giving themselves also have a container giving an optional version of themselves.
+///
+/// This is a hard-baked container semantics.
+/// But doing this, we disallow aggregating fields to determine whether
+/// a certain type is present or not.
+impl<'a, T: Sized, B: OnContainer<'a, T>> OnContainer<'a, T> for Option<B> {
+	fn container_as(container: &'a T) -> Self {
+		Some(B::container_as(container))
+	}
+}
+
 /// [JustEntity] is trivially containable in any type.
 impl<'a, T: Default + Sized> OnContainer<'a, T> for JustEntity {
 	fn container_as(_container: &'a T) -> Self {
