@@ -9,7 +9,7 @@ use crate::NoOp;
 /// Bundles are entities plus metadata that exist in the buffer.
 pub trait Bundle<Entity, Buf: Bufferlike<Entity>> {
 	/// Inserts a bundle into a buffer.
-	fn insert_into(self, buffer: &mut Buf, entity: Option<Entity>);
+	fn insert_into(self, buffer: &mut Buf, entity: Option<Entity>) -> Option<Entity>;
 
 	/// Removes a bundle from a buffer.
 	fn remove_from(buffer: &mut Buf, entity: Entity);
@@ -39,8 +39,12 @@ pub struct JustEntity;
 ///
 /// Using them should mostly be encapsulated behind [Facts]
 pub trait Bufferlike<Entity: Sized>: Sized {
-	fn insert<B: Bundle<Entity, Self>>(&mut self, entity: Option<Entity>, bundle: B) {
-		bundle.insert_into(self, entity);
+	fn insert<B: Bundle<Entity, Self>>(
+		&mut self,
+		entity: Option<Entity>,
+		bundle: B,
+	) -> Option<Entity> {
+		bundle.insert_into(self, entity)
 	}
 
 	fn remove<B: Bundle<Entity, Self>>(&mut self, entity: Entity) {
@@ -106,7 +110,13 @@ pub trait DraftBufferlike<Entity: Sized, Buffer: Bufferlike<Entity>>: Sized {
 }
 
 impl<Entity: Sized> Bufferlike<Entity> for NoOp {
-	fn insert<B: Bundle<Entity, Self>>(&mut self, _entity: Option<Entity>, _bundle: B) {}
+	fn insert<B: Bundle<Entity, Self>>(
+		&mut self,
+		_entity: Option<Entity>,
+		_bundle: B,
+	) -> Option<Entity> {
+		None
+	}
 
 	fn remove<B: Bundle<Entity, Self>>(&mut self, _entity: Entity) {}
 
@@ -145,8 +155,9 @@ where
 }
 
 impl<Entity, Buffer: Bufferlike<Entity>> Bundle<Entity, Buffer> for NoOp {
-	fn insert_into(self, _buffer: &mut Buffer, _entity: Option<Entity>) {
-		// do nothing
+	fn insert_into(self, _buffer: &mut Buffer, _entity: Option<Entity>) -> Option<Entity> {
+		// do nothing and don't indicate that an entity was inserted
+		None
 	}
 
 	fn remove_from(_buffer: &mut Buffer, _entity: Entity) {

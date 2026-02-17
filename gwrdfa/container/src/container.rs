@@ -43,21 +43,6 @@ pub trait ContainerGiving<'a, B: Sized> {
 	fn as_item(&'a self) -> B;
 }
 
-/// All container types that have a container giving themselves also have a container giving an optional version of themselves.
-///
-/// This is a hard-baked container semantics.
-/// But doing this, we disallow aggregating fields to determine whether
-/// a certain type is present or not.
-///
-/// This also prohibits overloading types,
-/// as you will get conflicting implementations of the `OnContainer` trait.
-/// Just as in an ECS, you're going to want to use different types for different fields.
-impl<'a, T: ContainerGiving<'a, B> + Sized, B> ContainerGiving<'a, Option<B>> for T {
-	fn as_item(&'a self) -> Option<B> {
-		Some(self.as_item())
-	}
-}
-
 /// [JustEntity] is trivially containable in any type.
 impl<'a, T: Default + Sized> ContainerGiving<'a, JustEntity> for T {
 	fn as_item(&'a self) -> JustEntity {
@@ -78,6 +63,49 @@ impl<T: Sized> ContainerHolding<T> for T {
 	fn remove_from_container(&mut self) {
 		// do nothing
 		// for now the user should remove the whole entity
+	}
+}
+
+/// Provisional API to replace option usage.
+///
+/// This would be a semantically-specific type to mark a field as present or absent.
+#[derive(Debug, Clone)]
+pub enum ContainerComponent<T: Sized> {
+	Present(T),
+	Absent,
+}
+
+impl<T: Sized> ContainerComponent<T> {
+	pub fn new(data: T) -> Self {
+		Self::Present(data)
+	}
+
+	pub fn as_ref(&self) -> ContainerComponent<&T> {
+		match self {
+			Self::Present(data) => ContainerComponent::Present(data),
+			Self::Absent => ContainerComponent::Absent,
+		}
+	}
+}
+
+/// All container types that have a container giving themselves also have a container giving an optional version of themselves.
+///
+/// This is a hard-baked container semantics.
+/// But doing this, we disallow aggregating fields to determine whether
+/// a certain type is present or not.
+///
+/// This also prohibits overloading types,
+/// as you will get conflicting implementations of the `OnContainer` trait.
+/// Just as in an ECS, you're going to want to use different types for different fields.
+impl<'a, T: ContainerGiving<'a, B> + Sized, B> ContainerGiving<'a, Option<B>> for T {
+	fn as_item(&'a self) -> Option<B> {
+		Some(self.as_item())
+	}
+}
+
+impl<'a, T: ContainerGiving<'a, B> + Sized, B> ContainerGiving<'a, ContainerComponent<B>> for T {
+	fn as_item(&'a self) -> ContainerComponent<B> {
+		ContainerComponent::Present(self.as_item())
 	}
 }
 
