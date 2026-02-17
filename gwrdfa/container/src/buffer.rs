@@ -117,4 +117,24 @@ pub mod test {
 		ToContainer::remove_from(&mut buffer, entity);
 		assert_eq!(buffer.get(entity), None);
 	}
+
+	#[test]
+	fn test_multiple_inserts_and_removes() {
+		// First insert
+		let mut buffer: ContainerEntityBuffer<TestContainer> = ContainerEntityBuffer::new();
+		let container = TestContainer::default();
+		let entity = buffer.insert(container);
+		buffer.remove(entity);
+		assert_eq!(buffer.get(entity), None);
+
+		// Second insert
+		let container = TestContainer::default().with_num(1);
+		let entity = buffer.insert(container);
+		assert_eq!(buffer.get(entity), Some(&TestContainer::default().with_num(1)));
+
+		// Third insert
+		let container = TestContainer::default().with_num(2);
+		let entity = buffer.insert(container);
+		assert_eq!(buffer.get(entity), Some(&TestContainer::default().with_num(2)));
+	}
 }
