@@ -51,22 +51,6 @@ impl<'a, T: Default + Sized> ContainerGiving<'a, JustEntity> for T {
 	}
 }
 
-/// All container types can contain themselves.
-impl<T: Sized> ContainerHolding<T> for T {
-	fn from_data(data: T) -> Self {
-		data
-	}
-
-	fn update_with_data(&mut self, data: T) {
-		*self = data;
-	}
-
-	fn remove_from_container(&mut self) {
-		// do nothing
-		// for now the user should remove the whole entity
-	}
-}
-
 /// Provisional API to replace option usage.
 ///
 /// This would be a semantically-specific type to mark a field as present or absent.
