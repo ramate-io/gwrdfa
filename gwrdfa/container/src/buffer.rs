@@ -1,4 +1,4 @@
-use crate::{Container, ContainerEntity};
+use crate::{ContainerEntity, ContainerHolding};
 use parabyzantine::buffer::{Bufferlike, Bundle};
 use std::collections::HashMap;
 
@@ -12,6 +12,7 @@ impl<T: Sized> ContainerEntityBuffer<T> {
 		Self { next_entity: ContainerEntity::new(0), entities: HashMap::new() }
 	}
 
+	/// Iterates over the entities in the buffer.
 	pub fn iter(&self) -> std::collections::hash_map::Iter<ContainerEntity, T> {
 		self.entities.iter()
 	}
@@ -46,6 +47,7 @@ impl<T: Sized> ContainerEntityBuffer<T> {
 }
 
 impl<T: Sized> Bufferlike<ContainerEntity> for ContainerEntityBuffer<T> {
+	/// Removes an entity from the buffer.
 	fn remove_entity(&mut self, entity: ContainerEntity) {
 		self.remove(entity);
 	}
@@ -56,7 +58,7 @@ pub struct ToContainer<T: Sized>(pub T);
 
 impl<T, B> Bundle<ContainerEntity, ContainerEntityBuffer<T>> for ToContainer<B>
 where
-	T: Container<B>,
+	T: ContainerHolding<B>,
 	B: Sized,
 {
 	fn insert_into(self, buffer: &mut ContainerEntityBuffer<T>, entity: Option<ContainerEntity>) {
@@ -71,7 +73,8 @@ where
 		}
 	}
 
-	fn remove_from(self, buffer: &mut ContainerEntityBuffer<T>, entity: ContainerEntity) {
+	fn remove_from(buffer: &mut ContainerEntityBuffer<T>, entity: ContainerEntity) {
+		// TODO: this is too aggressive, we actually want B to define its own removal semantics.
 		buffer.remove(entity);
 	}
 }

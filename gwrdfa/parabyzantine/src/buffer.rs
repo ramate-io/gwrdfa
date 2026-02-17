@@ -12,7 +12,7 @@ pub trait Bundle<Entity, Buf: Bufferlike<Entity>> {
 	fn insert_into(self, buffer: &mut Buf, entity: Option<Entity>);
 
 	/// Removes a bundle from a buffer.
-	fn remove_from(self, buffer: &mut Buf, entity: Entity);
+	fn remove_from(buffer: &mut Buf, entity: Entity);
 }
 
 /// Marks when a bundle is just an entity.
@@ -43,8 +43,8 @@ pub trait Bufferlike<Entity: Sized>: Sized {
 		bundle.insert_into(self, entity);
 	}
 
-	fn remove<B: Bundle<Entity, Self>>(&mut self, entity: Entity, bundle: B) {
-		bundle.remove_from(self, entity);
+	fn remove<B: Bundle<Entity, Self>>(&mut self, entity: Entity) {
+		B::remove_from(self, entity);
 	}
 
 	fn remove_entity(&mut self, entity: Entity);
@@ -59,13 +59,8 @@ pub trait Bufferlike<Entity: Sized>: Sized {
 }
 
 /// Query plans are used to build queries over the buffer.
-pub trait QueryPlanlike<
-	'a,
-	Entity: Sized,
-	Buffer: Bufferlike<Entity>,
-	B: Bundle<Entity, Buffer>,
-	Query,
-> where
+pub trait QueryPlanlike<'a, Entity: Sized, Buffer: Bufferlike<Entity>, B, Query>
+where
 	Query: Querylike<Entity, Buffer, B> + 'a,
 {
 	fn build(self, buffer: &'a Buffer) -> Query;
@@ -75,7 +70,7 @@ pub trait QueryPlanlike<
 /// They can also perform logical optimizations w.r.t. the buffer and the intended types or values.
 ///
 /// They are constructed from indexes and contain bespoke ways to work with the buffer.
-pub trait Querylike<Entity: Sized, Buffer: Bufferlike<Entity>, B: Bundle<Entity, Buffer>> {
+pub trait Querylike<Entity: Sized, Buffer: Bufferlike<Entity>, B> {
 	fn next(&mut self) -> Option<(Entity, B)>;
 
 	fn get(&self, entity: Entity) -> Option<B>;
@@ -113,7 +108,7 @@ pub trait DraftBufferlike<Entity: Sized, Buffer: Bufferlike<Entity>>: Sized {
 impl<Entity: Sized> Bufferlike<Entity> for NoOp {
 	fn insert<B: Bundle<Entity, Self>>(&mut self, _entity: Option<Entity>, _bundle: B) {}
 
-	fn remove<B: Bundle<Entity, Self>>(&mut self, _entity: Entity, _bundle: B) {}
+	fn remove<B: Bundle<Entity, Self>>(&mut self, _entity: Entity) {}
 
 	fn remove_entity(&mut self, _entity: Entity) {}
 }
@@ -128,9 +123,7 @@ impl<Entity: Sized, Buffer: Bufferlike<Entity>> DraftBufferlike<Entity, Buffer> 
 	fn commit(&mut self, _buffer: &mut Buffer) {}
 }
 
-impl<Entity: Sized, Buffer: Bufferlike<Entity>, B: Bundle<Entity, Buffer>>
-	Querylike<Entity, Buffer, B> for NoOp
-{
+impl<Entity: Sized, Buffer: Bufferlike<Entity>, B> Querylike<Entity, Buffer, B> for NoOp {
 	fn next(&mut self) -> Option<(Entity, B)> {
 		None
 	}
@@ -156,7 +149,7 @@ impl<Entity, Buffer: Bufferlike<Entity>> Bundle<Entity, Buffer> for NoOp {
 		// do nothing
 	}
 
-	fn remove_from(self, _buffer: &mut Buffer, _entity: Entity) {
+	fn remove_from(_buffer: &mut Buffer, _entity: Entity) {
 		// do nothing
 	}
 }

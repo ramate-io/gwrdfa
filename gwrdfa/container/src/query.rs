@@ -1,5 +1,5 @@
-use crate::{Container, ContainerEntity, ContainerEntityBuffer};
-use parabyzantine::buffer::{Bundle, QueryPlanlike, Querylike};
+use crate::{ContainerEntity, ContainerEntityBuffer, ContainerGiving};
+use parabyzantine::buffer::{QueryPlanlike, Querylike};
 
 /// A query over a container.
 pub struct ContainerQuery<'a, T: Sized> {
@@ -14,23 +14,23 @@ impl<'a, T: Sized> ContainerQuery<'a, T> {
 	}
 }
 
-impl<'a, T: Container<B> + Sized, B: Bundle<ContainerEntity, ContainerEntityBuffer<T>>>
+impl<'a, T: ContainerGiving<'a, B> + Sized, B>
 	Querylike<ContainerEntity, ContainerEntityBuffer<T>, B> for ContainerQuery<'a, T>
 {
 	fn next(&mut self) -> Option<(ContainerEntity, B)> {
-		self.iter.next().map(|(entity, data)| (entity.clone(), data.as_bundle()))
+		self.iter.next().map(|(entity, data)| (entity.clone(), data.as_item()))
 	}
 
 	fn get(&self, entity: ContainerEntity) -> Option<B> {
-		self.buffer.get(entity).map(|container| container.as_bundle())
+		self.buffer.get(entity).map(|container| container.as_item())
 	}
 }
 
-/// The query plan for all container entities.
+/// The plan to query all container entities.
 #[derive(Debug, Clone, Copy)]
 pub struct AllContainerEntities;
 
-impl<'a, T: Container<B> + Sized, B: Bundle<ContainerEntity, ContainerEntityBuffer<T>>>
+impl<'a, T: ContainerGiving<'a, B> + Sized, B>
 	QueryPlanlike<'a, ContainerEntity, ContainerEntityBuffer<T>, B, ContainerQuery<'a, T>>
 	for AllContainerEntities
 {
