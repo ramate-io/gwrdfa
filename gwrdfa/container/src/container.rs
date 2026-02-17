@@ -61,6 +61,10 @@ impl<'a, T: Sized, B: OnContainer<'a, T>> ContainerGiving<'a, B> for &'a T {
 /// This is a hard-baked container semantics.
 /// But doing this, we disallow aggregating fields to determine whether
 /// a certain type is present or not.
+///
+/// This also prohibits overloading types,
+/// as you will get conflicting implementations of the `OnContainer` trait.
+/// Just as in an ECS, you're going to want to use different types for different fields.
 impl<'a, T: Sized, B: OnContainer<'a, T>> OnContainer<'a, T> for Option<B> {
 	fn container_as(container: &'a T) -> Self {
 		Some(B::container_as(container))
