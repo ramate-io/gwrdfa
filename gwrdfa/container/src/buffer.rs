@@ -114,7 +114,7 @@ pub mod test {
 		let mut buffer: ContainerEntityBuffer<TestContainer> = ContainerEntityBuffer::new();
 		let container = TestContainer::default();
 		let entity = buffer.insert(container);
-		ToContainer::remove_from(&mut buffer, entity);
+		ToContainer::<TestContainer>::remove_from(&mut buffer, entity);
 		assert_eq!(buffer.get(entity), None);
 	}
 
