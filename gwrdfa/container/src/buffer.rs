@@ -83,7 +83,7 @@ where
 
 	fn remove_from(buffer: &mut ContainerEntityBuffer<T>, entity: ContainerEntity) {
 		// TODO: this is too aggressive, we actually want B to define its own removal semantics.
-		buffer.remove_container(entity);
+		B::remove_from(buffer, entity);
 	}
 }
 
@@ -91,6 +91,7 @@ where
 pub mod test {
 	use super::*;
 	use crate::container::test::TestContainer;
+	use crate::container::test::TestField;
 	use parabyzantine::buffer::Bufferlike;
 
 	#[test]
@@ -106,9 +107,9 @@ pub mod test {
 		// Insert the whole container
 		let mut buffer: ContainerEntityBuffer<TestContainer> = ContainerEntityBuffer::new();
 		let container = TestContainer::default();
-		let entity = ToContainer(container).insert_into(&mut buffer, None);
-		assert_eq!(entity, Some(ContainerEntity::new(0)));
-		assert_eq!(buffer.get(ContainerEntity::new(0)), Some(&TestContainer::default()));
+		let entity = buffer.insert_container(container);
+		assert_eq!(entity, ContainerEntity::new(0));
+		assert_eq!(buffer.get(entity), Some(&TestContainer::default()));
 
 		// Insert a container component as a new entity
 		let num: i32 = 1;
@@ -150,12 +151,12 @@ pub mod test {
 	}
 
 	#[test]
-	fn test_remove_from_with_to_container() {
+	fn test_bufferlike_remove() {
 		let mut buffer: ContainerEntityBuffer<TestContainer> = ContainerEntityBuffer::new();
-		let container = TestContainer::default();
+		let container = TestContainer::default().with_field(Some(TestField(1)));
 		let entity = buffer.insert_container(container);
-		ToContainer::<TestContainer>::remove_from(&mut buffer, entity);
-		assert_eq!(buffer.get(entity), None);
+		buffer.remove::<ToContainer<TestField>>(entity);
+		assert_eq!(buffer.get(entity), Some(&TestContainer::default().with_field(None)));
 	}
 
 	#[test]
