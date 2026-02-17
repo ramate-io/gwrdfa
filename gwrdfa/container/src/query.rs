@@ -1,12 +1,14 @@
-use crate::buffer::{Container, ContainerEntity, ContainerEntityBuffer};
+use crate::{Container, ContainerEntity, ContainerEntityBuffer};
 use parabyzantine::buffer::{Bundle, QueryPlanlike, Querylike};
 
+/// A query over a container.
 pub struct ContainerQuery<'a, T: Sized> {
 	buffer: &'a ContainerEntityBuffer<T>,
 	iter: std::collections::hash_map::Iter<'a, ContainerEntity, T>,
 }
 
 impl<'a, T: Sized> ContainerQuery<'a, T> {
+	/// Creates a new query over a container.
 	pub fn new(buffer: &'a ContainerEntityBuffer<T>) -> Self {
 		Self { buffer, iter: buffer.iter() }
 	}
