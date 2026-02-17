@@ -78,3 +78,43 @@ where
 		buffer.remove(entity);
 	}
 }
+
+#[cfg(test)]
+pub mod test {
+	use super::*;
+	use crate::container::test::TestContainer;
+
+	#[test]
+	fn test_insert() {
+		let mut buffer = ContainerEntityBuffer::new();
+		let container = TestContainer::default();
+		let entity = buffer.insert(container);
+		assert_eq!(buffer.get(entity), Some(&TestContainer::default()));
+	}
+
+	#[test]
+	fn test_insert_into_with_to_container() {
+		let mut buffer: ContainerEntityBuffer<TestContainer> = ContainerEntityBuffer::new();
+		let container = TestContainer::default();
+		ToContainer(container).insert_into(&mut buffer, None);
+		assert_eq!(buffer.get(ContainerEntity::new(0)), Some(&TestContainer::default()));
+	}
+
+	#[test]
+	fn test_remove() {
+		let mut buffer: ContainerEntityBuffer<TestContainer> = ContainerEntityBuffer::new();
+		let container = TestContainer::default();
+		let entity = buffer.insert(container);
+		buffer.remove(entity);
+		assert_eq!(buffer.get(entity), None);
+	}
+
+	#[test]
+	fn test_remove_from_with_to_container() {
+		let mut buffer: ContainerEntityBuffer<TestContainer> = ContainerEntityBuffer::new();
+		let container = TestContainer::default();
+		let entity = buffer.insert(container);
+		ToContainer::remove_from(&mut buffer, entity);
+		assert_eq!(buffer.get(entity), None);
+	}
+}

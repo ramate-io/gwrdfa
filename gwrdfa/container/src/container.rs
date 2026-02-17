@@ -56,17 +56,38 @@ impl<T: Sized> ContainerHolding<T> for T {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod test {
 	use super::*;
 
 	#[derive(Debug, Clone, Default, PartialEq, Eq)]
 	pub struct TestField(pub i32);
 
 	#[derive(Debug, Clone, Default, PartialEq, Eq)]
-	struct TestContainer {
+	pub struct TestContainer {
 		num: i32,
 		slice: [i32; 10],
 		field: Option<TestField>,
+	}
+
+	impl TestContainer {
+		pub fn new(num: i32, slice: [i32; 10], field: Option<TestField>) -> Self {
+			Self { num, slice, field }
+		}
+
+		pub fn with_num(mut self, num: i32) -> Self {
+			self.num = num;
+			self
+		}
+
+		pub fn with_slice(mut self, slice: [i32; 10]) -> Self {
+			self.slice = slice;
+			self
+		}
+
+		pub fn with_field(mut self, field: Option<TestField>) -> Self {
+			self.field = field;
+			self
+		}
 	}
 
 	impl ContainerGiving<'_, i32> for TestContainer {
