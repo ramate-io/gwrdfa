@@ -1,4 +1,4 @@
-use crate::{ContainerEntity, ContainerHolding};
+use crate::{ContainerEntity, ContainerHolding, ContainerHoldingOps};
 use parabyzantine::buffer::{Bufferlike, Bundle};
 use std::collections::HashMap;
 
@@ -83,7 +83,7 @@ where
 
 	fn remove_from(buffer: &mut ContainerEntityBuffer<T>, entity: ContainerEntity) {
 		// TODO: this is too aggressive, we actually want B to define its own removal semantics.
-		B::remove_from(buffer, entity);
+		buffer.get_mut(entity).map(|container| container.remove_this::<B>());
 	}
 }
 
