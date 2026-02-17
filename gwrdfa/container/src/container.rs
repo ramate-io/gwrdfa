@@ -1,3 +1,4 @@
+pub mod tuple;
 use parabyzantine::buffer::JustEntity;
 
 /// A trait representing valid containers for bundles.
