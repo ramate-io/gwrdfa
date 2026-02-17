@@ -50,7 +50,7 @@ impl<T: Sized, B: IntoContainer<T>> ContainerHolding<B> for T {
 }
 
 /// All types that are containable in a type induce a container on that type.
-impl<'a, T: Sized, B: OnContainer<'a, &'a T>> ContainerGiving<'a, B> for &'a T {
+impl<'a, T: Sized, B: OnContainer<'a, T>> ContainerGiving<'a, B> for &'a T {
 	fn as_item(&'a self) -> B {
 		B::container_as(self)
 	}
@@ -83,5 +83,46 @@ impl<T: Sized> IntoContainer<T> for T {
 impl<'a, T: Sized> OnContainer<'a, T> for &'a T {
 	fn container_as(container: &'a T) -> Self {
 		container
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[derive(Debug, Clone, Default, PartialEq, Eq)]
+	struct TestContainer {
+		num: i32,
+		slice: [i32; 10],
+	}
+
+	impl OnContainer<'_, TestContainer> for i32 {
+		fn container_as(container: &'_ TestContainer) -> Self {
+			container.num
+		}
+	}
+
+	impl<'a> OnContainer<'a, TestContainer> for &'a [i32] {
+		fn container_as(container: &'a TestContainer) -> &'a [i32] {
+			&container.slice
+		}
+	}
+
+	#[test]
+	fn test_container_giving() {
+		// Allocate the container
+		let container = &TestContainer::default();
+
+		// Get the num from the container
+		let num: i32 = container.as_item();
+		assert_eq!(num, container.num);
+
+		// Get the slice from the container
+		let slice: &[i32] = container.as_item();
+		assert_eq!(slice, &container.slice);
+
+		// Get the container itself
+		let container: &TestContainer = container.as_item();
+		assert_eq!(container, &TestContainer { num: 0, slice: [0; 10] });
 	}
 }
