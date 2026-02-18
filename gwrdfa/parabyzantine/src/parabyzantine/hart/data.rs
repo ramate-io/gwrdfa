@@ -67,15 +67,28 @@ pub trait ParabyzantineData<Spec: ParabyzantineDataSpec>: Sized {
 
 	/// The buffer for the transaction.
 	fn parabyzantine_transaction_buffer(&self) -> &Spec::TransactionBuffer;
+
+	/// The draft buffer for the transaction.
+	fn parabyzantine_transaction_buffer_mut(&mut self) -> &mut Spec::TransactionBuffer;
+
 	/// The draft buffer for the transaction.
 	fn parabyzantine_transaction_draft_buffer(&self) -> Spec::TransactionDraftBuffer;
+
 	/// The buffer for the task.
 	fn parabyzantine_task_buffer(&self) -> &Spec::TaskBuffer;
+
+	/// The draft buffer for the task.
+	fn parabyzantine_task_buffer_mut(&mut self) -> &mut Spec::TaskBuffer;
+
 	/// The draft buffer for the task.
 	fn parabyzantine_task_draft_buffer(&self) -> Spec::TaskDraftBuffer;
 
 	/// The buffer for the message.
 	fn parabyzantine_message_buffer(&self) -> &Spec::MessageBuffer;
+
+	/// The draft buffer for the message.
+	fn parabyzantine_message_buffer_mut(&mut self) -> &mut Spec::MessageBuffer;
+
 	/// The draft buffer for the message.
 	fn parabyzantine_message_draft_buffer(&self) -> Spec::MessageDraftBuffer;
 
@@ -191,6 +204,10 @@ impl ParabyzantineData<NoOp> for NoOpData {
 		NoOp
 	}
 
+	fn parabyzantine_transaction_buffer_mut(&mut self) -> &mut NoOp {
+		&mut self.no_op
+	}
+
 	fn parabyzantine_task_buffer(&self) -> &NoOp {
 		&self.no_op
 	}
@@ -198,11 +215,19 @@ impl ParabyzantineData<NoOp> for NoOpData {
 		NoOp
 	}
 
+	fn parabyzantine_task_buffer_mut(&mut self) -> &mut NoOp {
+		&mut self.no_op
+	}
+
 	fn parabyzantine_message_buffer(&self) -> &NoOp {
 		&self.no_op
 	}
 	fn parabyzantine_message_draft_buffer(&self) -> NoOp {
 		NoOp
+	}
+
+	fn parabyzantine_message_buffer_mut(&mut self) -> &mut NoOp {
+		&mut self.no_op
 	}
 }
 

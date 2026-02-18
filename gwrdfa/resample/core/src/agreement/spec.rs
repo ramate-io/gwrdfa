@@ -5,7 +5,7 @@ use super::{
 use parabyzantine::NoOp;
 use parabyzantine::{
 	agreement::{ParabyzantineAgreementDataBinding, ParabyzantineAgreementDataSpec},
-	buffer::{Bundle, QueryPlanlike, Querylike},
+	buffer::{QueryPlanlike, Querylike},
 };
 
 /// A [ResampleAgreementSpec] is a specification for ResampleAgreement consensus.
@@ -23,16 +23,13 @@ pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Siz
 	type Subcommittee: Subcommittee<Self::Sender>;
 
 	/// The bundle of the agreement in the buffer.
-	type IndexSubcommitteeAgreementBundle: Bundle<
-		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
-		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer,
-	>;
+	type IndexSubcommitteeAgreementQueryData;
 
 	/// The query for the index subcommittee agreement.
 	type IndexSubcommitteeAgreementQuery: Querylike<
 		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
 		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer,
-		Self::IndexSubcommitteeAgreementBundle,
+		Self::IndexSubcommitteeAgreementQueryData,
 	>;
 
 	/// The query plan for the index subcommittee agreement.
@@ -40,7 +37,7 @@ pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Siz
 		'a,
 		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
 		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer,
-		Self::IndexSubcommitteeAgreementBundle,
+		Self::IndexSubcommitteeAgreementQueryData,
 		Self::IndexSubcommitteeAgreementQuery,
 	>;
 
@@ -48,20 +45,17 @@ pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Siz
 	type IndexSubcommitteeAgreement: IndexSubcommitteeAgreement<Self::Index, Self::Sender, Self::Subcommittee>
 		+ for<'a> From<&'a (
 			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
-			Self::IndexSubcommitteeAgreementBundle,
+			Self::IndexSubcommitteeAgreementQueryData,
 		)>;
 
 	/// The bundle of the certificate in the buffer.
-	type CertificateBundle: Bundle<
-		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
-		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateBuffer,
-	>;
+	type CertificateQueryData;
 
 	/// The query for the certificate.
 	type CertificateQuery: Querylike<
 		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
 		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateBuffer,
-		Self::CertificateBundle,
+		Self::CertificateQueryData,
 	>;
 
 	/// The query plan for the certificate.
@@ -69,7 +63,7 @@ pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Siz
 		'a,
 		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
 		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateBuffer,
-		Self::CertificateBundle,
+		Self::CertificateQueryData,
 		Self::CertificateQuery,
 	>;
 
@@ -77,7 +71,7 @@ pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Siz
 	type Certificate: Certificate<Self::Index, Self::Value, Self::Sender>
 		+ for<'a> From<&'a (
 			<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
-			Self::CertificateBundle,
+			Self::CertificateQueryData,
 		)>;
 
 	/// The type of the certificate set.
@@ -113,11 +107,11 @@ impl ResampleAgreementSpec<NoOp> for NoOp {
 	type Value = NoOp;
 	type Sender = NoOp;
 	type Subcommittee = NoOp;
-	type IndexSubcommitteeAgreementBundle = NoOp;
+	type IndexSubcommitteeAgreementQueryData = NoOp;
 	type IndexSubcommitteeAgreementQuery = NoOp;
 	type IndexSubcommitteeAgreementQueryPlan = NoOp;
 	type IndexSubcommitteeAgreement = NoOp;
-	type CertificateBundle = NoOp;
+	type CertificateQueryData = NoOp;
 	type CertificateQuery = NoOp;
 	type CertificateQueryPlan = NoOp;
 	type Certificate = NoOp;

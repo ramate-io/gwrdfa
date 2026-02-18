@@ -110,25 +110,25 @@ impl<Binding: ResampleAgreementBinding>
 	}
 
 	/// A [ResampleAgreement] data must be able to provide a [IndexSubcommitteeAgreementQuery]
-	fn index_subcommittee_agreement_query(
+	fn index_subcommittee_agreement_query_plan(
 		&mut self,
 	) -> <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
 		Binding::ParabyzantineAgreementDataBinding,
 	>>::IndexSubcommitteeAgreementQueryPlan {
-		self.data_mut().index_subcommittee_agreement_query()
+		self.data_mut().index_subcommittee_agreement_query_plan()
 	}
 
 	/// A [ResampleAgreement] data must be able to provide a [CertificateQuery]
-	fn certificate_query(
+	fn certificate_query_plan(
 		&mut self,
 		index: &(
 			<<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
-			<Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::IndexSubcommitteeAgreementBundle,
+			<Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::IndexSubcommitteeAgreementQueryData,
 		),
 	) -> <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
 		Binding::ParabyzantineAgreementDataBinding,
 	>>::CertificateQueryPlan {
-		self.0.certificate_query(index)
+		self.data_mut().certificate_query_plan(index)
 	}
 }
 
@@ -142,40 +142,39 @@ impl<Binding: ResampleAgreementBinding> ParabyzantineAgreement for ResampleAgree
 		>,
 	) {
 		// over all the index subcommittee agreements
-		let index_query = self.data_mut().index_subcommittee_agreement_query();
-		for index_bundle in agreement_world.agreement_facts.query(index_query) {
+		let index_query = self.index_subcommittee_agreement_query_plan();
+		for index_data in agreement_world.agreement_facts.query(index_query) {
 			let index: <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
 				Binding::ParabyzantineAgreementDataBinding,
-			>>::IndexSubcommitteeAgreement = (&index_bundle).into();
+			>>::IndexSubcommitteeAgreement = (&index_data).into();
 
 			// insert all of the certificates for this index into the certificate set
-			let certificate_query = self.data_mut().certificate_query(&index_bundle);
-			for certificate_bundle in agreement_world.certificate_facts.query(certificate_query) {
+			let certificate_query_plan = self.certificate_query_plan(&index_data);
+			for certificate_data in agreement_world.certificate_facts.query(certificate_query_plan)
+			{
 				let certificate: <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
 					Binding::ParabyzantineAgreementDataBinding,
-				>>::Certificate = (&certificate_bundle).into();
+				>>::Certificate = (&certificate_data).into();
 
-				self.data_mut().certificate_set_mut().insert(certificate);
+				// This is just for moving the certificate into the certificate set.
+				self.certificate_set_mut().insert(certificate);
 			}
 
 			// check the subcommittee condition
-			let subcommittee_condition = index.subcommittee().condition(
-				self.data_mut()
-					.certificate_set()
-					.partial_subcommittees_for_index(&index.index()),
-			);
+			let subcommittee_condition = index
+				.subcommittee()
+				.condition(self.certificate_set().partial_subcommittees_for_index(&index.index()));
 			match subcommittee_condition {
 				Condition::Consensus(value) => {
 					// Elect the subcommittees from the consensus value
-					self.data_mut().sampler_mut().elect_subcommittees_from_consensus_value(
+					self.sampler_mut().elect_subcommittees_from_consensus_value(
 						&value,
 						&index,
 						&mut agreement_world.agreement_inferences,
 					);
 
 					// Insert the ResampleAgreement consensus agreement
-					self.data_mut()
-						.resample_agreement_consensus_update_mut()
+					self.resample_agreement_consensus_update_mut()
 						.insert_resample_agreement_consensus_agreement(
 							&index.index(),
 							&value,
@@ -184,7 +183,7 @@ impl<Binding: ResampleAgreementBinding> ParabyzantineAgreement for ResampleAgree
 				}
 				Condition::Hung => {
 					// Elect the subcommittees from the hung value
-					self.data_mut().sampler_mut().elect_subcommittees_from_hung_value(
+					self.sampler_mut().elect_subcommittees_from_hung_value(
 						&index,
 						&mut agreement_world.agreement_inferences,
 					);
@@ -224,7 +223,8 @@ impl ResampleAgreementBinding for NoOp {
 mod tests {
 	use super::*;
 	use parabyzantine::{
-		agreement::Agreement, AgreementAction, AgreementHandler, DataBinding, Parabyzantine, Spec,
+		agreement::Agreement, task::Task, AgreementAction, AgreementHandler, DataBinding,
+		Parabyzantine, Spec, TaskAction, TaskHandler,
 	};
 
 	#[test]
@@ -235,8 +235,14 @@ mod tests {
 				DataBinding<NoOp>,
 				AgreementAction<Agreement>,
 				AgreementHandler<ResampleAgreement<NoOp>>,
+				TaskAction<Task>,
+				TaskHandler<NoOp>,
 			)>,
-		> = Parabyzantine { data: NoOpData::new(), agreement_handler: resample_agreement };
-		parabyzantine.update(Agreement);
+		> = Parabyzantine {
+			data: NoOpData::new(),
+			agreement_handler: resample_agreement,
+			task_handler: NoOp,
+		};
+		parabyzantine.update_agreement(Agreement);
 	}
 }

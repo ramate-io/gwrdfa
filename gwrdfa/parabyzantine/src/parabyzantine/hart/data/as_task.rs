@@ -26,15 +26,30 @@ impl<Spec: ParabyzantineDataSpec, Data: ParabyzantineData<Spec>> ParabyzantineTa
 	fn parabyzantine_task_agreement_draft_buffer(&self) -> Spec::AgreementDraftBuffer {
 		self.parabyzantine_agreement_draft_buffer()
 	}
+
+	fn parabyzantine_task_agreement_buffer_mut(&mut self) -> &mut Spec::AgreementBuffer {
+		self.parabyzantine_agreement_buffer_mut()
+	}
+
 	fn parabyzantine_task_transaction_buffer(&self) -> &Spec::TransactionBuffer {
 		self.parabyzantine_transaction_buffer()
 	}
 	fn parabyzantine_task_transaction_draft_buffer(&self) -> Spec::TransactionDraftBuffer {
 		self.parabyzantine_transaction_draft_buffer()
 	}
+
+	fn parabyzantine_task_transaction_buffer_mut(&mut self) -> &mut Spec::TransactionBuffer {
+		self.parabyzantine_transaction_buffer_mut()
+	}
+
 	fn parabyzantine_task_task_buffer(&self) -> &Spec::TaskBuffer {
 		self.parabyzantine_task_buffer()
 	}
+
+	fn parabyzantine_task_task_buffer_mut(&mut self) -> &mut Spec::TaskBuffer {
+		self.parabyzantine_task_buffer_mut()
+	}
+
 	fn parabyzantine_task_task_draft_buffer(&self) -> Spec::TaskDraftBuffer {
 		self.parabyzantine_task_draft_buffer()
 	}
