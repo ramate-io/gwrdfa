@@ -1,7 +1,7 @@
 use super::{IndexTaskSubcommitteeAgreement, TaskSubcommittee};
 use parabyzantine::{
 	buffer::{Facts, Inferences},
-	task::{ParabyzantineTaskBinding, ParabyzantineTaskDataSpec},
+	task::{ParabyzantineTaskDataBinding, ParabyzantineTaskDataSpec},
 };
 
 /// A [ResampleTasker] is a trait that can compute a resample task.
@@ -16,7 +16,7 @@ pub trait ResampleTasker<
 	Sender: Eq,
 	Sub: TaskSubcommittee<Sender>,
 	SubAg: IndexTaskSubcommitteeAgreement<Index, Sender, Sub>,
-	Binding: ParabyzantineTaskBinding,
+	Binding: ParabyzantineTaskDataBinding,
 >: Sized
 {
 	fn compute_resample_task(

@@ -1,9 +1,9 @@
 use super::TaskSubcommittee;
-use parabyzantine::task::ParabyzantineTaskBinding;
+use parabyzantine::task::ParabyzantineTaskDataBinding;
 
 use super::ResampleTaskSpec;
 
-pub trait ResampleTaskData<Binding: ParabyzantineTaskBinding, Spec: ResampleTaskSpec<Binding>>:
+pub trait ResampleTaskData<Binding: ParabyzantineTaskDataBinding, Spec: ResampleTaskSpec<Binding>>:
 	Sized
 {
 	/// Gets the sender identifier for the Hart.

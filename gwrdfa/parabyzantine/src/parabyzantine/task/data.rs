@@ -75,10 +75,10 @@ pub trait ParabyzantineTask: Sized {
 	fn compute_parabyzantine_task(&mut self, data: &mut TaskWorld<Self::Spec>);
 }
 
-/// A [ParabyzantineTaskBinding] is a binding for the [ParabyzantineTask] protocol.
+/// A [ParabyzantineTaskDataBinding] is a binding for the [ParabyzantineTask] protocol.
 ///
 /// It binds between the [ParabyzantineTaskDataSpec] and the [ParabyzantineTaskData].
-pub trait ParabyzantineTaskBinding {
+pub trait ParabyzantineTaskDataBinding {
 	type Spec: ParabyzantineTaskDataSpec;
 	type Data: ParabyzantineTaskData<Self::Spec>;
 }

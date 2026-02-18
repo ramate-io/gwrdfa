@@ -1,11 +1,11 @@
 use super::{IndexTaskSubcommitteeAgreement, ResampleTasker, TaskSubcommittee};
 use parabyzantine::{
 	buffer::{QueryPlanlike, Querylike},
-	task::ParabyzantineTaskBinding,
+	task::ParabyzantineTaskDataBinding,
 	task::ParabyzantineTaskDataSpec,
 };
 
-pub trait ResampleTaskSpec<Binding: ParabyzantineTaskBinding>: Sized {
+pub trait ResampleTaskSpec<Binding: ParabyzantineTaskDataBinding>: Sized {
 	/// The type of the index.
 	type Index: Eq;
 

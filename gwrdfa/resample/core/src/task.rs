@@ -5,12 +5,12 @@ pub mod task_subcommittee;
 
 pub use data::ResampleTaskData;
 use execution::ResampleTasker;
-use parabyzantine::task::{ParabyzantineTask, ParabyzantineTaskBinding, TaskWorld};
+use parabyzantine::task::{ParabyzantineTask, ParabyzantineTaskDataBinding, TaskWorld};
 pub use spec::ResampleTaskSpec;
 pub use task_subcommittee::{IndexTaskSubcommitteeAgreement, TaskSubcommittee};
 
 pub trait ResampleTaskBinding: Sized {
-	type ParabyzantineTaskDataBinding: ParabyzantineTaskBinding;
+	type ParabyzantineTaskDataBinding: ParabyzantineTaskDataBinding;
 	type ResampleTaskSpec: ResampleTaskSpec<Self::ParabyzantineTaskDataBinding>;
 	type ResampleTaskData: ResampleTaskData<
 		Self::ParabyzantineTaskDataBinding,
@@ -53,7 +53,7 @@ impl<Binding: ResampleTaskBinding>
 }
 
 impl<Binding: ResampleTaskBinding> ParabyzantineTask for ResampleTask<Binding> {
-	type Spec = <Binding::ParabyzantineTaskDataBinding as ParabyzantineTaskBinding>::Spec;
+	type Spec = <Binding::ParabyzantineTaskDataBinding as ParabyzantineTaskDataBinding>::Spec;
 
 	fn compute_parabyzantine_task(&mut self, data: &mut TaskWorld<Self::Spec>) {
 		let index_task_subcommittee_agreement_query =
