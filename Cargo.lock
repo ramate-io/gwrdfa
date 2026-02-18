@@ -3,6 +3,13 @@
 version = 4
 
 [[package]]
+name = "gwrdfa-container"
+version = "0.0.1"
+dependencies = [
+ "parabyzantine",
+]
+
+[[package]]
 name = "gwrdfa-resample"
 version = "0.0.1"
 dependencies = [

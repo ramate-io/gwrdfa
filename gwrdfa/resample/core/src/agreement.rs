@@ -114,7 +114,7 @@ impl<Binding: ResampleAgreementBinding>
 		&mut self,
 	) -> <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
 		Binding::ParabyzantineAgreementDataBinding,
-	>>::IndexSubcommitteeAgreementQuery {
+	>>::IndexSubcommitteeAgreementQueryPlan {
 		self.data_mut().index_subcommittee_agreement_query()
 	}
 
@@ -127,7 +127,7 @@ impl<Binding: ResampleAgreementBinding>
 		),
 	) -> <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
 		Binding::ParabyzantineAgreementDataBinding,
-	>>::CertificateQuery {
+	>>::CertificateQueryPlan {
 		self.0.certificate_query(index)
 	}
 }
