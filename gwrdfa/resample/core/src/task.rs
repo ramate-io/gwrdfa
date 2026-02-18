@@ -4,4 +4,4 @@ pub mod task_subcommittee;
 
 pub use data::ResampleTaskData;
 pub use spec::ResampleTaskSpec;
-pub use task_subcommittee::TaskSubcommittee;
+pub use task_subcommittee::{IndexTaskSubcommitteeAgreement, TaskSubcommittee};
