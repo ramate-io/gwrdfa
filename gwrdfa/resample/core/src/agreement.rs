@@ -156,7 +156,16 @@ impl<Binding: ResampleAgreementBinding> ParabyzantineAgreement for ResampleAgree
 					Binding::ParabyzantineAgreementDataBinding,
 				>>::Certificate = (&certificate_data).into();
 
-				self.data_mut().certificate_set_mut().insert(certificate);
+				// Check if the certificate is really for this index.
+				// Recall that queries do not guarantee soundness,
+				// they are simply accessors for data which may be optimized
+				// for particular values.
+				//
+				// NOTE: in the future, we may generalize index checking to allow for
+				// different kinds of indices to satisfy this check.
+				if certificate.index() == index.index() {
+					self.data_mut().certificate_set_mut().insert(certificate);
+				}
 			}
 
 			// check the subcommittee condition
