@@ -223,7 +223,8 @@ impl ResampleAgreementBinding for NoOp {
 mod tests {
 	use super::*;
 	use parabyzantine::{
-		agreement::Agreement, AgreementAction, AgreementHandler, DataBinding, Parabyzantine, Spec,
+		agreement::Agreement, task::Task, AgreementAction, AgreementHandler, DataBinding,
+		Parabyzantine, Spec, TaskAction, TaskHandler,
 	};
 
 	#[test]
@@ -234,8 +235,14 @@ mod tests {
 				DataBinding<NoOp>,
 				AgreementAction<Agreement>,
 				AgreementHandler<ResampleAgreement<NoOp>>,
+				TaskAction<Task>,
+				TaskHandler<NoOp>,
 			)>,
-		> = Parabyzantine { data: NoOpData::new(), agreement_handler: resample_agreement };
-		parabyzantine.update(Agreement);
+		> = Parabyzantine {
+			data: NoOpData::new(),
+			agreement_handler: resample_agreement,
+			task_handler: NoOp,
+		};
+		parabyzantine.update_agreement(Agreement);
 	}
 }

@@ -1,4 +1,4 @@
-use crate::act::{Act, Invoke, Pair};
+use crate::act::Act;
 use crate::hart::ParabyzantineDataBinding;
 use crate::Spec;
 use core::marker::PhantomData;
@@ -18,6 +18,14 @@ pub trait ParabyzantineSystemSpec {
 		Self::AgreementAction,
 		<Self::DataBinding as ParabyzantineDataBinding>::Data,
 	>;
+
+	/// The action to use for task in the system.
+	type TaskAction;
+
+	/// The handler of the task action.
+	///
+	/// The handle must be able to apply the TaskAction to a mutable borrow of the data.
+	type TaskHandler: Act<Self::TaskAction, <Self::DataBinding as ParabyzantineDataBinding>::Data>;
 }
 
 /// A [ParabyzantineSystem] is a trait that defines the system of parabyzantine.
@@ -52,25 +60,29 @@ pub trait ParabyzantineSystem: Sized {
 		&mut <Self::Spec as ParabyzantineSystemSpec>::AgreementHandler,
 		&mut <<Self::Spec as ParabyzantineSystemSpec>::DataBinding as ParabyzantineDataBinding>::Data,
 	);
-}
 
-/// A Parabyzantine system automatically implements the [Pair] trait for the agreement action.
-impl<Spec: ParabyzantineSystemSpec, System: ParabyzantineSystem<Spec = Spec>>
-	Pair<Spec::AgreementAction> for System
-{
-	type Left = Spec::AgreementHandler;
-	type Right = <Spec::DataBinding as ParabyzantineDataBinding>::Data;
-
-	fn pair(&mut self) -> (&mut Self::Left, &mut Self::Right) {
-		self.data_and_agreement_pair()
+	/// Gets the task handler for the system.
+	fn task_handler(&mut self) -> &mut <Self::Spec as ParabyzantineSystemSpec>::TaskHandler {
+		let (task_handler, _data) = self.data_and_task_pair();
+		task_handler
 	}
+
+	/// Gets the data and task pair
+	fn data_and_task_pair(
+		&mut self,
+	) -> (
+		&mut <Self::Spec as ParabyzantineSystemSpec>::TaskHandler,
+		&mut <<Self::Spec as ParabyzantineSystemSpec>::DataBinding as ParabyzantineDataBinding>::Data,
+	);
 }
+
 /// A transparent wrapper for parabyzantine system.
 ///
 /// This is the most common way to compose parabyzantine systems.
 pub struct Parabyzantine<Spec: ParabyzantineSystemSpec> {
 	pub data: <Spec::DataBinding as ParabyzantineDataBinding>::Data,
 	pub agreement_handler: Spec::AgreementHandler,
+	pub task_handler: Spec::TaskHandler,
 }
 
 /// A [Parabyzantine] simply implements direct borrows for the data and the agreement handler.
@@ -85,20 +97,28 @@ impl<Spec: ParabyzantineSystemSpec> ParabyzantineSystem for Parabyzantine<Spec> 
 	){
 		(&mut self.agreement_handler, &mut self.data)
 	}
+
+	fn data_and_task_pair(
+		&mut self,
+	) -> (
+		&mut <Self::Spec as ParabyzantineSystemSpec>::TaskHandler,
+		&mut <<Self::Spec as ParabyzantineSystemSpec>::DataBinding as ParabyzantineDataBinding>::Data,
+	){
+		(&mut self.task_handler, &mut self.data)
+	}
 }
 
 impl<Spec: ParabyzantineSystemSpec> Parabyzantine<Spec> {
-	/// Allows invoking without adding the trait.
-	///
-	/// We use the term update because it is more specific
-	/// to what the ParabyzantineSystem is doing when invoking an action.
-	///
-	/// It is updating some number of worlds in the system.
-	pub fn update<A>(&mut self, action: A)
-	where
-		Self: Invoke<A>,
-	{
-		<Self as Invoke<A>>::invoke(self, action);
+	/// Direct call to invoke the agreement handler.
+	pub fn update_agreement(&mut self, action: Spec::AgreementAction) {
+		let (agreement_handler, data) = self.data_and_agreement_pair();
+		agreement_handler.act(action, data);
+	}
+
+	/// Direct call to invoke the task handler.
+	pub fn update_task(&mut self, action: Spec::TaskAction) {
+		let (task_handler, data) = self.data_and_task_pair();
+		task_handler.act(action, data);
 	}
 }
 
@@ -138,11 +158,44 @@ impl<H> AgreementHandler<H> {
 	}
 }
 
+/// A marker struct for the task action.
+#[derive(Debug, Clone, Copy)]
+pub struct TaskAction<T> {
+	phantom: PhantomData<T>,
+}
+
+impl<T> TaskAction<T> {
+	pub fn new(_action: T) -> Self {
+		Self { phantom: PhantomData }
+	}
+}
+
+/// A marker struct for the task handler.
+#[derive(Debug, Clone, Copy)]
+pub struct TaskHandler<H> {
+	phantom: PhantomData<H>,
+}
+
+impl<H> TaskHandler<H> {
+	pub fn new(_handler: H) -> Self {
+		Self { phantom: PhantomData }
+	}
+}
+
 /// A Spec on ParabyzantineHartSystem is a ParabyzantineSystemSpec.
-impl<D: ParabyzantineDataBinding, A, H: Act<A, D::Data>> ParabyzantineSystemSpec
-	for Spec<(DataBinding<D>, AgreementAction<A>, AgreementHandler<H>)>
+impl<D: ParabyzantineDataBinding, A, AH: Act<A, D::Data>, T, TH: Act<T, D::Data>>
+	ParabyzantineSystemSpec
+	for Spec<(
+		DataBinding<D>,
+		AgreementAction<A>,
+		AgreementHandler<AH>,
+		TaskAction<T>,
+		TaskHandler<TH>,
+	)>
 {
 	type DataBinding = D;
 	type AgreementAction = A;
-	type AgreementHandler = H;
+	type AgreementHandler = AH;
+	type TaskAction = T;
+	type TaskHandler = TH;
 }
