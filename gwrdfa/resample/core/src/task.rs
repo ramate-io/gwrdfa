@@ -56,12 +56,12 @@ impl<Binding: ResampleTaskBinding> ParabyzantineTask for ResampleTask<Binding> {
 	type Spec = <Binding::ParabyzantineTaskDataBinding as ParabyzantineTaskDataBinding>::Spec;
 
 	fn compute_parabyzantine_task(&mut self, data: &mut TaskWorld<Self::Spec>) {
-		let index_task_subcommittee_agreement_query =
+		let index_task_subcommittee_agreement_query_plan =
 			self.index_task_subcommittee_agreement_query_plan();
-		for index_bundle in data.agreement_facts.query(index_task_subcommittee_agreement_query) {
+		for index_data in data.agreement_facts.query(index_task_subcommittee_agreement_query_plan) {
 			let index: <Binding::ResampleTaskSpec as ResampleTaskSpec<
 				Binding::ParabyzantineTaskDataBinding,
-			>>::IndexTaskSubcommitteeAgreement = (&index_bundle).into();
+			>>::IndexTaskSubcommitteeAgreement = (&index_data).into();
 
 			// If the task is assigned to this replica, compute the resample task.
 			if self.is_task_assigned_to_me(&index.subcommittee()) {

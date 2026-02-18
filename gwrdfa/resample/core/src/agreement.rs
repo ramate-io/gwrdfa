@@ -110,16 +110,16 @@ impl<Binding: ResampleAgreementBinding>
 	}
 
 	/// A [ResampleAgreement] data must be able to provide a [IndexSubcommitteeAgreementQuery]
-	fn index_subcommittee_agreement_query(
+	fn index_subcommittee_agreement_query_plan(
 		&mut self,
 	) -> <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
 		Binding::ParabyzantineAgreementDataBinding,
 	>>::IndexSubcommitteeAgreementQueryPlan {
-		self.data_mut().index_subcommittee_agreement_query()
+		self.data_mut().index_subcommittee_agreement_query_plan()
 	}
 
 	/// A [ResampleAgreement] data must be able to provide a [CertificateQuery]
-	fn certificate_query(
+	fn certificate_query_plan(
 		&mut self,
 		index: &(
 			<<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
@@ -128,7 +128,7 @@ impl<Binding: ResampleAgreementBinding>
 	) -> <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
 		Binding::ParabyzantineAgreementDataBinding,
 	>>::CertificateQueryPlan {
-		self.0.certificate_query(index)
+		self.data_mut().certificate_query_plan(index)
 	}
 }
 
@@ -142,18 +142,19 @@ impl<Binding: ResampleAgreementBinding> ParabyzantineAgreement for ResampleAgree
 		>,
 	) {
 		// over all the index subcommittee agreements
-		let index_query = self.data_mut().index_subcommittee_agreement_query();
-		for index_bundle in agreement_world.agreement_facts.query(index_query) {
+		let index_query = self.data_mut().index_subcommittee_agreement_query_plan();
+		for index_data in agreement_world.agreement_facts.query(index_query) {
 			let index: <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
 				Binding::ParabyzantineAgreementDataBinding,
-			>>::IndexSubcommitteeAgreement = (&index_bundle).into();
+			>>::IndexSubcommitteeAgreement = (&index_data).into();
 
 			// insert all of the certificates for this index into the certificate set
-			let certificate_query = self.data_mut().certificate_query(&index_bundle);
-			for certificate_bundle in agreement_world.certificate_facts.query(certificate_query) {
+			let certificate_query_plan = self.data_mut().certificate_query_plan(&index_data);
+			for certificate_data in agreement_world.certificate_facts.query(certificate_query_plan)
+			{
 				let certificate: <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
 					Binding::ParabyzantineAgreementDataBinding,
-				>>::Certificate = (&certificate_bundle).into();
+				>>::Certificate = (&certificate_data).into();
 
 				self.data_mut().certificate_set_mut().insert(certificate);
 			}
