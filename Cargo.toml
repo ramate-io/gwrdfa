@@ -5,7 +5,8 @@ resolver = "2"
 members = [
   "gwrdfa/parabyzantine",
   "gwrdfa/container",
-  "gwrdfa/resample/core"
+  "gwrdfa/resample/core",
+  "gwrdfa/gossamer"
 ]
 
 [workspace.package]
@@ -34,6 +35,7 @@ syn = { version = "2.0", features = ["full"] }
 quote = "1.0.23"
 proc-macro2 = "1.0.32"
 paste = { version = "1.0", default-features = false }
+libp2p = { version = "0.53.2" }
 
 orfile = { git = "https://github.com/movementlabsxyz/orfile.git", rev = "d02299214e5aa202130cd1eb9593ce8064d1ec69" }
 orfile-util = { git = "https://github.com/movementlabsxyz/orfile.git", rev = "d02299214e5aa202130cd1eb9593ce8064d1ec69" }
@@ -42,6 +44,8 @@ clap-markdown-ext = { git = "https://github.com/movementlabsxyz/clap-markdown-ex
 
 parabyzantine = { path = "gwrdfa/parabyzantine" }
 gwrdfa-container = { path = "gwrdfa/container" }
+gossamer = { path = "gwrdfa/gossamer" }
+gwrdfa-resample = { path = "gwrdfa/resample/core" }
 
 [workspace.lints.clippy]
 debug_assert_with_mut_call = "deny"
