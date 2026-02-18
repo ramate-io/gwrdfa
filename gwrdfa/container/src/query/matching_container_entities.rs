@@ -16,9 +16,12 @@ impl<'a, T: ContainerGiving<'a, Option<B>> + Sized, B: 'a>
 	Querylike<ContainerEntity, ContainerEntityBuffer<T>, B> for MatchingContainerQuery<'a, T, B>
 {
 	fn next(&mut self) -> Option<(ContainerEntity, B)> {
-		self.container_query
-			.next()
-			.and_then(|(entity, data)| data.map(|data| (entity, data)))
+		while let Some((entity, data)) = self.container_query.next() {
+			if let Some(data) = data {
+				return Some((entity, data));
+			}
+		}
+		None
 	}
 
 	fn get(&self, entity: ContainerEntity) -> Option<B> {
@@ -46,7 +49,10 @@ impl<'a, T: ContainerGiving<'a, Option<B>> + Sized, B: 'a>
 #[cfg(test)]
 mod test {
 	use super::*;
-	use crate::container::test::TestContainer;
+	use crate::buffer::ToContainer;
+	use crate::container::test::{TestContainer, TestField};
+	use parabyzantine::buffer::Bufferlike;
+	use std::collections::HashSet;
 
 	#[test]
 	fn test_matching_container_entities() {
@@ -56,5 +62,21 @@ mod test {
 		let query_plan = MatchingContainerEntities;
 		let mut query = query_plan.build(&buffer);
 		assert_eq!(query.next(), Some((entity, 0 as i32)));
+
+		buffer.insert(None, ToContainer(0 as i32));
+		buffer.insert(None, ToContainer(TestField(1)));
+		buffer.insert(None, ToContainer(TestField(2)));
+
+		let mut query = MatchingContainerEntities.build(&buffer);
+		let mut matched_entities: HashSet<(ContainerEntity, &TestField)> = HashSet::new();
+		while let Some(tuple) = query.next() {
+			matched_entities.insert(tuple);
+		}
+
+		let expected_entities = HashSet::from([
+			(ContainerEntity::new(2), &TestField(1)),
+			(ContainerEntity::new(3), &TestField(2)),
+		]);
+		assert_eq!(matched_entities, expected_entities);
 	}
 }

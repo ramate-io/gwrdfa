@@ -98,7 +98,7 @@ impl<'a, T: ContainerGiving<'a, B> + Sized, B> ContainerGiving<'a, ContainerComp
 pub mod test {
 	use super::*;
 
-	#[derive(Debug, Clone, Default, PartialEq, Eq)]
+	#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 	pub struct TestField(pub i32);
 
 	#[derive(Debug, Clone, Default, PartialEq, Eq)]
