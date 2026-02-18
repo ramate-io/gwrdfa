@@ -1,4 +1,4 @@
-use super::{IndexTaskSubcommitteeAgreement, TaskSubcommittee};
+use super::{IndexTaskSubcommitteeAgreement, ResampleTasker, TaskSubcommittee};
 use parabyzantine::{
 	buffer::{QueryPlanlike, Querylike},
 	task::ParabyzantineTaskBinding,
@@ -40,4 +40,13 @@ pub trait ResampleTaskSpec<Binding: ParabyzantineTaskBinding>: Sized {
 			<Binding::Spec as ParabyzantineTaskDataSpec>::AgreementEntity,
 			Self::IndexTaskSubcommitteeAgreementQueryData,
 		)>;
+
+	/// The tasker
+	type ResampleTasker: ResampleTasker<
+		Self::Index,
+		Self::Sender,
+		Self::TaskSubcommittee,
+		Self::IndexTaskSubcommitteeAgreement,
+		Binding,
+	>;
 }

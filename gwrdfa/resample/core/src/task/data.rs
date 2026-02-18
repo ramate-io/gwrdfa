@@ -13,4 +13,12 @@ pub trait ResampleTaskData<Binding: ParabyzantineTaskBinding, Spec: ResampleTask
 	fn is_task_assigned_to_me(&self, task_subcommittee: &Spec::TaskSubcommittee) -> bool {
 		task_subcommittee.is_task_assigned_to(self.me())
 	}
+
+	/// Gets the query for the index subcommittee agreement.
+	fn index_task_subcommittee_agreement_query_plan(
+		&self,
+	) -> Spec::IndexTaskSubcommitteeAgreementQueryPlan;
+
+	/// Gets the tasker
+	fn resample_tasker_mut(&mut self) -> &mut Spec::ResampleTasker;
 }

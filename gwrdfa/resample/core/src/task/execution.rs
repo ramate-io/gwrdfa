@@ -19,12 +19,21 @@ pub trait ResampleTasker<
 	Binding: ParabyzantineTaskBinding,
 >: Sized
 {
-	fn execute_resample_task(
+	fn compute_resample_task(
 		&mut self,
 		index: &SubAg,
 		agreement_facts: &Facts<
 			<Binding::Spec as ParabyzantineTaskDataSpec>::AgreementEntity,
 			<Binding::Spec as ParabyzantineTaskDataSpec>::AgreementBuffer,
+		>,
+		transaction_facts: &Facts<
+			<Binding::Spec as ParabyzantineTaskDataSpec>::TransactionEntity,
+			<Binding::Spec as ParabyzantineTaskDataSpec>::TransactionBuffer,
+		>,
+		transaction_inferences: &mut Inferences<
+			<Binding::Spec as ParabyzantineTaskDataSpec>::TransactionEntity,
+			<Binding::Spec as ParabyzantineTaskDataSpec>::TransactionBuffer,
+			<Binding::Spec as ParabyzantineTaskDataSpec>::TransactionDraftBuffer,
 		>,
 		task_facts: &Facts<
 			<Binding::Spec as ParabyzantineTaskDataSpec>::TaskEntity,

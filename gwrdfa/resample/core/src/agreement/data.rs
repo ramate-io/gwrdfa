@@ -70,7 +70,7 @@ impl ResampleAgreementData<NoOp, NoOp> for NoOpData {
 			<NoOp as ParabyzantineAgreementDataSpec>::AgreementEntity,
 			<NoOp as ResampleAgreementSpec<NoOp>>::IndexSubcommitteeAgreementQueryData,
 		),
-	) -> <NoOp as ResampleAgreementSpec<NoOp>>::CertificateQuery {
+	) -> <NoOp as ResampleAgreementSpec<NoOp>>::CertificateQueryPlan {
 		NoOp
 	}
 }
