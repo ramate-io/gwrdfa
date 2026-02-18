@@ -156,6 +156,7 @@ impl<Binding: ResampleAgreementBinding> ParabyzantineAgreement for ResampleAgree
 					Binding::ParabyzantineAgreementDataBinding,
 				>>::Certificate = (&certificate_data).into();
 
+				// This is just for moving the certificate into the certificate set.
 				self.data_mut().certificate_set_mut().insert(certificate);
 			}
 
