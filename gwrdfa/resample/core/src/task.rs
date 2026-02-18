@@ -5,7 +5,11 @@ pub mod task_subcommittee;
 
 pub use data::ResampleTaskData;
 use execution::ResampleTasker;
-use parabyzantine::task::{ParabyzantineTask, ParabyzantineTaskDataBinding, TaskWorld};
+use parabyzantine::task::{
+	ParabyzantineTask, ParabyzantineTaskData, ParabyzantineTaskDataBinding, TaskWorld,
+};
+use parabyzantine::NoOp;
+use parabyzantine::NoOpData;
 pub use spec::ResampleTaskSpec;
 pub use task_subcommittee::{IndexTaskSubcommitteeAgreement, TaskSubcommittee};
 
@@ -53,9 +57,14 @@ impl<Binding: ResampleTaskBinding>
 }
 
 impl<Binding: ResampleTaskBinding> ParabyzantineTask for ResampleTask<Binding> {
-	type Spec = <Binding::ParabyzantineTaskDataBinding as ParabyzantineTaskDataBinding>::Spec;
+	type Binding = Binding::ParabyzantineTaskDataBinding;
 
-	fn compute_parabyzantine_task(&mut self, data: &mut TaskWorld<Self::Spec>) {
+	fn update_parabyzantine_task(
+		&mut self,
+		data: &mut TaskWorld<
+			<Binding::ParabyzantineTaskDataBinding as ParabyzantineTaskDataBinding>::Spec,
+		>,
+	) {
 		let index_task_subcommittee_agreement_query_plan =
 			self.index_task_subcommittee_agreement_query_plan();
 		for index_data in data.agreement_facts.query(index_task_subcommittee_agreement_query_plan) {
@@ -76,5 +85,49 @@ impl<Binding: ResampleTaskBinding> ParabyzantineTask for ResampleTask<Binding> {
 				);
 			}
 		}
+	}
+}
+
+impl<Binding: ResampleTaskBinding> ResampleTask<Binding> {
+	pub fn resample_task(
+		&mut self,
+		task_data: &<Binding::ParabyzantineTaskDataBinding as ParabyzantineTaskDataBinding>::Data,
+	) {
+		let mut task_world = task_data.parabyzantine_task_world();
+		self.update_parabyzantine_task(&mut task_world);
+	}
+}
+
+impl ResampleTaskBinding for NoOp {
+	type ParabyzantineTaskDataBinding = NoOp;
+	type ResampleTaskSpec = NoOp;
+	type ResampleTaskData = NoOpData;
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use parabyzantine::{
+		agreement::Agreement, task::Task, AgreementAction, AgreementHandler, DataBinding, NoOp,
+		NoOpData, Parabyzantine, Spec, TaskAction, TaskHandler,
+	};
+
+	#[test]
+	fn test_noop_resample_agreement_noops() {
+		let resample_task = ResampleTask::<NoOp>(NoOpData::new());
+		let mut parabyzantine: Parabyzantine<
+			Spec<(
+				DataBinding<NoOp>,
+				AgreementAction<Agreement>,
+				AgreementHandler<NoOp>,
+				TaskAction<Task>,
+				TaskHandler<ResampleTask<NoOp>>,
+			)>,
+		> = Parabyzantine {
+			data: NoOpData::new(),
+			agreement_handler: NoOp,
+			task_handler: resample_task,
+		};
+		parabyzantine.update_task(Task);
 	}
 }

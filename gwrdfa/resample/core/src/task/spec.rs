@@ -3,6 +3,7 @@ use parabyzantine::{
 	buffer::{QueryPlanlike, Querylike},
 	task::ParabyzantineTaskDataBinding,
 	task::ParabyzantineTaskDataSpec,
+	NoOp,
 };
 
 pub trait ResampleTaskSpec<Binding: ParabyzantineTaskDataBinding>: Sized {
@@ -49,4 +50,15 @@ pub trait ResampleTaskSpec<Binding: ParabyzantineTaskDataBinding>: Sized {
 		Self::IndexTaskSubcommitteeAgreement,
 		Binding,
 	>;
+}
+
+impl ResampleTaskSpec<NoOp> for NoOp {
+	type Index = NoOp;
+	type Sender = NoOp;
+	type TaskSubcommittee = NoOp;
+	type IndexTaskSubcommitteeAgreementQueryData = NoOp;
+	type IndexTaskSubcommitteeAgreementQuery = NoOp;
+	type IndexTaskSubcommitteeAgreementQueryPlan = NoOp;
+	type IndexTaskSubcommitteeAgreement = NoOp;
+	type ResampleTasker = NoOp;
 }
