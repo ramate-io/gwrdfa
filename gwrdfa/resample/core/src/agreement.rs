@@ -123,7 +123,7 @@ impl<Binding: ResampleAgreementBinding>
 		&mut self,
 		index: &(
 			<<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
-			<Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::IndexSubcommitteeAgreementBundle,
+			<Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::IndexSubcommitteeAgreementQueryData,
 		),
 	) -> <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
 		Binding::ParabyzantineAgreementDataBinding,
