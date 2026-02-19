@@ -13,7 +13,7 @@ impl<T: Sized> ContainerEntityBuffer<T> {
 	}
 
 	/// Iterates over the entities in the buffer.
-	pub fn iter(&self) -> std::collections::hash_map::Iter<ContainerEntity, T> {
+	pub fn iter<'a>(&'a self) -> std::collections::hash_map::Iter<'a, ContainerEntity, T> {
 		self.entities.iter()
 	}
 

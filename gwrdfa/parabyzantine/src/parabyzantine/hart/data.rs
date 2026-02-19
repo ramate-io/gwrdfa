@@ -93,7 +93,7 @@ pub trait ParabyzantineData<Spec: ParabyzantineDataSpec>: Sized {
 	fn parabyzantine_message_draft_buffer(&self) -> Spec::MessageDraftBuffer;
 
 	/// The world of the parabyzantine.
-	fn parabyzantine_world(&self) -> ParabyzantineWorld<Spec> {
+	fn parabyzantine_world<'a>(&'a self) -> ParabyzantineWorld<'a, Spec> {
 		ParabyzantineWorld {
 			certificate_facts: self.parabyzantine_certificate_buffer().into(),
 			certificate_inferences: self.parabyzantine_certificate_draft_buffer().into(),

@@ -48,7 +48,7 @@ pub trait ParabyzantineMessageInData<Spec: ParabyzantineMessageInDataSpec>: Size
 	/// The draft buffer for the certificate.
 	fn parabyzantine_message_in_certificate_draft_buffer(&self) -> Spec::CertificateDraftBuffer;
 
-	fn parabyzantine_message_in_world(&self) -> MessageInWorld<Spec> {
+	fn parabyzantine_message_in_world<'a>(&'a self) -> MessageInWorld<'a, Spec> {
 		MessageInWorld {
 			message_facts: self.parabyzantine_message_in_message_buffer().into(),
 			message_inferences: self.parabyzantine_message_in_message_draft_buffer().into(),

@@ -43,7 +43,7 @@ pub trait ParabyzantineAgreementData<Spec: ParabyzantineAgreementDataSpec>: Size
 	fn parabyzantine_agreement_agreement_draft_buffer(&self) -> Spec::AgreementDraftBuffer;
 
 	/// The world of the agreement.
-	fn parabyzantine_agreement_world(&self) -> AgreementWorld<Spec> {
+	fn parabyzantine_agreement_world<'a>(&'a self) -> AgreementWorld<'a, Spec> {
 		AgreementWorld {
 			certificate_facts: self.parabyzantine_agreement_certificate_buffer().into(),
 			certificate_inferences: self.parabyzantine_agreement_certificate_draft_buffer().into(),
