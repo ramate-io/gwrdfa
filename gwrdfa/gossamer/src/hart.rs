@@ -13,6 +13,14 @@ pub struct GossamerHart<Binding: ParabyzantineDataBinding, Message: GossamerMess
 	max_batch_size: usize,
 }
 
+impl<Binding: ParabyzantineDataBinding, Message: GossamerMessage> From<Gossamer>
+	for GossamerHart<Binding, Message>
+{
+	fn from(gossamer: Gossamer) -> Self {
+		Self::new(gossamer)
+	}
+}
+
 impl<Binding: ParabyzantineDataBinding, Message: GossamerMessage> GossamerHart<Binding, Message> {
 	pub fn new(gossamer: Gossamer) -> Self {
 		Self { __marker: PhantomData, gossamer, max_batch_size: 256 }

@@ -24,14 +24,14 @@ struct GossamerBehaviour {
 }
 
 #[derive(Debug, Clone)]
-pub struct Config {
+pub struct GossamerConfig {
 	pub identity: Keypair,
 	pub topic: String,
 	pub listen_on: Multiaddr,
 	pub bootstrap_peers: Vec<Multiaddr>,
 }
 
-impl Default for Config {
+impl Default for GossamerConfig {
 	fn default() -> Self {
 		Self {
 			identity: Keypair::generate_ed25519(),
@@ -48,7 +48,7 @@ pub enum GossamerConfigError {
 	BuildError(String),
 }
 
-impl Config {
+impl GossamerConfig {
 	pub async fn build(self) -> Result<(GossamerTask, Gossamer), GossamerConfigError> {
 		let peer_id = PeerId::from(self.identity.public());
 
@@ -220,6 +220,25 @@ pub trait GossamerMessage: Sized {
 }
 
 impl Gossamer {
+	/// Spawns a Gossamer task in a tokio runtime.
+	pub async fn spawn_tokio(config: GossamerConfig) -> Result<Gossamer, GossamerConfigError> {
+		let (gossamer_task, gossamer) = config.build().await?;
+		tokio::spawn(gossamer_task);
+		Ok(gossamer)
+	}
+
+	/// Produces a mock instance, mostly used for testing purposes.
+	pub fn mock() -> (Self, UnboundedSender<Vec<u8>>, UnboundedReceiver<Vec<u8>>) {
+		let (sender_into_gossamer, receiver_into_gossamer) = unbounded_channel();
+		let (sender_from_gossamer, receiver_from_gossamer) = unbounded_channel();
+
+		(
+			Self { sender_from_gossamer, receiver_into_gossamer },
+			sender_into_gossamer,
+			receiver_from_gossamer,
+		)
+	}
+
 	pub fn send_message<M: GossamerMessage>(
 		&mut self,
 		message: M,
