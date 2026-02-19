@@ -49,6 +49,26 @@ pub enum GossamerConfigError {
 }
 
 impl GossamerConfig {
+	pub fn with_identity(mut self, identity: Keypair) -> Self {
+		self.identity = identity;
+		self
+	}
+
+	pub fn with_topic(mut self, topic: String) -> Self {
+		self.topic = topic;
+		self
+	}
+
+	pub fn with_listen_on(mut self, listen_on: Multiaddr) -> Self {
+		self.listen_on = listen_on;
+		self
+	}
+
+	pub fn with_bootstrap_peers(mut self, bootstrap_peers: Vec<Multiaddr>) -> Self {
+		self.bootstrap_peers = bootstrap_peers;
+		self
+	}
+
 	pub async fn build(self) -> Result<(GossamerTask, Gossamer), GossamerConfigError> {
 		let peer_id = PeerId::from(self.identity.public());
 
