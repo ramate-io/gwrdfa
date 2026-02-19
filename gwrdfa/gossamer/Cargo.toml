@@ -10,6 +10,7 @@ publish = { workspace = true }
 rust-version = { workspace = true }
 
 [dependencies]
+parabyzantine = { workspace = true }
 libp2p = { workspace = true, default-features = false, features = [
     "tcp",
     "dns",

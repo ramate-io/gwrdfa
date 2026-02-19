@@ -1075,6 +1075,7 @@ version = "0.0.1"
 dependencies = [
  "futures",
  "libp2p",
+ "parabyzantine",
  "thiserror 1.0.69",
  "tokio",
 ]

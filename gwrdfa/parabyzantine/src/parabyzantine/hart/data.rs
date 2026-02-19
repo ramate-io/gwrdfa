@@ -142,10 +142,13 @@ pub struct ParabyzantineWorld<'a, Spec: ParabyzantineDataSpec> {
 
 /// A [ParabyzantineHart] trait describes operations on the parabyzantine hart.
 pub trait ParabyzantineHart: Sized {
-	type Spec: ParabyzantineDataSpec;
+	type Binding: ParabyzantineDataBinding;
 
 	/// Compute the parabyzantine hart.
-	fn update_parabyzantine_hart(&mut self, data: &mut ParabyzantineWorld<Self::Spec>);
+	fn update_parabyzantine_hart(
+		&mut self,
+		data: &mut ParabyzantineWorld<<Self::Binding as ParabyzantineDataBinding>::Spec>,
+	);
 }
 
 /// A [ParabyzantineDataBinding] is a binding for the [Parabyzantine] protocol.
