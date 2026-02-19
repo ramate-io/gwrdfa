@@ -314,7 +314,7 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 		Ok(())
 	}
 
-	pub fn try_recv_entity(&mut self) -> Result<Option<Entity>, GossamerMessageError> {
+	pub fn try_recv_confirmation(&mut self) -> Result<Option<Entity>, GossamerMessageError> {
 		match self.entity_into_gossamer_receiver.try_recv() {
 			Ok(entity) => Ok(Some(entity)),
 			Err(TryRecvError::Empty) => Ok(None),
