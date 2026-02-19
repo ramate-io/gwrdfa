@@ -1,4 +1,5 @@
 use crate::{hart::gossamer_messages::GossamerMessages, GossamerMessage, GossamerMessageError};
+use crate::{Broadcast, In, InFlight, Out};
 use parabyzantine::{
 	buffer::{Bundle, QueryPlanlike, Querylike},
 	hart::{ParabyzantineDataBinding, ParabyzantineDataSpec},
@@ -10,13 +11,21 @@ where
 		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
 		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
 	>,
+	(In, Self::Message): Bundle<
+		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
+		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
+	>,
+	InFlight: Bundle<
+		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
+		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
+	>,
+	Broadcast: Bundle<
+		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
+		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
+	>,
 {
 	/// The type of the message.
-	type Message: GossamerMessage
-		+ Bundle<
-			<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-			<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-		>;
+	type Message: GossamerMessage;
 
 	/// The type of the query for the message.
 	type MessageQuery: Querylike<

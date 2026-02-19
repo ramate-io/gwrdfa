@@ -25,8 +25,8 @@ impl<Entity: Sized, Buffer: Bufferlike<Entity>, D: DraftBufferlike<Entity, Buffe
 	}
 
 	/// Removes an entity and a bundle from the inferences.
-	pub fn remove<B: Bundle<Entity, Buffer>>(&mut self, entity: Entity, bundle: B) {
-		self.inner.draft_remove(entity, bundle);
+	pub fn remove<B: Bundle<Entity, Buffer>>(&mut self, entity: Entity) {
+		self.inner.draft_remove::<B>(entity);
 	}
 
 	/// Removes an entity from the inferences.

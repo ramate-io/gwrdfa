@@ -333,6 +333,12 @@ pub struct In;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Out;
 
-/// Marks that an entity
+/// Marks an entity that has been pushed in flight for Gossamer
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct InFlight;
+
+/// Marks that an entity has flowed through Gossamer broadcast.
+///
+/// Often these are entities that are ready to be removed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Broadcast;

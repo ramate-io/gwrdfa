@@ -100,7 +100,7 @@ pub trait DraftBufferlike<Entity: Sized, Buffer: Bufferlike<Entity>>: Sized {
 	fn draft_insert<B: Bundle<Entity, Buffer>>(&mut self, entity: Option<Entity>, bundle: B);
 
 	/// Removes a bundle from the draft buffer.
-	fn draft_remove<B: Bundle<Entity, Buffer>>(&mut self, entity: Entity, bundle: B);
+	fn draft_remove<B: Bundle<Entity, Buffer>>(&mut self, entity: Entity);
 
 	/// Removes an entity from the draft buffer.
 	fn draft_remove_entity(&mut self, entity: Entity);
@@ -126,7 +126,7 @@ impl<Entity: Sized> Bufferlike<Entity> for NoOp {
 impl<Entity: Sized, Buffer: Bufferlike<Entity>> DraftBufferlike<Entity, Buffer> for NoOp {
 	fn draft_insert<B: Bundle<Entity, Buffer>>(&mut self, _entity: Option<Entity>, _bundle: B) {}
 
-	fn draft_remove<B: Bundle<Entity, Buffer>>(&mut self, _entity: Entity, _bundle: B) {}
+	fn draft_remove<B: Bundle<Entity, Buffer>>(&mut self, _entity: Entity) {}
 
 	fn draft_remove_entity(&mut self, _entity: Entity) {}
 

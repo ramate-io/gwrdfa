@@ -1,4 +1,4 @@
-use crate::GossamerMessage;
+use crate::{GossamerMessage, InFlight, Out};
 use parabyzantine::{
 	buffer::{QueryPlanlike, Querylike},
 	hart::{ParabyzantineDataBinding, ParabyzantineDataSpec},
@@ -8,19 +8,33 @@ use parabyzantine::{
 pub trait GossamerMessages<
 	Message: GossamerMessage,
 	Binding: ParabyzantineDataBinding,
-	Query: Querylike<
+	OutQuery: Querylike<
 		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
 		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-		Message,
+		(Out, Message),
 	>,
-	QueryPlan: for<'a> QueryPlanlike<
+	OutQueryPlan: for<'a> QueryPlanlike<
 		'a,
 		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
 		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-		Message,
-		Query,
+		(Out, Message),
+		OutQuery,
+	>,
+	InFlightQuery: Querylike<
+		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
+		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
+		(InFlight, Message),
+	>,
+	InFlightQueryPlan: for<'a> QueryPlanlike<
+		'a,
+		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
+		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
+		(InFlight, Message),
+		InFlightQuery,
 	>,
 >
 {
-	fn gossamer_messages(&mut self) -> QueryPlan;
+	fn gossamer_messages_out_plan(&mut self) -> OutQueryPlan;
+
+	fn gossamer_messages_in_flight_plan(&mut self) -> InFlightQueryPlan;
 }
