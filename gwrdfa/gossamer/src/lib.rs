@@ -69,7 +69,9 @@ impl GossamerConfig {
 		self
 	}
 
-	pub async fn build(self) -> Result<(GossamerTask, Gossamer), GossamerConfigError> {
+	pub async fn build<Entity>(
+		self,
+	) -> Result<(GossamerTask<Entity>, Gossamer), GossamerConfigError> {
 		let peer_id = PeerId::from(self.identity.public());
 
 		// ---- GOSSIPSUB ----
@@ -143,9 +145,9 @@ impl GossamerConfig {
 	}
 }
 
-pub struct GossamerTask {
+pub struct GossamerTask<Entity> {
 	sender_into_gossamer: UnboundedSender<Vec<u8>>,
-	receiver_from_gossamer: UnboundedReceiver<Vec<u8>>,
+	receiver_from_gossamer: UnboundedReceiver<(Entity, Vec<u8>)>,
 	topic_hash: TopicHash,
 	swarm: Swarm<GossamerBehaviour>,
 }
@@ -285,3 +287,15 @@ impl Gossamer {
 		}
 	}
 }
+
+/// Marks that an entity has flowed in through Gossamer In
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct In;
+
+/// Marks that an entity has been dispatched for Gossamer out
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Out;
+
+/// Marks that an entity
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Broadcast;

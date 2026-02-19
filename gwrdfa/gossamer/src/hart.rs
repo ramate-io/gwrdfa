@@ -1,3 +1,9 @@
+pub mod gossamer_messages;
+pub mod spec;
+
+use gossamer_messages::GossamerMessages;
+pub use spec::GossamerSpec;
+
 use crate::{Gossamer, GossamerMessage, GossamerMessageError};
 use core::marker::PhantomData;
 use parabyzantine::{
@@ -7,23 +13,27 @@ use parabyzantine::{
 	},
 };
 
-pub struct GossamerHart<Binding: ParabyzantineDataBinding, Message: GossamerMessage> {
-	__marker: PhantomData<(Binding, Message)>,
+pub struct GossamerHart<Binding: ParabyzantineDataBinding, Spec: GossamerSpec<Binding>>
+where
+	GossamerMessageError: Bundle<
+		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
+		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
+	>,
+{
+	messages: Spec::Messages,
 	gossamer: Gossamer,
 	max_batch_size: usize,
 }
 
-impl<Binding: ParabyzantineDataBinding, Message: GossamerMessage> From<Gossamer>
-	for GossamerHart<Binding, Message>
+impl<Binding: ParabyzantineDataBinding, Spec: GossamerSpec<Binding>> GossamerHart<Binding, Spec>
+where
+	GossamerMessageError: Bundle<
+		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
+		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
+	>,
 {
-	fn from(gossamer: Gossamer) -> Self {
-		Self::new(gossamer)
-	}
-}
-
-impl<Binding: ParabyzantineDataBinding, Message: GossamerMessage> GossamerHart<Binding, Message> {
-	pub fn new(gossamer: Gossamer) -> Self {
-		Self { __marker: PhantomData, gossamer, max_batch_size: 256 }
+	pub fn new(gossamer: Gossamer, messages: Spec::Messages) -> Self {
+		Self { messages, gossamer, max_batch_size: 256 }
 	}
 
 	pub fn with_max_batch_size(mut self, max_batch_size: usize) -> Self {
@@ -32,13 +42,9 @@ impl<Binding: ParabyzantineDataBinding, Message: GossamerMessage> GossamerHart<B
 	}
 }
 
-impl<Binding: ParabyzantineDataBinding, Message: GossamerMessage> ParabyzantineHart
-	for GossamerHart<Binding, Message>
+impl<Binding: ParabyzantineDataBinding, Spec: GossamerSpec<Binding>> ParabyzantineHart
+	for GossamerHart<Binding, Spec>
 where
-	Message: Bundle<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-	>,
 	GossamerMessageError: Bundle<
 		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
 		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
@@ -47,8 +53,23 @@ where
 	type Binding = Binding;
 
 	fn update_parabyzantine_hart(&mut self, data: &mut ParabyzantineWorld<Binding::Spec>) {
+		// Try to send messages to the swarm via gossamer
+		let gossamer_query_plan = self.messages.gossamer_messages();
+		for (entity, message) in data.message_facts.query(gossamer_query_plan) {
+			match self.gossamer.send_message(message) {
+				Ok(_) => {
+					data.message_inferences.remove_entity(entity);
+				}
+				Err(e) => {
+					// Insert the error into the inferences
+					data.message_inferences.insert(None, e);
+				}
+			}
+		}
+
+		// Try to receive up to max_batch_size messages
 		for _ in 0..self.max_batch_size {
-			match self.gossamer.try_recv_message::<Message>() {
+			match self.gossamer.try_recv_message::<Spec::Message>() {
 				Ok(Some(message)) => {
 					// Insert the message into the inferences
 					data.message_inferences.insert(None, message)
