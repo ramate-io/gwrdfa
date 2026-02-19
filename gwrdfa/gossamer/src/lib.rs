@@ -69,9 +69,9 @@ impl GossamerConfig {
 		self
 	}
 
-	pub async fn build<Entity>(
+	pub async fn build<Entity: Send + Sync + 'static>(
 		self,
-	) -> Result<(GossamerTask<Entity>, Gossamer), GossamerConfigError> {
+	) -> Result<(GossamerTask<Entity>, Gossamer<Entity>), GossamerConfigError> {
 		let peer_id = PeerId::from(self.identity.public());
 
 		// ---- GOSSIPSUB ----
@@ -130,24 +130,32 @@ impl GossamerConfig {
 			.map_err(|e| GossamerConfigError::BuildError(e.to_string()))?;
 
 		// Allocate the channels
-		let (sender_into_gossamer, receiver_into_gossamer) = unbounded_channel();
-		let (sender_from_gossamer, receiver_from_gossamer) = unbounded_channel();
+		let (message_into_gossamer_sender, message_into_gossamer_receiver) = unbounded_channel();
+		let (entity_message_from_gossamer_sender, entity_message_from_gossamer_receiver) =
+			unbounded_channel();
+		let (entity_into_gossamer_sender, entity_into_gossamer_receiver) = unbounded_channel();
 
 		Ok((
 			GossamerTask {
-				sender_into_gossamer,
-				receiver_from_gossamer,
+				message_into_gossamer_sender,
+				entity_message_from_gossamer_receiver,
+				entity_into_gossamer_sender,
 				topic_hash: topic.hash(),
 				swarm,
 			},
-			Gossamer { receiver_into_gossamer, sender_from_gossamer },
+			Gossamer {
+				message_into_gossamer_receiver,
+				entity_message_from_gossamer_sender,
+				entity_into_gossamer_receiver,
+			},
 		))
 	}
 }
 
-pub struct GossamerTask<Entity> {
-	sender_into_gossamer: UnboundedSender<Vec<u8>>,
-	receiver_from_gossamer: UnboundedReceiver<(Entity, Vec<u8>)>,
+pub struct GossamerTask<Entity: Send + Sync + 'static> {
+	message_into_gossamer_sender: UnboundedSender<Vec<u8>>,
+	entity_message_from_gossamer_receiver: UnboundedReceiver<(Entity, Vec<u8>)>,
+	entity_into_gossamer_sender: UnboundedSender<Entity>,
 	topic_hash: TopicHash,
 	swarm: Swarm<GossamerBehaviour>,
 }
@@ -164,7 +172,7 @@ pub enum GossamerTaskError {
 	SwarmStreamDisconnected,
 }
 
-impl Future for GossamerTask {
+impl<Entity: Send + Sync + 'static> Future for GossamerTask<Entity> {
 	type Output = Result<(), GossamerTaskError>;
 
 	fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
@@ -177,12 +185,15 @@ impl Future for GossamerTask {
 			let topic_hash = self.topic_hash.clone();
 
 			// 1. Poll outbound channel
-			match Pin::new(&mut self.receiver_from_gossamer).poll_recv(cx) {
-				Poll::Ready(Some(msg)) => {
+			match Pin::new(&mut self.entity_message_from_gossamer_receiver).poll_recv(cx) {
+				Poll::Ready(Some((entity, msg))) => {
 					self.swarm
 						.behaviour_mut()
 						.gossipsub
 						.publish(topic_hash, msg)
+						.map_err(|e| GossamerTaskError::BroadcastError(e.to_string()))?;
+					self.entity_into_gossamer_sender
+						.send(entity)
 						.map_err(|e| GossamerTaskError::BroadcastError(e.to_string()))?;
 					progressed = true;
 				}
@@ -197,7 +208,7 @@ impl Future for GossamerTask {
 				Poll::Ready(Some(SwarmEvent::Behaviour(GossamerBehaviourEvent::Gossipsub(
 					gossipsub::Event::Message { message, .. },
 				)))) => {
-					if let Err(e) = self.sender_into_gossamer.send(message.data) {
+					if let Err(e) = self.message_into_gossamer_sender.send(message.data) {
 						return Poll::Ready(Err(GossamerTaskError::RelayToGossamerError(e)));
 					}
 					progressed = true;
@@ -219,9 +230,10 @@ impl Future for GossamerTask {
 	}
 }
 
-pub struct Gossamer {
-	receiver_into_gossamer: UnboundedReceiver<Vec<u8>>,
-	sender_from_gossamer: UnboundedSender<Vec<u8>>,
+pub struct Gossamer<Entity: Send + Sync> {
+	message_into_gossamer_receiver: UnboundedReceiver<Vec<u8>>,
+	entity_message_from_gossamer_sender: UnboundedSender<(Entity, Vec<u8>)>,
+	entity_into_gossamer_receiver: UnboundedReceiver<Entity>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -230,8 +242,8 @@ pub enum GossamerMessageError {
 	SerializeError((String, Vec<u8>)),
 	#[error("Error deserializing message: {0:?}")]
 	DeserializeError((String, Vec<u8>)),
-	#[error("Error sending message from Gossamer to the swarm: {0}")]
-	RelayToSwarmError(#[from] tokio::sync::mpsc::error::SendError<Vec<u8>>),
+	#[error("Error sending message from Gossamer to the swarm")]
+	RelayToSwarm,
 	#[error("Error receiving message from the swarm: {0}")]
 	ReceiveFromSwarmError(#[from] tokio::sync::mpsc::error::TryRecvError),
 }
@@ -241,45 +253,70 @@ pub trait GossamerMessage: Sized {
 	fn from_gossamer_bytes(bytes: Vec<u8>) -> Result<Self, GossamerMessageError>;
 }
 
-impl Gossamer {
+impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 	/// Spawns a Gossamer task in a tokio runtime.
-	pub async fn spawn_tokio(config: GossamerConfig) -> Result<Gossamer, GossamerConfigError> {
+	pub async fn spawn_tokio(
+		config: GossamerConfig,
+	) -> Result<Gossamer<Entity>, GossamerConfigError> {
 		let (gossamer_task, gossamer) = config.build().await?;
 		tokio::spawn(gossamer_task);
 		Ok(gossamer)
 	}
 
 	/// Produces a mock instance, mostly used for testing purposes.
-	pub fn mock() -> (Self, UnboundedSender<Vec<u8>>, UnboundedReceiver<Vec<u8>>) {
-		let (sender_into_gossamer, receiver_into_gossamer) = unbounded_channel();
-		let (sender_from_gossamer, receiver_from_gossamer) = unbounded_channel();
+	pub fn mock() -> (
+		Self,
+		UnboundedSender<Vec<u8>>,
+		UnboundedReceiver<(Entity, Vec<u8>)>,
+		UnboundedSender<Entity>,
+	) {
+		let (message_into_gossamer_sender, message_into_gossamer_receiver) = unbounded_channel();
+		let (entity_message_from_gossamer_sender, entity_message_from_gossamer_receiver) =
+			unbounded_channel();
+		let (entity_into_gossamer_sender, entity_into_gossamer_receiver) = unbounded_channel();
 
 		(
-			Self { sender_from_gossamer, receiver_into_gossamer },
-			sender_into_gossamer,
-			receiver_from_gossamer,
+			Self {
+				message_into_gossamer_receiver,
+				entity_message_from_gossamer_sender,
+				entity_into_gossamer_receiver,
+			},
+			message_into_gossamer_sender,
+			entity_message_from_gossamer_receiver,
+			entity_into_gossamer_sender,
 		)
-	}
-
-	pub fn send_message<M: GossamerMessage>(
-		&mut self,
-		message: M,
-	) -> Result<(), GossamerMessageError> {
-		let bytes = message.to_goassamer_bytes()?;
-		self.sender_from_gossamer
-			.send(bytes)
-			.map_err(|e| GossamerMessageError::RelayToSwarmError(e))?;
-		Ok(())
 	}
 
 	pub fn try_recv_message<M: GossamerMessage>(
 		&mut self,
 	) -> Result<Option<M>, GossamerMessageError> {
-		match self.receiver_into_gossamer.try_recv() {
+		match self.message_into_gossamer_receiver.try_recv() {
 			Ok(bytes) => {
 				let message = GossamerMessage::from_gossamer_bytes(bytes)?;
 				Ok(Some(message))
 			}
+			Err(TryRecvError::Empty) => Ok(None),
+			Err(TryRecvError::Disconnected) => {
+				Err(GossamerMessageError::ReceiveFromSwarmError(TryRecvError::Disconnected))
+			}
+		}
+	}
+
+	pub fn send_message<M: GossamerMessage>(
+		&mut self,
+		entity: Entity,
+		message: M,
+	) -> Result<(), GossamerMessageError> {
+		let bytes = message.to_goassamer_bytes()?;
+		self.entity_message_from_gossamer_sender
+			.send((entity, bytes))
+			.map_err(|_| GossamerMessageError::RelayToSwarm)?;
+		Ok(())
+	}
+
+	pub fn try_recv_entity(&mut self) -> Result<Option<Entity>, GossamerMessageError> {
+		match self.entity_into_gossamer_receiver.try_recv() {
+			Ok(entity) => Ok(Some(entity)),
 			Err(TryRecvError::Empty) => Ok(None),
 			Err(TryRecvError::Disconnected) => {
 				Err(GossamerMessageError::ReceiveFromSwarmError(TryRecvError::Disconnected))
