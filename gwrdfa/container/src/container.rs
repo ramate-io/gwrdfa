@@ -1,6 +1,6 @@
-pub mod tuple;
+// pub mod tuple;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Component<T: Sized> {
 	Present(T),
 	Absent,
@@ -170,12 +170,12 @@ pub mod test {
 		let container = &TestContainer::default();
 
 		// Get the num from the container
-		let num: i32 = container.as_item();
-		assert_eq!(num, container.num);
+		let num: Component<&i32> = container.as_component();
+		assert_eq!(num, Component::Present(&container.num));
 
 		// Get the slice from the container
-		let slice: &[i32] = container.as_item();
-		assert_eq!(slice, &container.slice);
+		let slice: Component<&[i32; 10]> = container.as_component();
+		assert_eq!(slice, Component::Present(&container.slice));
 	}
 
 	#[test]
@@ -187,16 +187,16 @@ pub mod test {
 		let container = &container;
 
 		// Get the field from the container
-		let field: Option<&TestField> = container.as_item();
-		assert_eq!(field, Some(&TestField(1)));
+		let field: Component<&TestField> = container.as_component();
+		assert_eq!(field, Component::Present(&TestField(1)));
 
 		// Get the num as an option
-		let num: Option<i32> = container.as_item();
-		assert_eq!(num, Some(0));
+		let num: Component<&i32> = container.as_component();
+		assert_eq!(num, Component::Present(&0));
 
 		// Get the slice as an option
-		let slice: Option<&[i32]> = container.as_item();
-		assert_eq!(slice, Some(&container.slice[..]));
+		let slice: Component<&[i32; 10]> = container.as_component();
+		assert_eq!(slice, Component::Present(&container.slice));
 	}
 
 	#[test]
@@ -213,9 +213,9 @@ pub mod test {
 	fn test_container_holding_optional() {
 		let mut container = TestContainer::default();
 		container.update_with_data(TestField(1));
-		assert_eq!(container.field, Some(TestField(1)));
+		assert_eq!(container.field, Component::Present(TestField(1)));
 
 		container.remove_this::<TestField>();
-		assert_eq!(container.field, None);
+		assert_eq!(container.field, Component::Absent);
 	}
 }

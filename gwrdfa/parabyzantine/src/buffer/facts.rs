@@ -1,4 +1,7 @@
-use crate::buffer::{Bufferlike, QueryPlanlike, Querylike};
+use crate::buffer::{
+	query::{QueryPlanlike, Querylike},
+	Bufferlike,
+};
 use core::marker::PhantomData;
 
 /// Facts are entities that exist at a particular snapshot of the buffer.
@@ -14,7 +17,11 @@ impl<'a, Entity: Sized, Buffer: Bufferlike<Entity>> Facts<'a, Entity, Buffer> {
 	}
 
 	/// Queries the facts in the buffer.
-	pub fn query<B: 'a, QueryPlan: QueryPlanlike<Entity, Buffer, B> + 'a>(
+	pub fn query<
+		B: 'a,
+		Query: Querylike<'a, Entity, Buffer, Item = B> + 'a,
+		QueryPlan: QueryPlanlike<Entity, Buffer, Query<'a> = Query> + 'a,
+	>(
 		&'a self,
 		query_plan: QueryPlan,
 	) -> impl Iterator<Item = (Entity, B)> + 'a {
@@ -23,7 +30,11 @@ impl<'a, Entity: Sized, Buffer: Bufferlike<Entity>> Facts<'a, Entity, Buffer> {
 	}
 
 	/// Gets a bundle from the facts in the buffer.
-	pub fn get<B: 'a, QueryPlan: QueryPlanlike<Entity, Buffer, B> + 'a>(
+	pub fn get<
+		B: 'a,
+		Query: Querylike<'a, Entity, Buffer, Item = B> + 'a,
+		QueryPlan: QueryPlanlike<Entity, Buffer, Query<'a> = Query> + 'a,
+	>(
 		&self,
 		entity: Entity,
 		query_plan: QueryPlan,

@@ -1,6 +1,6 @@
 use crate::{Component, ContainerEntity, ContainerEntityBuffer, ContainerGiving};
 use core::marker::PhantomData;
-use parabyzantine::buffer::{QueryPlanlike, Querylike};
+use parabyzantine::buffer::query::{QueryPlanlike, Querylike};
 
 /// A query over a container.
 pub struct AllComponents<'a, T: ContainerGiving<'a, B> + Sized, B> {
@@ -17,9 +17,12 @@ impl<'a, T: ContainerGiving<'a, B> + Sized, B> AllComponents<'a, T, B> {
 }
 
 impl<'a, T: ContainerGiving<'a, B> + Sized, B>
-	Querylike<ContainerEntity, ContainerEntityBuffer<T>, Component<&'a B>>
-	for AllComponents<'a, T, B>
+	Querylike<'a, ContainerEntity, ContainerEntityBuffer<T>> for AllComponents<'a, T, B>
+where
+	B: 'a,
 {
+	type Item = Component<&'a B>;
+
 	fn next(&mut self) -> Option<(ContainerEntity, Component<&'a B>)> {
 		self.iter.next().map(|(entity, data)| (entity.clone(), data.as_component()))
 	}
@@ -31,13 +34,18 @@ impl<'a, T: ContainerGiving<'a, B> + Sized, B>
 
 /// The plan to query all container entities.
 #[derive(Debug, Clone, Copy)]
-pub struct AllContainerEntities;
+pub struct AllContainerEntities<B>(PhantomData<B>);
 
-impl<'x, T, B> QueryPlanlike<ContainerEntity, ContainerEntityBuffer<T>, Component<&'x B>>
-	for AllContainerEntities
+impl<B> AllContainerEntities<B> {
+	pub fn new() -> Self {
+		Self(PhantomData)
+	}
+}
+
+impl<T, B> QueryPlanlike<ContainerEntity, ContainerEntityBuffer<T>> for AllContainerEntities<B>
 where
-	T: ContainerGiving<'x, B> + Sized,
-	B: 'x,
+	for<'a> T: ContainerGiving<'a, B> + Sized,
+	B: 'static,
 {
 	type Query<'a>
 		= AllComponents<'a, T, B>
@@ -59,8 +67,8 @@ mod test {
 		let mut buffer: ContainerEntityBuffer<TestContainer> = ContainerEntityBuffer::new();
 		let container = TestContainer::default();
 		let entity = buffer.insert_container(container);
-		let query_plan = AllContainerEntities;
+		let query_plan = AllContainerEntities::<i32>::new();
 		let mut query = query_plan.build(&buffer);
-		assert_eq!(query.next(), Some((entity, 0 as i32)));
+		assert_eq!(query.next(), Some((entity, Component::Present(&0))));
 	}
 }

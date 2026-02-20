@@ -1,6 +1,6 @@
 use super::all_components::AllComponents;
 use crate::{ContainerEntity, ContainerEntityBuffer, ContainerGiving};
-use parabyzantine::buffer::{QueryPlanlike, Querylike};
+use parabyzantine::buffer::query::{QueryPlanlike, Querylike};
 
 pub struct MatchingAllComponents<'a, T: ContainerGiving<'a, B> + Sized, B: 'a> {
 	container_query: AllComponents<'a, T, B>,
@@ -13,8 +13,10 @@ impl<'a, T: ContainerGiving<'a, B> + Sized, B: 'a> MatchingAllComponents<'a, T, 
 }
 
 impl<'a, T: ContainerGiving<'a, B> + Sized, B: 'a>
-	Querylike<ContainerEntity, ContainerEntityBuffer<T>, B> for MatchingAllComponents<'a, T, B>
+	Querylike<'a, ContainerEntity, ContainerEntityBuffer<T>, B> for MatchingAllComponents<'a, T, B>
 {
+	type Item = B;
+
 	fn next(&mut self) -> Option<(ContainerEntity, B)> {
 		while let Some((entity, data)) = self.container_query.next() {
 			if let Some(data) = data {
