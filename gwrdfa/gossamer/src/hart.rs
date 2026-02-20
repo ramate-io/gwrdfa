@@ -166,7 +166,11 @@ where
 #[cfg(test)]
 pub mod tests {
 	use super::*;
-	use gwrdfa_container::{ContainerEntityBuffer, ContainerGiving, ContainerHolding};
+	use gwrdfa_container::{
+		query::matching_container_entities::{MatchingContainerEntities, MatchingContainerQuery},
+		ContainerEntity, ContainerEntityBuffer, ContainerGiving, ContainerHolding,
+	};
+	use parabyzantine::{NoOp, NoOpData, ParabyzantineData};
 
 	#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 	pub struct TestMessage(String);
@@ -308,5 +312,130 @@ pub mod tests {
 		fn as_item(&'a self) -> Option<&'a Broadcast> {
 			self.message_broadcast.as_ref()
 		}
+	}
+
+	pub struct TestParabyzantineSpec;
+
+	impl ParabyzantineDataSpec for TestParabyzantineSpec {
+		type CertificateEntity = NoOp;
+		type CertificateBuffer = NoOp;
+		type CertificateDraftBuffer = NoOp;
+		type AgreementEntity = NoOp;
+		type AgreementBuffer = NoOp;
+		type AgreementDraftBuffer = NoOp;
+		type TransactionEntity = NoOp;
+		type TransactionBuffer = NoOp;
+		type TransactionDraftBuffer = NoOp;
+		type MessageEntity = ContainerEntity;
+		type MessageBuffer = ContainerEntityBuffer<GossamerContainer>;
+		type MessageDraftBuffer = NoOp;
+		type TaskEntity = NoOp;
+		type TaskBuffer = NoOp;
+		type TaskDraftBuffer = NoOp;
+	}
+
+	pub struct TestParabyzantineData {
+		gossamer_buffer: ContainerEntityBuffer<GossamerContainer>,
+		noop_data: NoOpData,
+	}
+
+	impl ParabyzantineData<TestParabyzantineSpec> for TestParabyzantineData {
+		fn parabyzantine_certificate_buffer(&self) -> &NoOp {
+			&self.noop_data.no_op
+		}
+
+		fn parabyzantine_certificate_buffer_mut(&mut self) -> &mut NoOp {
+			&mut self.noop_data.no_op
+		}
+
+		fn parabyzantine_certificate_draft_buffer(&self) -> NoOp {
+			NoOp
+		}
+
+		fn parabyzantine_agreement_buffer(&self) -> &NoOp {
+			&self.noop_data.no_op
+		}
+
+		fn parabyzantine_agreement_buffer_mut(&mut self) -> &mut NoOp {
+			&mut self.noop_data.no_op
+		}
+
+		fn parabyzantine_agreement_draft_buffer(&self) -> NoOp {
+			NoOp
+		}
+
+		fn parabyzantine_transaction_buffer(&self) -> &NoOp {
+			&self.noop_data.no_op
+		}
+
+		fn parabyzantine_transaction_buffer_mut(&mut self) -> &mut NoOp {
+			&mut self.noop_data.no_op
+		}
+
+		fn parabyzantine_transaction_draft_buffer(&self) -> NoOp {
+			NoOp
+		}
+
+		fn parabyzantine_message_buffer(&self) -> &ContainerEntityBuffer<GossamerContainer> {
+			&self.gossamer_buffer
+		}
+
+		fn parabyzantine_message_buffer_mut(
+			&mut self,
+		) -> &mut ContainerEntityBuffer<GossamerContainer> {
+			&mut self.gossamer_buffer
+		}
+
+		fn parabyzantine_message_draft_buffer(&self) -> NoOp {
+			NoOp
+		}
+
+		fn parabyzantine_task_buffer(&self) -> &NoOp {
+			&self.noop_data.no_op
+		}
+
+		fn parabyzantine_task_buffer_mut(&mut self) -> &mut NoOp {
+			&mut self.noop_data.no_op
+		}
+
+		fn parabyzantine_task_draft_buffer(&self) -> NoOp {
+			NoOp
+		}
+	}
+
+	pub struct TestParabyzantineDataBinding;
+
+	impl ParabyzantineDataBinding for TestParabyzantineDataBinding {
+		type Spec = TestParabyzantineSpec;
+		type Data = TestParabyzantineData;
+	}
+
+	pub struct TestGossamerMessages;
+
+	impl<'a>
+		GossamerMessages<
+			TestMessage,
+			TestParabyzantineDataBinding,
+			MatchingContainerQuery<'a, GossamerContainer, (Out, TestMessage)>,
+			MatchingContainerEntities,
+		> for TestGossamerMessages
+	{
+		fn gossamer_messages_out_plan(
+			&mut self,
+		) -> MatchingContainerQueryPlan<GossamerContainer, (Out, TestMessage)> {
+			MatchingContainerQuery::new()
+		}
+	}
+
+	#[tokio::test]
+	async fn test_gossamer_hart() {
+		let gossamer = Gossamer::<ContainerEntity>::mock();
+		let messages = GossamerMessages::<
+			ContainerEntity,
+			TestParabyzantineDataBinding,
+			MatchingContainerQuery<GossamerContainer, (Out, TestMessage)>,
+			MatchingContainerEntities,
+		>::new();
+		let hart = GossamerHart::<Binding, Spec>::new(gossamer, messages);
 	}
 }
