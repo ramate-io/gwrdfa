@@ -162,3 +162,151 @@ where
 		}
 	}
 }
+
+#[cfg(test)]
+pub mod tests {
+	use super::*;
+	use gwrdfa_container::{ContainerEntityBuffer, ContainerGiving, ContainerHolding};
+
+	#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+	pub struct TestMessage(String);
+
+	#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+	pub struct GossamerContainer {
+		message: Option<TestMessage>,
+		message_in: Option<In>,
+		message_out: Option<Out>,
+		message_in_flight: Option<InFlight>,
+		message_broadcast: Option<Broadcast>,
+	}
+
+	impl ContainerHolding<TestMessage> for GossamerContainer {
+		fn from_data(data: TestMessage) -> Self {
+			Self {
+				message: Some(data),
+				message_in: None,
+				message_out: None,
+				message_in_flight: None,
+				message_broadcast: None,
+			}
+		}
+
+		fn update_with_data(&mut self, data: TestMessage) {
+			self.message = Some(data);
+		}
+
+		fn remove_from_container(&mut self) {
+			self.message = None;
+		}
+	}
+
+	impl<'a> ContainerGiving<'a, Option<&'a TestMessage>> for GossamerContainer {
+		fn as_item(&'a self) -> Option<&'a TestMessage> {
+			self.message.as_ref()
+		}
+	}
+
+	impl ContainerHolding<In> for GossamerContainer {
+		fn from_data(data: In) -> Self {
+			Self {
+				message: None,
+				message_in: Some(data),
+				message_out: None,
+				message_in_flight: None,
+				message_broadcast: None,
+			}
+		}
+
+		fn update_with_data(&mut self, data: In) {
+			self.message_in = Some(data);
+		}
+
+		fn remove_from_container(&mut self) {
+			self.message_in = None;
+		}
+	}
+
+	impl<'a> ContainerGiving<'a, Option<&'a In>> for GossamerContainer {
+		fn as_item(&'a self) -> Option<&'a In> {
+			self.message_in.as_ref()
+		}
+	}
+
+	impl ContainerHolding<Out> for GossamerContainer {
+		fn from_data(data: Out) -> Self {
+			Self {
+				message: None,
+				message_in: None,
+				message_out: Some(data),
+				message_in_flight: None,
+				message_broadcast: None,
+			}
+		}
+
+		fn update_with_data(&mut self, data: Out) {
+			self.message_out = Some(data);
+		}
+
+		fn remove_from_container(&mut self) {
+			self.message_out = None;
+		}
+	}
+
+	impl<'a> ContainerGiving<'a, Option<&'a Out>> for GossamerContainer {
+		fn as_item(&'a self) -> Option<&'a Out> {
+			self.message_out.as_ref()
+		}
+	}
+
+	impl ContainerHolding<InFlight> for GossamerContainer {
+		fn from_data(data: InFlight) -> Self {
+			Self {
+				message: None,
+				message_in: None,
+				message_out: None,
+				message_in_flight: Some(data),
+				message_broadcast: None,
+			}
+		}
+
+		fn update_with_data(&mut self, data: InFlight) {
+			self.message_in_flight = Some(data);
+		}
+
+		fn remove_from_container(&mut self) {
+			self.message_in_flight = None;
+		}
+	}
+
+	impl<'a> ContainerGiving<'a, Option<&'a InFlight>> for GossamerContainer {
+		fn as_item(&'a self) -> Option<&'a InFlight> {
+			self.message_in_flight.as_ref()
+		}
+	}
+
+	impl ContainerHolding<Broadcast> for GossamerContainer {
+		fn from_data(data: Broadcast) -> Self {
+			Self {
+				message: None,
+				message_in: None,
+				message_out: None,
+				message_in_flight: None,
+				message_broadcast: Some(data),
+			}
+		}
+
+		fn update_with_data(&mut self, data: Broadcast) {
+			self.message_broadcast = Some(data);
+		}
+
+		fn remove_from_container(&mut self) {
+			self.message_broadcast = None;
+		}
+	}
+
+	impl<'a> ContainerGiving<'a, Option<&'a Broadcast>> for GossamerContainer {
+		fn as_item(&'a self) -> Option<&'a Broadcast> {
+			self.message_broadcast.as_ref()
+		}
+	}
+}

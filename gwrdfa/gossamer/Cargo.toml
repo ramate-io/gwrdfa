@@ -26,5 +26,8 @@ futures = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
 
+[dev-dependencies]
+gwrdfa-container = { workspace = true }
+
 [lints]
 workspace = true
