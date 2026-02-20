@@ -1,20 +1,20 @@
-use super::all_components::AllComponents;
+use super::all_components::AllComponentsQuery;
 use crate::{Component, ContainerEntity, ContainerEntityBuffer, ContainerGiving};
 use core::marker::PhantomData;
 use parabyzantine::buffer::query::{QueryPlanlike, Querylike};
 
-pub struct MatchingComponents<'a, T: ContainerGiving<'a, B> + Sized, B: 'a> {
-	container_query: AllComponents<'a, T, B>,
+pub struct MatchingComponentsQuery<'a, T: ContainerGiving<'a, B> + Sized, B: 'a> {
+	container_query: AllComponentsQuery<'a, T, B>,
 }
 
-impl<'a, T: ContainerGiving<'a, B> + Sized, B: 'a> MatchingComponents<'a, T, B> {
+impl<'a, T: ContainerGiving<'a, B> + Sized, B: 'a> MatchingComponentsQuery<'a, T, B> {
 	pub fn new(buffer: &'a ContainerEntityBuffer<T>) -> Self {
-		Self { container_query: AllComponents::new(buffer) }
+		Self { container_query: AllComponentsQuery::new(buffer) }
 	}
 }
 
 impl<'a, T: ContainerGiving<'a, B> + Sized, B: 'a>
-	Querylike<'a, ContainerEntity, ContainerEntityBuffer<T>> for MatchingComponents<'a, T, B>
+	Querylike<'a, ContainerEntity, ContainerEntityBuffer<T>> for MatchingComponentsQuery<'a, T, B>
 {
 	type Item = &'a B;
 
@@ -37,26 +37,26 @@ impl<'a, T: ContainerGiving<'a, B> + Sized, B: 'a>
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct Matching<B>(PhantomData<B>);
+pub struct MatchingComponents<B>(PhantomData<B>);
 
-impl<B> Matching<B> {
+impl<B> MatchingComponents<B> {
 	pub fn new() -> Self {
 		Self(PhantomData)
 	}
 }
 
-impl<T, B> QueryPlanlike<ContainerEntity, ContainerEntityBuffer<T>> for Matching<B>
+impl<T, B> QueryPlanlike<ContainerEntity, ContainerEntityBuffer<T>> for MatchingComponents<B>
 where
 	for<'a> T: ContainerGiving<'a, B> + Sized,
 	B: 'static,
 {
 	type Query<'a>
-		= MatchingComponents<'a, T, B>
+		= MatchingComponentsQuery<'a, T, B>
 	where
 		ContainerEntityBuffer<T>: 'a;
 
-	fn build<'a>(self, buffer: &'a ContainerEntityBuffer<T>) -> MatchingComponents<'a, T, B> {
-		MatchingComponents::new(buffer)
+	fn build<'a>(self, buffer: &'a ContainerEntityBuffer<T>) -> MatchingComponentsQuery<'a, T, B> {
+		MatchingComponentsQuery::new(buffer)
 	}
 }
 
@@ -73,7 +73,7 @@ mod test {
 		let mut buffer: ContainerEntityBuffer<TestContainer> = ContainerEntityBuffer::new();
 		let container = TestContainer::default();
 		let entity = buffer.insert_container(container);
-		let query_plan = Matching::<i32>::new();
+		let query_plan = MatchingComponents::<i32>::new();
 		let mut query = query_plan.build(&buffer);
 		assert_eq!(query.next(), Some((entity, &0)));
 
@@ -81,7 +81,7 @@ mod test {
 		buffer.insert(None, ToContainer(TestField(1)));
 		buffer.insert(None, ToContainer(TestField(2)));
 
-		let mut query = Matching::<TestField>::new().build(&buffer);
+		let mut query = MatchingComponents::<TestField>::new().build(&buffer);
 		let mut matched_entities: HashSet<(ContainerEntity, &TestField)> = HashSet::new();
 		while let Some(tuple) = query.next() {
 			matched_entities.insert(tuple);

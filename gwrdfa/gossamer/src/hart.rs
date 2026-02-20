@@ -168,7 +168,7 @@ pub mod tests {
 	use super::*;
 	use crate::GossamerMessage;
 	use gwrdfa_container::{
-		query::matching_components::{MatchingAllComponents, MatchingContainerEntities},
+		query::matching_components::{MatchingAllComponentsQuery, MatchingContainerEntities},
 		ContainerEntity, ContainerEntityBuffer, ContainerGiving, ContainerHolding,
 	};
 	use parabyzantine::{NoOp, NoOpData, ParabyzantineData};
@@ -431,14 +431,14 @@ pub mod tests {
 		GossamerMessages<
 			TestMessage,
 			TestParabyzantineDataBinding,
-			MatchingAllComponents<'a, GossamerContainer, (Out, TestMessage)>,
+			MatchingAllComponentsQuery<'a, GossamerContainer, (Out, TestMessage)>,
 			MatchingContainerEntities,
 		> for TestGossamerMessages
 	{
 		fn gossamer_messages_out_plan(
 			&mut self,
-		) -> MatchingAllComponentsPlan<GossamerContainer, (Out, TestMessage)> {
-			MatchingAllComponents
+		) -> MatchingAllComponentsQueryPlan<GossamerContainer, (Out, TestMessage)> {
+			MatchingAllComponentsQuery
 		}
 	}
 
@@ -448,7 +448,7 @@ pub mod tests {
 		let messages = GossamerMessages::<
 			ContainerEntity,
 			TestParabyzantineDataBinding,
-			MatchingAllComponents<GossamerContainer, (Out, TestMessage)>,
+			MatchingAllComponentsQuery<GossamerContainer, (Out, TestMessage)>,
 			MatchingContainerEntities,
 		>::new();
 		let hart = GossamerHart::<Binding, Spec>::new(gossamer, messages);

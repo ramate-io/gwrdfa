@@ -3,13 +3,13 @@ use core::marker::PhantomData;
 use parabyzantine::buffer::query::{QueryPlanlike, Querylike};
 
 /// A query over a container.
-pub struct AllComponents<'a, T: ContainerGiving<'a, B> + Sized, B> {
+pub struct AllComponentsQuery<'a, T: ContainerGiving<'a, B> + Sized, B> {
 	buffer: &'a ContainerEntityBuffer<T>,
 	iter: std::collections::hash_map::Iter<'a, ContainerEntity, T>,
 	_phantom: PhantomData<B>,
 }
 
-impl<'a, T: ContainerGiving<'a, B> + Sized, B> AllComponents<'a, T, B> {
+impl<'a, T: ContainerGiving<'a, B> + Sized, B> AllComponentsQuery<'a, T, B> {
 	/// Creates a new query over a container.
 	pub fn new(buffer: &'a ContainerEntityBuffer<T>) -> Self {
 		Self { buffer, iter: buffer.iter(), _phantom: PhantomData }
@@ -17,7 +17,7 @@ impl<'a, T: ContainerGiving<'a, B> + Sized, B> AllComponents<'a, T, B> {
 }
 
 impl<'a, T: ContainerGiving<'a, B> + Sized, B>
-	Querylike<'a, ContainerEntity, ContainerEntityBuffer<T>> for AllComponents<'a, T, B>
+	Querylike<'a, ContainerEntity, ContainerEntityBuffer<T>> for AllComponentsQuery<'a, T, B>
 where
 	B: 'a,
 {
@@ -34,26 +34,26 @@ where
 
 /// The plan to query all container entities.
 #[derive(Debug, Clone, Copy)]
-pub struct All<B>(PhantomData<B>);
+pub struct AllComponents<B>(PhantomData<B>);
 
-impl<B> All<B> {
+impl<B> AllComponents<B> {
 	pub fn new() -> Self {
 		Self(PhantomData)
 	}
 }
 
-impl<T, B> QueryPlanlike<ContainerEntity, ContainerEntityBuffer<T>> for All<B>
+impl<T, B> QueryPlanlike<ContainerEntity, ContainerEntityBuffer<T>> for AllComponents<B>
 where
 	for<'a> T: ContainerGiving<'a, B> + Sized,
 	B: 'static,
 {
 	type Query<'a>
-		= AllComponents<'a, T, B>
+		= AllComponentsQuery<'a, T, B>
 	where
 		ContainerEntityBuffer<T>: 'a;
 
-	fn build<'a>(self, buffer: &'a ContainerEntityBuffer<T>) -> AllComponents<'a, T, B> {
-		AllComponents::new(buffer)
+	fn build<'a>(self, buffer: &'a ContainerEntityBuffer<T>) -> AllComponentsQuery<'a, T, B> {
+		AllComponentsQuery::new(buffer)
 	}
 }
 
@@ -67,7 +67,7 @@ mod test {
 		let mut buffer: ContainerEntityBuffer<TestContainer> = ContainerEntityBuffer::new();
 		let container = TestContainer::default();
 		let entity = buffer.insert_container(container);
-		let query_plan = All::<i32>::new();
+		let query_plan = AllComponents::<i32>::new();
 		let mut query = query_plan.build(&buffer);
 		assert_eq!(query.next(), Some((entity, Component::Present(&0))));
 	}
