@@ -34,15 +34,15 @@ where
 
 /// The plan to query all container entities.
 #[derive(Debug, Clone, Copy)]
-pub struct AllContainerEntities<B>(PhantomData<B>);
+pub struct All<B>(PhantomData<B>);
 
-impl<B> AllContainerEntities<B> {
+impl<B> All<B> {
 	pub fn new() -> Self {
 		Self(PhantomData)
 	}
 }
 
-impl<T, B> QueryPlanlike<ContainerEntity, ContainerEntityBuffer<T>> for AllContainerEntities<B>
+impl<T, B> QueryPlanlike<ContainerEntity, ContainerEntityBuffer<T>> for All<B>
 where
 	for<'a> T: ContainerGiving<'a, B> + Sized,
 	B: 'static,
@@ -67,7 +67,7 @@ mod test {
 		let mut buffer: ContainerEntityBuffer<TestContainer> = ContainerEntityBuffer::new();
 		let container = TestContainer::default();
 		let entity = buffer.insert_container(container);
-		let query_plan = AllContainerEntities::<i32>::new();
+		let query_plan = All::<i32>::new();
 		let mut query = query_plan.build(&buffer);
 		assert_eq!(query.next(), Some((entity, Component::Present(&0))));
 	}
