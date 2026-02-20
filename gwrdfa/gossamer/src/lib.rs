@@ -342,3 +342,66 @@ pub struct InFlight;
 /// Often these are entities that are ready to be removed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Broadcast;
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+	pub struct TestMessage(Vec<u8>);
+
+	impl TestMessage {
+		pub fn new(data: Vec<u8>) -> Self {
+			Self(data)
+		}
+	}
+
+	impl GossamerMessage for TestMessage {
+		fn to_goassamer_bytes(&self) -> Result<Vec<u8>, GossamerMessageError> {
+			Ok(self.0.clone())
+		}
+		fn from_gossamer_bytes(bytes: Vec<u8>) -> Result<Self, GossamerMessageError> {
+			Ok(TestMessage(bytes))
+		}
+	}
+
+	#[tokio::test]
+	async fn test_mock_flow() -> Result<(), anyhow::Error> {
+		// Build the mock Gossamer instance.
+		let (
+			mut gossamer,
+			message_into_gossamer_sender,
+			mut entity_message_from_gossamer_receiver,
+			entity_into_gossamer_sender,
+		) = Gossamer::<u32>::mock();
+
+		// Send a message into the Gossamer instance.
+		let message1 = TestMessage::new(vec![1, 2, 3]);
+		let message1_bytes = message1.to_goassamer_bytes()?;
+		message_into_gossamer_sender.send(message1_bytes)?;
+
+		// Receive the message from the Gossamer instance.
+		let message = gossamer.try_recv_message::<TestMessage>()?;
+		assert_eq!(message, Some(TestMessage(vec![1, 2, 3])));
+
+		// Send an out message from the Gossamer instance.
+		let entity1 = 1;
+		let message2 = TestMessage::new(vec![4, 5, 6]);
+		let message2_bytes = message2.to_goassamer_bytes()?;
+		gossamer.send_message(entity1, message2)?;
+		let (entity, message) = entity_message_from_gossamer_receiver
+			.recv()
+			.await
+			.ok_or(anyhow::anyhow!("Failed to receive message"))?;
+		assert_eq!(entity, entity1);
+		assert_eq!(message, message2_bytes);
+
+		// Send a confirmation back into the Gossamer instance.
+		let entity1 = 1;
+		entity_into_gossamer_sender.send(entity1)?;
+		let confirmation = gossamer.try_recv_confirmation()?;
+		assert_eq!(confirmation, Some(entity1));
+
+		Ok(())
+	}
+}
