@@ -32,16 +32,17 @@ impl<'a, T: ContainerGiving<'a, Option<B>> + Sized, B: 'a>
 #[derive(Debug, Clone, Copy)]
 pub struct MatchingContainerEntities;
 
-impl<'a, T: ContainerGiving<'a, Option<B>> + Sized, B: 'a>
-	QueryPlanlike<
-		'a,
-		ContainerEntity,
-		ContainerEntityBuffer<T>,
-		B,
-		MatchingContainerQuery<'a, T, B>,
-	> for MatchingContainerEntities
+impl<T, B> QueryPlanlike<ContainerEntity, ContainerEntityBuffer<T>, B> for MatchingContainerEntities
+where
+	for<'a> T: ContainerGiving<'a, Option<B>> + Sized,
+	for<'a> B: 'a,
 {
-	fn build(self, buffer: &'a ContainerEntityBuffer<T>) -> MatchingContainerQuery<'a, T, B> {
+	type Query<'a>
+		= MatchingContainerQuery<'a, T, B>
+	where
+		ContainerEntityBuffer<T>: 'a;
+
+	fn build<'a>(self, buffer: &'a ContainerEntityBuffer<T>) -> MatchingContainerQuery<'a, T, B> {
 		MatchingContainerQuery::new(buffer)
 	}
 }

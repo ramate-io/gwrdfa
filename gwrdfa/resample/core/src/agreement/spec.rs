@@ -33,12 +33,10 @@ pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Siz
 	>;
 
 	/// The query plan for the index subcommittee agreement.
-	type IndexSubcommitteeAgreementQueryPlan: for<'a> QueryPlanlike<
-		'a,
+	type IndexSubcommitteeAgreementQueryPlan: QueryPlanlike<
 		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
 		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer,
 		Self::IndexSubcommitteeAgreementQueryData,
-		Self::IndexSubcommitteeAgreementQuery,
 	>;
 
 	/// The type of the index subcommittee agreement.
@@ -59,12 +57,10 @@ pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Siz
 	>;
 
 	/// The query plan for the certificate.
-	type CertificateQueryPlan: for<'a> QueryPlanlike<
-		'a,
+	type CertificateQueryPlan: QueryPlanlike<
 		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
 		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateBuffer,
 		Self::CertificateQueryData,
-		Self::CertificateQuery,
 	>;
 
 	/// The type of the certificate.
