@@ -1,5 +1,6 @@
 use super::all_components::AllComponents;
-use crate::{ContainerEntity, ContainerEntityBuffer, ContainerGiving};
+use crate::{Component, ContainerEntity, ContainerEntityBuffer, ContainerGiving};
+use core::marker::PhantomData;
 use parabyzantine::buffer::query::{QueryPlanlike, Querylike};
 
 pub struct MatchingAllComponents<'a, T: ContainerGiving<'a, B> + Sized, B: 'a> {
@@ -13,31 +14,41 @@ impl<'a, T: ContainerGiving<'a, B> + Sized, B: 'a> MatchingAllComponents<'a, T, 
 }
 
 impl<'a, T: ContainerGiving<'a, B> + Sized, B: 'a>
-	Querylike<'a, ContainerEntity, ContainerEntityBuffer<T>, B> for MatchingAllComponents<'a, T, B>
+	Querylike<'a, ContainerEntity, ContainerEntityBuffer<T>> for MatchingAllComponents<'a, T, B>
 {
-	type Item = B;
+	type Item = &'a B;
 
-	fn next(&mut self) -> Option<(ContainerEntity, B)> {
+	fn next(&mut self) -> Option<(ContainerEntity, &'a B)> {
 		while let Some((entity, data)) = self.container_query.next() {
-			if let Some(data) = data {
+			if let Component::Present(data) = data {
 				return Some((entity, data));
 			}
 		}
 		None
 	}
 
-	fn get(&self, entity: ContainerEntity) -> Option<B> {
-		self.container_query.get(entity).flatten()
+	fn get(&self, entity: ContainerEntity) -> Option<&'a B> {
+		match self.container_query.get(entity) {
+			Some(Component::Present(data)) => Some(data),
+			Some(Component::Absent) => None,
+			None => None,
+		}
 	}
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct MatchingContainerEntities;
+pub struct MatchingContainerEntities<B>(PhantomData<B>);
 
-impl<T, B> QueryPlanlike<ContainerEntity, ContainerEntityBuffer<T>, B> for MatchingContainerEntities
+impl<B> MatchingContainerEntities<B> {
+	pub fn new() -> Self {
+		Self(PhantomData)
+	}
+}
+
+impl<T, B> QueryPlanlike<ContainerEntity, ContainerEntityBuffer<T>> for MatchingContainerEntities<B>
 where
-	for<'a> T: ContainerGiving<Option<B>> + Sized,
-	for<'a> B: 'a,
+	for<'a> T: ContainerGiving<'a, B> + Sized,
+	B: 'static,
 {
 	type Query<'a>
 		= MatchingAllComponents<'a, T, B>
@@ -62,15 +73,15 @@ mod test {
 		let mut buffer: ContainerEntityBuffer<TestContainer> = ContainerEntityBuffer::new();
 		let container = TestContainer::default();
 		let entity = buffer.insert_container(container);
-		let query_plan = MatchingContainerEntities;
+		let query_plan = MatchingContainerEntities::<i32>::new();
 		let mut query = query_plan.build(&buffer);
-		assert_eq!(query.next(), Some((entity, 0 as i32)));
+		assert_eq!(query.next(), Some((entity, &0)));
 
 		buffer.insert(None, ToContainer(0 as i32));
 		buffer.insert(None, ToContainer(TestField(1)));
 		buffer.insert(None, ToContainer(TestField(2)));
 
-		let mut query = MatchingContainerEntities.build(&buffer);
+		let mut query = MatchingContainerEntities::<TestField>::new().build(&buffer);
 		let mut matched_entities: HashSet<(ContainerEntity, &TestField)> = HashSet::new();
 		while let Some(tuple) = query.next() {
 			matched_entities.insert(tuple);
