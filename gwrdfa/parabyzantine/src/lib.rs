@@ -46,3 +46,15 @@ impl From<&(NoOp, NoOp)> for NoOp {
 		NoOp
 	}
 }
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+pub struct TypedNoOp<T> {
+	pub no_op: NoOp,
+	pub phantom: PhantomData<T>,
+}
+
+impl<T> TypedNoOp<T> {
+	pub fn new() -> Self {
+		Self { no_op: NoOp, phantom: PhantomData }
+	}
+}

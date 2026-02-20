@@ -1,15 +1,15 @@
-use crate::{ContainerEntity, ContainerEntityBuffer, ContainerGiving};
+use crate::{Component, ContainerEntity, ContainerEntityBuffer, ContainerGiving};
 use core::marker::PhantomData;
 use parabyzantine::buffer::{QueryPlanlike, Querylike};
 
 /// A query over a container.
-pub struct ContainerQuery<'a, T: ContainerGiving<'a, B> + Sized, B> {
+pub struct AllComponents<'a, T: ContainerGiving<'a, B> + Sized, B> {
 	buffer: &'a ContainerEntityBuffer<T>,
 	iter: std::collections::hash_map::Iter<'a, ContainerEntity, T>,
 	_phantom: PhantomData<B>,
 }
 
-impl<'a, T: ContainerGiving<'a, B> + Sized, B> ContainerQuery<'a, T, B> {
+impl<'a, T: ContainerGiving<'a, B> + Sized, B> AllComponents<'a, T, B> {
 	/// Creates a new query over a container.
 	pub fn new(buffer: &'a ContainerEntityBuffer<T>) -> Self {
 		Self { buffer, iter: buffer.iter(), _phantom: PhantomData }
@@ -17,14 +17,15 @@ impl<'a, T: ContainerGiving<'a, B> + Sized, B> ContainerQuery<'a, T, B> {
 }
 
 impl<'a, T: ContainerGiving<'a, B> + Sized, B>
-	Querylike<ContainerEntity, ContainerEntityBuffer<T>, B> for ContainerQuery<'a, T, B>
+	Querylike<ContainerEntity, ContainerEntityBuffer<T>, Component<&'a B>>
+	for AllComponents<'a, T, B>
 {
-	fn next(&mut self) -> Option<(ContainerEntity, B)> {
-		self.iter.next().map(|(entity, data)| (entity.clone(), data.as_item()))
+	fn next(&mut self) -> Option<(ContainerEntity, Component<&'a B>)> {
+		self.iter.next().map(|(entity, data)| (entity.clone(), data.as_component()))
 	}
 
-	fn get(&self, entity: ContainerEntity) -> Option<B> {
-		self.buffer.get(entity).map(|container| container.as_item())
+	fn get(&self, entity: ContainerEntity) -> Option<Component<&'a B>> {
+		self.buffer.get(entity).map(|container| container.as_component())
 	}
 }
 
@@ -32,18 +33,19 @@ impl<'a, T: ContainerGiving<'a, B> + Sized, B>
 #[derive(Debug, Clone, Copy)]
 pub struct AllContainerEntities;
 
-impl<T, B> QueryPlanlike<ContainerEntity, ContainerEntityBuffer<T>, B> for AllContainerEntities
+impl<'x, T, B> QueryPlanlike<ContainerEntity, ContainerEntityBuffer<T>, Component<&'x B>>
+	for AllContainerEntities
 where
-	for<'a> T: ContainerGiving<'a, B> + Sized,
-	for<'a> B: 'a,
+	T: ContainerGiving<'x, B> + Sized,
+	B: 'x,
 {
 	type Query<'a>
-		= ContainerQuery<'a, T, B>
+		= AllComponents<'a, T, B>
 	where
 		ContainerEntityBuffer<T>: 'a;
 
-	fn build<'a>(self, buffer: &'a ContainerEntityBuffer<T>) -> ContainerQuery<'a, T, B> {
-		ContainerQuery::new(buffer)
+	fn build<'a>(self, buffer: &'a ContainerEntityBuffer<T>) -> AllComponents<'a, T, B> {
+		AllComponents::new(buffer)
 	}
 }
 

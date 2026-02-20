@@ -1,4 +1,4 @@
-use crate::{ContainerEntity, ContainerHolding, ContainerHoldingOps};
+use crate::{ContainerAccepting, ContainerEntity, ContainerHoldingOps};
 use parabyzantine::buffer::{Bufferlike, Bundle};
 use std::collections::HashMap;
 
@@ -58,7 +58,7 @@ pub struct ToContainer<T: Sized>(pub T);
 
 impl<T, B> Bundle<ContainerEntity, ContainerEntityBuffer<T>> for ToContainer<B>
 where
-	T: ContainerHolding<B>,
+	T: ContainerAccepting<B>,
 	B: Sized,
 {
 	fn insert_into(
@@ -92,6 +92,7 @@ pub mod test {
 	use super::*;
 	use crate::container::test::TestContainer;
 	use crate::container::test::TestField;
+	use crate::Component;
 	use parabyzantine::buffer::Bufferlike;
 
 	#[test]
@@ -153,10 +154,13 @@ pub mod test {
 	#[test]
 	fn test_bufferlike_remove() {
 		let mut buffer: ContainerEntityBuffer<TestContainer> = ContainerEntityBuffer::new();
-		let container = TestContainer::default().with_field(Some(TestField(1)));
+		let container = TestContainer::default().with_field(Component::Present(TestField(1)));
 		let entity = buffer.insert_container(container);
 		buffer.remove::<ToContainer<TestField>>(entity);
-		assert_eq!(buffer.get(entity), Some(&TestContainer::default().with_field(None)));
+		assert_eq!(
+			buffer.get(entity),
+			Some(&TestContainer::default().with_field(Component::Absent))
+		);
 	}
 
 	#[test]

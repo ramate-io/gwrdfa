@@ -1,5 +1,6 @@
 pub mod facts;
 pub mod inferences;
+pub mod query;
 
 pub use facts::Facts;
 pub use inferences::Inferences;
@@ -63,11 +64,15 @@ pub trait Bufferlike<Entity: Sized>: Sized {
 }
 
 /// Query plans are used to build queries over the buffer.
-pub trait QueryPlanlike<Entity, Buffer, B>
+pub trait QueryPlanlike<Entity, Buffer>
 where
 	Buffer: Bufferlike<Entity>,
 {
-	type Query<'a>: Querylike<Entity, Buffer, B>
+	type Item<'a>: 'a
+	where
+		Buffer: 'a;
+
+	type Query<'a>: Querylike<'a, Entity, Buffer, Item = Self::Item<'a>>
 	where
 		Buffer: 'a;
 
@@ -147,7 +152,7 @@ impl<Entity: Sized, Buffer: Bufferlike<Entity>, B> Querylike<Entity, Buffer, B> 
 	}
 }
 
-impl<Entity, Buffer, B> QueryPlanlike<Entity, Buffer, B> for NoOp
+impl<Entity, Buffer, B> QueryPlanlike<Entity, Buffer> for NoOp
 where
 	Entity: Sized,
 	Buffer: Bufferlike<Entity>,

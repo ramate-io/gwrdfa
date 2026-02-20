@@ -1,19 +1,19 @@
-use super::all_container_entities::ContainerQuery;
+use super::all_components::AllComponents;
 use crate::{ContainerEntity, ContainerEntityBuffer, ContainerGiving};
 use parabyzantine::buffer::{QueryPlanlike, Querylike};
 
-pub struct MatchingContainerQuery<'a, T: ContainerGiving<'a, Option<B>> + Sized, B: 'a> {
-	container_query: ContainerQuery<'a, T, Option<B>>,
+pub struct MatchingAllComponents<'a, T: ContainerGiving<'a, B> + Sized, B: 'a> {
+	container_query: AllComponents<'a, T, B>,
 }
 
-impl<'a, T: ContainerGiving<'a, Option<B>> + Sized, B: 'a> MatchingContainerQuery<'a, T, B> {
+impl<'a, T: ContainerGiving<'a, B> + Sized, B: 'a> MatchingAllComponents<'a, T, B> {
 	pub fn new(buffer: &'a ContainerEntityBuffer<T>) -> Self {
-		Self { container_query: ContainerQuery::new(buffer) }
+		Self { container_query: AllComponents::new(buffer) }
 	}
 }
 
-impl<'a, T: ContainerGiving<'a, Option<B>> + Sized, B: 'a>
-	Querylike<ContainerEntity, ContainerEntityBuffer<T>, B> for MatchingContainerQuery<'a, T, B>
+impl<'a, T: ContainerGiving<'a, B> + Sized, B: 'a>
+	Querylike<ContainerEntity, ContainerEntityBuffer<T>, B> for MatchingAllComponents<'a, T, B>
 {
 	fn next(&mut self) -> Option<(ContainerEntity, B)> {
 		while let Some((entity, data)) = self.container_query.next() {
@@ -34,16 +34,16 @@ pub struct MatchingContainerEntities;
 
 impl<T, B> QueryPlanlike<ContainerEntity, ContainerEntityBuffer<T>, B> for MatchingContainerEntities
 where
-	for<'a> T: ContainerGiving<'a, Option<B>> + Sized,
+	for<'a> T: ContainerGiving<Option<B>> + Sized,
 	for<'a> B: 'a,
 {
 	type Query<'a>
-		= MatchingContainerQuery<'a, T, B>
+		= MatchingAllComponents<'a, T, B>
 	where
 		ContainerEntityBuffer<T>: 'a;
 
-	fn build<'a>(self, buffer: &'a ContainerEntityBuffer<T>) -> MatchingContainerQuery<'a, T, B> {
-		MatchingContainerQuery::new(buffer)
+	fn build<'a>(self, buffer: &'a ContainerEntityBuffer<T>) -> MatchingAllComponents<'a, T, B> {
+		MatchingAllComponents::new(buffer)
 	}
 }
 

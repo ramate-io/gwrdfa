@@ -1,13 +1,37 @@
 pub mod tuple;
-use parabyzantine::buffer::JustEntity;
+
+#[derive(Debug)]
+pub enum Component<T: Sized> {
+	Present(T),
+	Absent,
+}
+
+impl<T: Sized> Default for Component<T> {
+	fn default() -> Self {
+		Self::Absent
+	}
+}
+
+impl<T: Sized> Component<T> {
+	pub fn new(data: T) -> Self {
+		Self::Present(data)
+	}
+
+	pub fn as_ref(&self) -> Component<&T> {
+		match self {
+			Self::Present(data) => Component::Present(data),
+			Self::Absent => Component::Absent,
+		}
+	}
+}
 
 /// A trait representing valid containers for bundles.
-pub trait ContainerHolding<B: Sized> {
+pub trait ContainerAccepting<Data: Sized> {
 	/// Creates a new container from a bundle.
-	fn from_data(data: B) -> Self;
+	fn from_data(data: Data) -> Self;
 
 	/// Updates a container with a bundle.
-	fn update_with_data(&mut self, data: B);
+	fn update_with_data(&mut self, data: Data);
 
 	/// Removes the value from the container.
 	fn remove_from_container(&mut self);
@@ -15,23 +39,23 @@ pub trait ContainerHolding<B: Sized> {
 
 /// A trait the localizes container holding operations to the call site.
 pub trait ContainerHoldingOps: Sized {
-	fn from_this_data<B: Sized>(data: B) -> Self
+	fn from_this_data<Data: Sized>(data: Data) -> Self
 	where
-		Self: ContainerHolding<B>,
+		Self: ContainerAccepting<Data>,
 	{
 		Self::from_data(data)
 	}
 
-	fn update_this_with_data<B: Sized>(&mut self, data: B)
+	fn update_this_with_data<Data: Sized>(&mut self, data: Data)
 	where
-		Self: ContainerHolding<B>,
+		Self: ContainerAccepting<Data>,
 	{
 		self.update_with_data(data)
 	}
 
-	fn remove_this<B: Sized>(&mut self)
+	fn remove_this<Data: Sized>(&mut self)
 	where
-		Self: ContainerHolding<B>,
+		Self: ContainerAccepting<Data>,
 	{
 		self.remove_from_container()
 	}
@@ -39,59 +63,9 @@ pub trait ContainerHoldingOps: Sized {
 
 impl<T: Sized> ContainerHoldingOps for T {}
 
-pub trait ContainerGiving<'a, B: Sized> {
+pub trait ContainerGiving<'a, Data: Sized> {
 	/// Gets a the bundle from a reference to the container
-	fn as_item(&'a self) -> B;
-}
-
-/// [JustEntity] is trivially containable in any type.
-impl<'a, T: Default + Sized> ContainerGiving<'a, JustEntity> for T {
-	fn as_item(&'a self) -> JustEntity {
-		JustEntity
-	}
-}
-
-/// Provisional API to replace option usage.
-///
-/// This would be a semantically-specific type to mark a field as present or absent.
-#[derive(Debug, Clone)]
-pub enum ContainerComponent<T: Sized> {
-	Present(T),
-	Absent,
-}
-
-impl<T: Sized> ContainerComponent<T> {
-	pub fn new(data: T) -> Self {
-		Self::Present(data)
-	}
-
-	pub fn as_ref(&self) -> ContainerComponent<&T> {
-		match self {
-			Self::Present(data) => ContainerComponent::Present(data),
-			Self::Absent => ContainerComponent::Absent,
-		}
-	}
-}
-
-/// All container types that have a container giving themselves also have a container giving an optional version of themselves.
-///
-/// This is a hard-baked container semantics.
-/// But doing this, we disallow aggregating fields to determine whether
-/// a certain type is present or not.
-///
-/// This also prohibits overloading types,
-/// as you will get conflicting implementations of the `OnContainer` trait.
-/// Just as in an ECS, you're going to want to use different types for different fields.
-impl<'a, T: ContainerGiving<'a, B> + Sized, B> ContainerGiving<'a, Option<B>> for T {
-	fn as_item(&'a self) -> Option<B> {
-		Some(self.as_item())
-	}
-}
-
-impl<'a, T: ContainerGiving<'a, B> + Sized, B> ContainerGiving<'a, ContainerComponent<B>> for T {
-	fn as_item(&'a self) -> ContainerComponent<B> {
-		ContainerComponent::Present(self.as_item())
-	}
+	fn as_component(&'a self) -> Component<&'a Data>;
 }
 
 #[cfg(test)]
@@ -105,11 +79,11 @@ pub mod test {
 	pub struct TestContainer {
 		num: i32,
 		slice: [i32; 10],
-		field: Option<TestField>,
+		field: Component<TestField>,
 	}
 
 	impl TestContainer {
-		pub fn new(num: i32, slice: [i32; 10], field: Option<TestField>) -> Self {
+		pub fn new(num: i32, slice: [i32; 10], field: Component<TestField>) -> Self {
 			Self { num, slice, field }
 		}
 
@@ -123,21 +97,21 @@ pub mod test {
 			self
 		}
 
-		pub fn with_field(mut self, field: Option<TestField>) -> Self {
+		pub fn with_field(mut self, field: Component<TestField>) -> Self {
 			self.field = field;
 			self
 		}
 	}
 
 	impl ContainerGiving<'_, i32> for TestContainer {
-		fn as_item(&'_ self) -> i32 {
-			self.num
+		fn as_component(&'_ self) -> Component<&'_ i32> {
+			Component::Present(&self.num)
 		}
 	}
 
-	impl ContainerHolding<i32> for TestContainer {
+	impl ContainerAccepting<i32> for TestContainer {
 		fn from_data(data: i32) -> Self {
-			Self { num: data, slice: [0; 10], field: None }
+			Self { num: data, slice: [0; 10], field: Component::Absent }
 		}
 
 		fn update_with_data(&mut self, data: i32) {
@@ -149,15 +123,15 @@ pub mod test {
 		}
 	}
 
-	impl<'a> ContainerGiving<'a, &'a [i32]> for TestContainer {
-		fn as_item(&'a self) -> &'a [i32] {
-			&self.slice
+	impl ContainerGiving<'_, [i32; 10]> for TestContainer {
+		fn as_component(&'_ self) -> Component<&'_ [i32; 10]> {
+			Component::Present(&self.slice)
 		}
 	}
 
-	impl ContainerHolding<[i32; 10]> for TestContainer {
+	impl ContainerAccepting<[i32; 10]> for TestContainer {
 		fn from_data(data: [i32; 10]) -> Self {
-			Self { num: 0, slice: data, field: None }
+			Self { num: 0, slice: data, field: Component::Absent }
 		}
 
 		fn update_with_data(&mut self, data: [i32; 10]) {
@@ -169,24 +143,24 @@ pub mod test {
 		}
 	}
 
-	impl<'a> ContainerGiving<'a, Option<&'a TestField>> for TestContainer {
-		fn as_item(&'a self) -> Option<&'a TestField> {
+	impl<'a> ContainerGiving<'a, TestField> for TestContainer {
+		fn as_component(&'a self) -> Component<&'a TestField> {
 			self.field.as_ref()
 		}
 	}
 
-	impl ContainerHolding<TestField> for TestContainer {
+	impl ContainerAccepting<TestField> for TestContainer {
 		fn from_data(data: TestField) -> Self {
-			Self { num: 0, slice: [0; 10], field: Some(data) }
+			Self { num: 0, slice: [0; 10], field: Component::Present(data) }
 		}
 
 		fn update_with_data(&mut self, data: TestField) {
-			self.field = Some(data);
+			self.field = Component::Present(data);
 		}
 
 		fn remove_from_container(&mut self) {
 			// set the field to none
-			self.field = None;
+			self.field = Component::Absent;
 		}
 	}
 
@@ -208,7 +182,7 @@ pub mod test {
 	fn test_container_giving_optional() {
 		// Allocate the container
 		let mut container = TestContainer::default();
-		container.field = Some(TestField(1));
+		container.field = Component::Present(TestField(1));
 
 		let container = &container;
 
