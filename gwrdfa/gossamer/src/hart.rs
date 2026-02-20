@@ -166,6 +166,7 @@ where
 #[cfg(test)]
 pub mod tests {
 	use super::*;
+	use crate::GossamerMessage;
 	use gwrdfa_container::{
 		query::matching_container_entities::{MatchingContainerEntities, MatchingContainerQuery},
 		ContainerEntity, ContainerEntityBuffer, ContainerGiving, ContainerHolding,
@@ -174,6 +175,16 @@ pub mod tests {
 
 	#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 	pub struct TestMessage(String);
+
+	impl GossamerMessage for TestMessage {
+		fn to_goassamer_bytes(&self) -> Result<Vec<u8>, GossamerMessageError> {
+			Ok(self.0.as_bytes().to_vec())
+		}
+
+		fn from_gossamer_bytes(bytes: Vec<u8>) -> Result<Self, GossamerMessageError> {
+			Ok(TestMessage(String::from_utf8(bytes).unwrap()))
+		}
+	}
 
 	#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 	pub struct GossamerContainer {
@@ -230,9 +241,9 @@ pub mod tests {
 		}
 	}
 
-	impl<'a> ContainerGiving<'a, Option<&'a In>> for GossamerContainer {
-		fn as_item(&'a self) -> Option<&'a In> {
-			self.message_in.as_ref()
+	impl ContainerGiving<'_, Option<In>> for GossamerContainer {
+		fn as_item(&self) -> Option<In> {
+			self.message_in.clone()
 		}
 	}
 
@@ -256,9 +267,13 @@ pub mod tests {
 		}
 	}
 
-	impl<'a> ContainerGiving<'a, Option<&'a Out>> for GossamerContainer {
-		fn as_item(&'a self) -> Option<&'a Out> {
-			self.message_out.as_ref()
+	impl ContainerGiving<'_, Option<(Out, TestMessage)>> for GossamerContainer {
+		fn as_item(&self) -> Option<(Out, TestMessage)> {
+			if let (Some(out), Some(message)) = (self.message_out.as_ref(), self.message.as_ref()) {
+				Some((*out, message.clone()))
+			} else {
+				None
+			}
 		}
 	}
 
@@ -282,9 +297,9 @@ pub mod tests {
 		}
 	}
 
-	impl<'a> ContainerGiving<'a, Option<&'a InFlight>> for GossamerContainer {
-		fn as_item(&'a self) -> Option<&'a InFlight> {
-			self.message_in_flight.as_ref()
+	impl ContainerGiving<'_, Option<InFlight>> for GossamerContainer {
+		fn as_item(&self) -> Option<InFlight> {
+			self.message_in_flight.clone()
 		}
 	}
 
@@ -308,9 +323,9 @@ pub mod tests {
 		}
 	}
 
-	impl<'a> ContainerGiving<'a, Option<&'a Broadcast>> for GossamerContainer {
-		fn as_item(&'a self) -> Option<&'a Broadcast> {
-			self.message_broadcast.as_ref()
+	impl ContainerGiving<'_, Option<Broadcast>> for GossamerContainer {
+		fn as_item(&self) -> Option<Broadcast> {
+			self.message_broadcast.clone()
 		}
 	}
 
@@ -423,7 +438,7 @@ pub mod tests {
 		fn gossamer_messages_out_plan(
 			&mut self,
 		) -> MatchingContainerQueryPlan<GossamerContainer, (Out, TestMessage)> {
-			MatchingContainerQuery::new()
+			MatchingContainerQuery
 		}
 	}
 

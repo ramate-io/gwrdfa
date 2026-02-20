@@ -63,11 +63,15 @@ pub trait Bufferlike<Entity: Sized>: Sized {
 }
 
 /// Query plans are used to build queries over the buffer.
-pub trait QueryPlanlike<'a, Entity: Sized, Buffer: Bufferlike<Entity>, B, Query>
+pub trait QueryPlanlike<Entity, Buffer, B>
 where
-	Query: Querylike<Entity, Buffer, B> + 'a,
+	Buffer: Bufferlike<Entity>,
 {
-	fn build(self, buffer: &'a Buffer) -> Query;
+	type Query<'a>: Querylike<Entity, Buffer, B>
+	where
+		Buffer: 'a;
+
+	fn build<'a>(self, buffer: &'a Buffer) -> Self::Query<'a>;
 }
 
 /// Queries are view helpers that are used to look at values in the buffer.
@@ -143,13 +147,18 @@ impl<Entity: Sized, Buffer: Bufferlike<Entity>, B> Querylike<Entity, Buffer, B> 
 	}
 }
 
-impl<'a, Entity, Buffer, B> QueryPlanlike<'a, Entity, Buffer, B, NoOp> for NoOp
+impl<Entity, Buffer, B> QueryPlanlike<Entity, Buffer, B> for NoOp
 where
 	Entity: Sized,
 	Buffer: Bufferlike<Entity>,
 	B: Bundle<Entity, Buffer>,
 {
-	fn build(self, _buffer: &'a Buffer) -> NoOp {
+	type Query<'a>
+		= NoOp
+	where
+		Buffer: 'a;
+
+	fn build<'a>(self, _buffer: &'a Buffer) -> NoOp {
 		NoOp
 	}
 }
