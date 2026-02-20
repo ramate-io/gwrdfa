@@ -1,24 +1,24 @@
 use crate::{GossamerMessage, Out};
 use parabyzantine::{
-	buffer::{QueryPlanlike, Querylike},
+	buffer::query::{QueryPlanlike, Querylike},
 	hart::{ParabyzantineDataBinding, ParabyzantineDataSpec},
 };
 
 /// A [GossamerMessages] trait is used to build queries over the Gossamer messages.
 pub trait GossamerMessages<
-	Message: GossamerMessage,
-	Binding: ParabyzantineDataBinding,
+	'a,
+	Message: GossamerMessage + 'a,
+	Binding: ParabyzantineDataBinding + 'a,
 	OutQuery: Querylike<
+			'a,
+			<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
+			<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
+			Item = (&'a Out, &'a Message),
+		> + 'a,
+	OutQueryPlan: QueryPlanlike<
 		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
 		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-		(Out, Message),
-	>,
-	OutQueryPlan: for<'a> QueryPlanlike<
-		'a,
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-		(Out, Message),
-		OutQuery,
+		Query<'a> = OutQuery,
 	>,
 >
 {
