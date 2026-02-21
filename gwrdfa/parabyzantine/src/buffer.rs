@@ -7,6 +7,14 @@ pub use inferences::Inferences;
 
 use crate::NoOp;
 
+pub trait Stores<T, Entity>: Bufferlike<Entity> {
+	/// Inserts a value into the store.
+	fn insert(&mut self, entity: Option<Entity>, value: T) -> Option<Entity>;
+
+	/// Removes a value from the store.
+	fn remove(&mut self, entity: Entity);
+}
+
 /// Bundles are entities plus metadata that exist in the buffer.
 pub trait Bundle<Entity, Buf: Bufferlike<Entity>> {
 	/// Inserts a bundle into a buffer.

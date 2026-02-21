@@ -1,5 +1,5 @@
 use crate::{ContainerAccepting, ContainerEntity, ContainerHoldingOps};
-use parabyzantine::buffer::{Bufferlike, Bundle};
+use parabyzantine::buffer::{Bufferlike, Bundle, Stores};
 use std::collections::HashMap;
 
 pub struct ContainerEntityBuffer<T: Sized> {
@@ -49,6 +49,25 @@ impl<T: Sized> ContainerEntityBuffer<T> {
 impl<T: Sized> Bufferlike<ContainerEntity> for ContainerEntityBuffer<T> {
 	/// Removes an entity from the buffer.
 	fn remove_entity(&mut self, entity: ContainerEntity) {
+		self.remove_container(entity);
+	}
+}
+
+impl<B, T: ContainerAccepting<B>> Stores<B, ContainerEntity> for ContainerEntityBuffer<T> {
+	fn insert(&mut self, entity: Option<ContainerEntity>, value: B) -> Option<ContainerEntity> {
+		match entity {
+			Some(entity) => {
+				match self.get_mut(entity) {
+					Some(data) => data.update_with_data(value),
+					None => self.upsert_container(entity, T::from_data(value)),
+				}
+				Some(entity)
+			}
+			None => Some(self.insert_container(T::from_data(value))),
+		}
+	}
+
+	fn remove(&mut self, entity: ContainerEntity) {
 		self.remove_container(entity);
 	}
 }
