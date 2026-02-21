@@ -305,7 +305,7 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 	pub fn send_message<M: GossamerMessage>(
 		&mut self,
 		entity: Entity,
-		message: M,
+		message: &M,
 	) -> Result<(), GossamerMessageError> {
 		let bytes = message.to_goassamer_bytes()?;
 		self.entity_message_from_gossamer_sender
@@ -388,7 +388,7 @@ mod tests {
 		let entity1 = 1;
 		let message2 = TestMessage::new(vec![4, 5, 6]);
 		let message2_bytes = message2.to_goassamer_bytes()?;
-		gossamer.send_message(entity1, message2)?;
+		gossamer.send_message(entity1, &message2)?;
 		let (entity, message) = entity_message_from_gossamer_receiver
 			.recv()
 			.await

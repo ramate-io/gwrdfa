@@ -168,8 +168,8 @@ pub mod tests {
 	use super::*;
 	use crate::GossamerMessage;
 	use gwrdfa_container::{
-		query::matching_components::{MatchingAllComponentsQuery, MatchingContainerEntities},
-		ContainerEntity, ContainerEntityBuffer, ContainerGiving, ContainerHolding,
+		query::matching_components::{MatchingComponents, MatchingComponentsQuery},
+		Component, ContainerAccepting, ContainerEntity, ContainerEntityBuffer, ContainerGiving,
 	};
 	use parabyzantine::{NoOp, NoOpData, ParabyzantineData};
 
@@ -186,146 +186,142 @@ pub mod tests {
 		}
 	}
 
-	#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+	#[derive(Debug, Clone, PartialEq, Eq)]
 	pub struct GossamerContainer {
-		message: Option<TestMessage>,
-		message_in: Option<In>,
-		message_out: Option<Out>,
-		message_in_flight: Option<InFlight>,
-		message_broadcast: Option<Broadcast>,
+		message: Component<TestMessage>,
+		message_in: Component<In>,
+		message_out: Component<Out>,
+		message_in_flight: Component<InFlight>,
+		message_broadcast: Component<Broadcast>,
 	}
 
-	impl ContainerHolding<TestMessage> for GossamerContainer {
+	impl ContainerAccepting<TestMessage> for GossamerContainer {
 		fn from_data(data: TestMessage) -> Self {
 			Self {
-				message: Some(data),
-				message_in: None,
-				message_out: None,
-				message_in_flight: None,
-				message_broadcast: None,
+				message: Component::Present(data),
+				message_in: Component::Absent,
+				message_out: Component::Absent,
+				message_in_flight: Component::Absent,
+				message_broadcast: Component::Absent,
 			}
 		}
 
 		fn update_with_data(&mut self, data: TestMessage) {
-			self.message = Some(data);
+			self.message = Component::Present(data);
 		}
 
 		fn remove_from_container(&mut self) {
-			self.message = None;
+			self.message = Component::Absent;
 		}
 	}
 
-	impl<'a> ContainerGiving<'a, Option<&'a TestMessage>> for GossamerContainer {
-		fn as_item(&'a self) -> Option<&'a TestMessage> {
+	impl<'a> ContainerGiving<'a, TestMessage> for GossamerContainer {
+		fn as_component(&'a self) -> Component<&'a TestMessage> {
 			self.message.as_ref()
 		}
 	}
 
-	impl ContainerHolding<In> for GossamerContainer {
+	impl ContainerAccepting<In> for GossamerContainer {
 		fn from_data(data: In) -> Self {
 			Self {
-				message: None,
-				message_in: Some(data),
-				message_out: None,
-				message_in_flight: None,
-				message_broadcast: None,
+				message: Component::Absent,
+				message_in: Component::Present(data),
+				message_out: Component::Absent,
+				message_in_flight: Component::Absent,
+				message_broadcast: Component::Absent,
 			}
 		}
 
 		fn update_with_data(&mut self, data: In) {
-			self.message_in = Some(data);
+			self.message_in = Component::Present(data);
 		}
 
 		fn remove_from_container(&mut self) {
-			self.message_in = None;
+			self.message_in = Component::Absent;
 		}
 	}
 
-	impl ContainerGiving<'_, Option<In>> for GossamerContainer {
-		fn as_item(&self) -> Option<In> {
-			self.message_in.clone()
+	impl<'a> ContainerGiving<'a, In> for GossamerContainer {
+		fn as_component(&'a self) -> Component<&'a In> {
+			self.message_in.as_ref()
 		}
 	}
 
-	impl ContainerHolding<Out> for GossamerContainer {
+	impl ContainerAccepting<Out> for GossamerContainer {
 		fn from_data(data: Out) -> Self {
 			Self {
-				message: None,
-				message_in: None,
-				message_out: Some(data),
-				message_in_flight: None,
-				message_broadcast: None,
+				message: Component::Absent,
+				message_in: Component::Absent,
+				message_out: Component::Present(data),
+				message_in_flight: Component::Absent,
+				message_broadcast: Component::Absent,
 			}
 		}
 
 		fn update_with_data(&mut self, data: Out) {
-			self.message_out = Some(data);
+			self.message_out = Component::Present(data);
 		}
 
 		fn remove_from_container(&mut self) {
-			self.message_out = None;
+			self.message_out = Component::Absent;
 		}
 	}
 
-	impl ContainerGiving<'_, Option<(Out, TestMessage)>> for GossamerContainer {
-		fn as_item(&self) -> Option<(Out, TestMessage)> {
-			if let (Some(out), Some(message)) = (self.message_out.as_ref(), self.message.as_ref()) {
-				Some((*out, message.clone()))
-			} else {
-				None
-			}
+	impl<'a> ContainerGiving<'a, Out> for GossamerContainer {
+		fn as_component(&'a self) -> Component<&'a Out> {
+			self.message_out.as_ref()
 		}
 	}
 
-	impl ContainerHolding<InFlight> for GossamerContainer {
+	impl ContainerAccepting<InFlight> for GossamerContainer {
 		fn from_data(data: InFlight) -> Self {
 			Self {
-				message: None,
-				message_in: None,
-				message_out: None,
-				message_in_flight: Some(data),
-				message_broadcast: None,
+				message: Component::Absent,
+				message_in: Component::Absent,
+				message_out: Component::Absent,
+				message_in_flight: Component::Present(data),
+				message_broadcast: Component::Absent,
 			}
 		}
 
 		fn update_with_data(&mut self, data: InFlight) {
-			self.message_in_flight = Some(data);
+			self.message_in_flight = Component::Present(data);
 		}
 
 		fn remove_from_container(&mut self) {
-			self.message_in_flight = None;
+			self.message_in_flight = Component::Absent;
 		}
 	}
 
-	impl ContainerGiving<'_, Option<InFlight>> for GossamerContainer {
-		fn as_item(&self) -> Option<InFlight> {
-			self.message_in_flight.clone()
+	impl<'a> ContainerGiving<'a, InFlight> for GossamerContainer {
+		fn as_component(&'a self) -> Component<&'a InFlight> {
+			self.message_in_flight.as_ref()
 		}
 	}
 
-	impl ContainerHolding<Broadcast> for GossamerContainer {
+	impl ContainerAccepting<Broadcast> for GossamerContainer {
 		fn from_data(data: Broadcast) -> Self {
 			Self {
-				message: None,
-				message_in: None,
-				message_out: None,
-				message_in_flight: None,
-				message_broadcast: Some(data),
+				message: Component::Absent,
+				message_in: Component::Absent,
+				message_out: Component::Absent,
+				message_in_flight: Component::Absent,
+				message_broadcast: Component::Present(data),
 			}
 		}
 
 		fn update_with_data(&mut self, data: Broadcast) {
-			self.message_broadcast = Some(data);
+			self.message_broadcast = Component::Present(data);
 		}
 
 		fn remove_from_container(&mut self) {
-			self.message_broadcast = None;
+			self.message_broadcast = Component::Absent;
 		}
 	}
 
-	impl ContainerGiving<'_, Option<Broadcast>> for GossamerContainer {
-		fn as_item(&self) -> Option<Broadcast> {
-			self.message_broadcast.clone()
+	impl<'a> ContainerGiving<'a, Broadcast> for GossamerContainer {
+		fn as_component(&'a self) -> Component<&'a Broadcast> {
+			self.message_broadcast.as_ref()
 		}
 	}
 
@@ -429,10 +425,11 @@ pub mod tests {
 
 	impl<'a>
 		GossamerMessages<
+			'a,
 			TestMessage,
 			TestParabyzantineDataBinding,
-			MatchingAllComponentsQuery<'a, GossamerContainer, (Out, TestMessage)>,
-			MatchingContainerEntities,
+			MatchingComponentsQuery<'a, GossamerContainer, (Out, TestMessage)>,
+			MatchingComponents<Out>,
 		> for TestGossamerMessages
 	{
 		fn gossamer_messages_out_plan(
