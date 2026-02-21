@@ -9,19 +9,10 @@ use crate::NoOp;
 
 pub trait Stores<T, Entity>: Bufferlike<Entity> {
 	/// Inserts a value into the store.
-	fn insert(&mut self, entity: Option<Entity>, value: T) -> Option<Entity>;
+	fn insert_record(&mut self, entity: Option<Entity>, value: T) -> Option<Entity>;
 
 	/// Removes a value from the store.
-	fn remove(&mut self, entity: Entity);
-}
-
-/// Bundles are entities plus metadata that exist in the buffer.
-pub trait Bundle<Entity, Buf: Bufferlike<Entity>> {
-	/// Inserts a bundle into a buffer.
-	fn insert_into(self, buffer: &mut Buf, entity: Option<Entity>) -> Option<Entity>;
-
-	/// Removes a bundle from a buffer.
-	fn remove_from(buffer: &mut Buf, entity: Entity);
+	fn remove_record(&mut self, entity: Entity);
 }
 
 /// Marks when a bundle is just an entity.
@@ -48,16 +39,18 @@ pub struct JustEntity;
 ///
 /// Using them should mostly be encapsulated behind [Facts]
 pub trait Bufferlike<Entity: Sized>: Sized {
-	fn insert<B: Bundle<Entity, Self>>(
-		&mut self,
-		entity: Option<Entity>,
-		bundle: B,
-	) -> Option<Entity> {
-		bundle.insert_into(self, entity)
+	fn insert<B>(&mut self, entity: Option<Entity>, bundle: B) -> Option<Entity>
+	where
+		Self: Stores<B, Entity>,
+	{
+		self.insert_record(entity, bundle)
 	}
 
-	fn remove<B: Bundle<Entity, Self>>(&mut self, entity: Entity) {
-		B::remove_from(self, entity);
+	fn remove<B>(&mut self, entity: Entity)
+	where
+		Self: Stores<B, Entity>,
+	{
+		self.remove_record(entity);
 	}
 
 	fn remove_entity(&mut self, entity: Entity);
@@ -88,10 +81,14 @@ pub trait DraftBufferlike<Entity: Sized, Buffer: Bufferlike<Entity>>: Sized {
 	/// Canonically, inserting Self::Entity as a bundle is equivalent to upserting the entity itself.
 	/// Systems which are not capable of complex bundle semantics may use this pattern to achieve
 	/// data augmentation.
-	fn draft_insert<B: Bundle<Entity, Buffer>>(&mut self, entity: Option<Entity>, bundle: B);
+	fn draft_insert<B>(&mut self, entity: Option<Entity>, bundle: B)
+	where
+		Buffer: Stores<B, Entity>;
 
 	/// Removes a bundle from the draft buffer.
-	fn draft_remove<B: Bundle<Entity, Buffer>>(&mut self, entity: Entity);
+	fn draft_remove<B>(&mut self, entity: Entity)
+	where
+		Buffer: Stores<B, Entity>;
 
 	/// Removes an entity from the draft buffer.
 	fn draft_remove_entity(&mut self, entity: Entity);
@@ -101,36 +98,49 @@ pub trait DraftBufferlike<Entity: Sized, Buffer: Bufferlike<Entity>>: Sized {
 }
 
 impl<Entity: Sized> Bufferlike<Entity> for NoOp {
-	fn insert<B: Bundle<Entity, Self>>(
-		&mut self,
-		_entity: Option<Entity>,
-		_bundle: B,
-	) -> Option<Entity> {
+	fn insert<B>(&mut self, entity: Option<Entity>, bundle: B) -> Option<Entity>
+	where
+		Self: Stores<B, Entity>,
+	{
 		None
 	}
 
-	fn remove<B: Bundle<Entity, Self>>(&mut self, _entity: Entity) {}
+	fn remove<B>(&mut self, _entity: Entity)
+	where
+		Self: Stores<B, Entity>,
+	{
+		// do nothing
+	}
 
 	fn remove_entity(&mut self, _entity: Entity) {}
 }
 
 impl<Entity: Sized, Buffer: Bufferlike<Entity>> DraftBufferlike<Entity, Buffer> for NoOp {
-	fn draft_insert<B: Bundle<Entity, Buffer>>(&mut self, _entity: Option<Entity>, _bundle: B) {}
+	fn draft_insert<B>(&mut self, _entity: Option<Entity>, _bundle: B)
+	where
+		Buffer: Stores<B, Entity>,
+	{
+		// do nothing
+	}
 
-	fn draft_remove<B: Bundle<Entity, Buffer>>(&mut self, _entity: Entity) {}
+	fn draft_remove<B>(&mut self, _entity: Entity)
+	where
+		Buffer: Stores<B, Entity>,
+	{
+		// do nothing
+	}
 
 	fn draft_remove_entity(&mut self, _entity: Entity) {}
 
 	fn commit(&mut self, _buffer: &mut Buffer) {}
 }
 
-impl<Entity, Buffer: Bufferlike<Entity>> Bundle<Entity, Buffer> for NoOp {
-	fn insert_into(self, _buffer: &mut Buffer, _entity: Option<Entity>) -> Option<Entity> {
-		// do nothing and don't indicate that an entity was inserted
+impl<Entity, Buffer: Bufferlike<Entity>> Stores<NoOp, Entity> for Buffer {
+	fn insert_record(&mut self, _entity: Option<Entity>, _value: NoOp) -> Option<Entity> {
 		None
 	}
 
-	fn remove_from(_buffer: &mut Buffer, _entity: Entity) {
+	fn remove_record(&mut self, _entity: Entity) {
 		// do nothing
 	}
 }

@@ -3,7 +3,7 @@ use crate::{Broadcast, In, InFlight, Out};
 use parabyzantine::{
 	buffer::{
 		query::{QueryPlanlike, Querylike},
-		Bundle,
+		Stores,
 	},
 	hart::{ParabyzantineDataBinding, ParabyzantineDataSpec},
 };

@@ -1,4 +1,4 @@
-use crate::buffer::{Bufferlike, Bundle, DraftBufferlike};
+use crate::buffer::{Bufferlike, DraftBufferlike, Stores};
 use core::marker::PhantomData;
 
 /// Inferences are entities that should be written to or modified in the buffer.
@@ -20,12 +20,18 @@ impl<Entity: Sized, Buffer: Bufferlike<Entity>, D: DraftBufferlike<Entity, Buffe
 	}
 
 	/// Inserts an entity and a bundle into the inferences.
-	pub fn insert<B: Bundle<Entity, Buffer>>(&mut self, entity: Option<Entity>, bundle: B) {
+	pub fn insert<B>(&mut self, entity: Option<Entity>, bundle: B)
+	where
+		Buffer: Stores<B, Entity>,
+	{
 		self.inner.draft_insert(entity, bundle);
 	}
 
 	/// Removes an entity and a bundle from the inferences.
-	pub fn remove<B: Bundle<Entity, Buffer>>(&mut self, entity: Entity) {
+	pub fn remove<B>(&mut self, entity: Entity)
+	where
+		Buffer: Stores<B, Entity>,
+	{
 		self.inner.draft_remove::<B>(entity);
 	}
 
