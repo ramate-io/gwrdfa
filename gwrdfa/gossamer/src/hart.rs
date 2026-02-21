@@ -7,63 +7,40 @@ pub use spec::GossamerSpec;
 use crate::{Broadcast, In, InFlight, Out};
 use crate::{Gossamer, GossamerMessageError};
 use parabyzantine::{
-	buffer::Bundle,
+	buffer::Stores,
 	hart::{
 		ParabyzantineDataBinding, ParabyzantineDataSpec, ParabyzantineHart, ParabyzantineWorld,
 	},
 };
 
-pub struct GossamerHart<Binding: ParabyzantineDataBinding, Spec: GossamerSpec<Binding>>
-where
-	GossamerMessageError: Bundle<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-	>,
-	(In, Spec::Message): Bundle<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-	>,
-	Out: Bundle<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-	>,
-	InFlight: Bundle<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-	>,
-	Broadcast: Bundle<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-	>,
-	<Binding::Spec as ParabyzantineDataSpec>::MessageEntity: Send + Sync + 'static,
+pub struct GossamerHart<
+	'a,
+	Binding: ParabyzantineDataBinding + 'a,
+	Spec: GossamerSpec<'a, Binding> + 'a,
+> where
+	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: Stores<GossamerMessageError, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ Stores<Spec::Message, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ Stores<(In, Spec::Message), <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ Stores<Out, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ Stores<InFlight, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>,
+	<Binding::Spec as ParabyzantineDataSpec>::MessageEntity: Send + Sync + 'a,
 {
 	messages: Spec::Messages,
 	gossamer: Gossamer<<Binding::Spec as ParabyzantineDataSpec>::MessageEntity>,
 	max_batch_size: usize,
 }
 
-impl<Binding: ParabyzantineDataBinding, Spec: GossamerSpec<Binding>> GossamerHart<Binding, Spec>
+impl<'a, Binding: ParabyzantineDataBinding + 'a, Spec: GossamerSpec<'a, Binding> + 'a>
+	GossamerHart<'a, Binding, Spec>
 where
-	GossamerMessageError: Bundle<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-	>,
-	(In, Spec::Message): Bundle<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-	>,
-	Out: Bundle<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-	>,
-	InFlight: Bundle<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-	>,
-	Broadcast: Bundle<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-	>,
+	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: Stores<GossamerMessageError, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ Stores<Spec::Message, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ Stores<(In, Spec::Message), <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ Stores<Out, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ Stores<InFlight, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>,
+	<Binding::Spec as ParabyzantineDataSpec>::MessageEntity: Send + Sync + 'a,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageEntity: Send + Sync + 'static,
 {
 	pub fn new(
@@ -79,29 +56,15 @@ where
 	}
 }
 
-impl<Binding: ParabyzantineDataBinding, Spec: GossamerSpec<Binding>> ParabyzantineHart
-	for GossamerHart<Binding, Spec>
+impl<'a, Binding: ParabyzantineDataBinding, Spec: GossamerSpec<'a, Binding>> ParabyzantineHart
+	for GossamerHart<'a, Binding, Spec>
 where
-	GossamerMessageError: Bundle<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-	>,
-	Out: Bundle<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-	>,
-	(In, Spec::Message): Bundle<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-	>,
-	InFlight: Bundle<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-	>,
-	Broadcast: Bundle<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-	>,
+	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: Stores<GossamerMessageError, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ Stores<Spec::Message, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ Stores<(In, Spec::Message), <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ Stores<Out, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ Stores<InFlight, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageEntity: Copy + Send + Sync + 'static,
 {
 	type Binding = Binding;

@@ -10,27 +10,12 @@ use parabyzantine::{
 
 pub trait GossamerSpec<'a, Binding: ParabyzantineDataBinding + 'a>
 where
-	GossamerMessageError: Bundle<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-	>,
-	(In, Self::Message): Bundle<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-	>,
-	Out: Bundle<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-	>,
-	InFlight: Bundle<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-	>,
-	Broadcast: Bundle<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-	>,
-	<<Binding as ParabyzantineDataBinding>::Spec as ParabyzantineDataSpec>::MessageBuffer: 'static,
+	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: Stores<GossamerMessageError, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ Stores<Self::Message, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ Stores<(In, Self::Message), <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ Stores<Out, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ Stores<InFlight, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>,
 {
 	/// The type of the message.
 	type Message: GossamerMessage + 'a;
