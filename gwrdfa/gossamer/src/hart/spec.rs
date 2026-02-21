@@ -8,7 +8,7 @@ use parabyzantine::{
 	hart::{ParabyzantineDataBinding, ParabyzantineDataSpec},
 };
 
-pub trait GossamerSpec<Binding: ParabyzantineDataBinding>
+pub trait GossamerSpec<'a, Binding: ParabyzantineDataBinding + 'a>
 where
 	GossamerMessageError: Bundle<
 		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
@@ -30,12 +30,13 @@ where
 		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
 		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
 	>,
+	<<Binding as ParabyzantineDataBinding>::Spec as ParabyzantineDataSpec>::MessageBuffer: 'static,
 {
 	/// The type of the message.
-	type Message: GossamerMessage;
+	type Message: GossamerMessage + 'a;
 
 	/// The type of the query for the message.
-	type MessageOutQuery: for<'a> Querylike<
+	type MessageOutQuery: Querylike<
 		'a,
 		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
 		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
@@ -43,14 +44,14 @@ where
 	>;
 
 	/// The type of the query plan for the message.
-	type MessageOutQueryPlan: for<'a> QueryPlanlike<
+	type MessageOutQueryPlan: QueryPlanlike<
 		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
 		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
 		Query<'a> = Self::MessageOutQuery,
 	>;
 
 	/// The type of the message builder.
-	type Messages: for<'a> GossamerMessages<
+	type Messages: GossamerMessages<
 		'a,
 		Self::Message,
 		Binding,

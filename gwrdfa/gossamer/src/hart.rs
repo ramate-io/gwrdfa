@@ -167,8 +167,9 @@ where
 pub mod tests {
 	use super::*;
 	use crate::GossamerMessage;
+	use core::marker::PhantomData;
 	use gwrdfa_container::{
-		query::matching_components::{MatchingComponents, MatchingComponentsQuery},
+		query::matching_tuple::{MatchingTuple, MatchingTupleQuery},
 		Component, ContainerAccepting, ContainerEntity, ContainerEntityBuffer, ContainerGiving,
 	};
 	use parabyzantine::{NoOp, NoOpData, ParabyzantineData};
@@ -428,15 +429,24 @@ pub mod tests {
 			'a,
 			TestMessage,
 			TestParabyzantineDataBinding,
-			MatchingComponentsQuery<'a, GossamerContainer, (Out, TestMessage)>,
-			MatchingComponents<Out>,
+			MatchingTupleQuery<'a, GossamerContainer, (Out, TestMessage)>,
+			MatchingTuple<(Out, TestMessage)>,
 		> for TestGossamerMessages
 	{
-		fn gossamer_messages_out_plan(
-			&mut self,
-		) -> MatchingAllComponentsQueryPlan<GossamerContainer, (Out, TestMessage)> {
-			MatchingAllComponentsQuery
+		fn gossamer_messages_out_plan(&mut self) -> MatchingTuple<(Out, TestMessage)> {
+			MatchingTuple::new()
 		}
+	}
+
+	pub struct TestGossamerSpec<'a> {
+		_phantom: PhantomData<&'a ()>,
+	}
+
+	impl<'a> GossamerSpec<'a, TestParabyzantineDataBinding> for TestGossamerSpec<'a> {
+		type Message = TestMessage;
+		type MessageOutQuery = MatchingTupleQuery<'a, GossamerContainer, (Out, TestMessage)>;
+		type MessageOutQueryPlan = MatchingTuple<(Out, TestMessage)>;
+		type Messages = TestGossamerMessages;
 	}
 
 	#[tokio::test]
@@ -445,8 +455,8 @@ pub mod tests {
 		let messages = GossamerMessages::<
 			ContainerEntity,
 			TestParabyzantineDataBinding,
-			MatchingAllComponentsQuery<GossamerContainer, (Out, TestMessage)>,
-			MatchingContainerEntities,
+			MatchingTupleQuery<'_, GossamerContainer, (Out, TestMessage)>,
+			MatchingTuple<(Out, TestMessage)>,
 		>::new();
 		let hart = GossamerHart::<Binding, Spec>::new(gossamer, messages);
 	}

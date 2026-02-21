@@ -10,11 +10,11 @@ pub trait GossamerMessages<
 	Message: GossamerMessage + 'a,
 	Binding: ParabyzantineDataBinding + 'a,
 	OutQuery: Querylike<
-			'a,
-			<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-			<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-			Item = (&'a Out, &'a Message),
-		> + 'a,
+		'a,
+		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
+		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
+		Item = (&'a Out, &'a Message),
+	>,
 	OutQueryPlan: QueryPlanlike<
 		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
 		<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
