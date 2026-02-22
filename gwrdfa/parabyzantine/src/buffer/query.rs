@@ -17,10 +17,11 @@ pub trait Querylike<Entity> {
 }
 
 pub trait IntoQuery<Entity, T> {
-	type Item;
-	type Query: Querylike<Entity, Item = Self::Item>;
+	type Query<'a>: Querylike<Entity>
+	where
+		Self: 'a;
 
-	fn into_query(&self, plan: T) -> Self::Query;
+	fn into_query<'a>(&'a self, plan: T) -> Self::Query<'a>;
 }
 
 impl<Entity, T> Querylike<Entity> for TypedNoOp<T> {

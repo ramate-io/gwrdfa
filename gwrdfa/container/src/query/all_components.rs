@@ -42,15 +42,14 @@ impl<B> AllComponents<B> {
 	}
 }
 
-impl<'a, T, B> IntoQuery<ContainerEntity, AllComponents<B>> for &'a ContainerEntityBuffer<T>
+impl<T, B> IntoQuery<ContainerEntity, AllComponents<B>> for ContainerEntityBuffer<T>
 where
-	T: ContainerGiving<B> + Sized,
+	T: ContainerGiving<B> + Sized + 'static,
 	B: 'static,
 {
-	type Item = Component<&'a B>;
-	type Query = AllComponentsQuery<'a, T, B>;
+	type Query<'a> = AllComponentsQuery<'a, T, B>;
 
-	fn into_query(&self, _plan: AllComponents<B>) -> AllComponentsQuery<'a, T, B> {
+	fn into_query<'a>(&'a self, _plan: AllComponents<B>) -> AllComponentsQuery<'a, T, B> {
 		AllComponentsQuery::new(self)
 	}
 }

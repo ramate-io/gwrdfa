@@ -49,16 +49,18 @@ impl<T> MatchingTuple<T> {
 	}
 }
 
-impl<'a, T, A, B> IntoQuery<ContainerEntity, MatchingTuple<(A, B)>> for &'a ContainerEntityBuffer<T>
+impl<T, A, B> IntoQuery<ContainerEntity, MatchingTuple<(A, B)>> for ContainerEntityBuffer<T>
 where
-	T: ContainerGiving<A> + ContainerGiving<B> + Sized,
-	A: 'a,
-	B: 'a,
+	T: ContainerGiving<A> + ContainerGiving<B> + Sized + 'static,
+	A: 'static,
+	B: 'static,
 {
-	type Item = (&'a A, &'a B);
-	type Query = MatchingTupleQuery<'a, T, (A, B)>;
+	type Query<'a>
+		= MatchingTupleQuery<'a, T, (A, B)>
+	where
+		Self: 'a;
 
-	fn into_query(&self, _plan: MatchingTuple<(A, B)>) -> MatchingTupleQuery<'a, T, (A, B)> {
+	fn into_query<'a>(&'a self, _plan: MatchingTuple<(A, B)>) -> MatchingTupleQuery<'a, T, (A, B)> {
 		MatchingTupleQuery::new(self)
 	}
 }
