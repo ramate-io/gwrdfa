@@ -14,7 +14,7 @@ impl<'a, T: ContainerGiving<'a, B> + Sized, B: 'a> MatchingComponentsQuery<'a, T
 }
 
 impl<'a, T: ContainerGiving<'a, B> + Sized, B: 'a>
-	Querylike<'a, ContainerEntity, ContainerEntityBuffer<T>> for MatchingComponentsQuery<'a, T, B>
+	Querylike<ContainerEntity, ContainerEntityBuffer<T>> for MatchingComponentsQuery<'a, T, B>
 {
 	type Item = &'a B;
 
@@ -63,7 +63,6 @@ where
 #[cfg(test)]
 mod test {
 	use super::*;
-	use crate::buffer::ToContainer;
 	use crate::container::test::{TestContainer, TestField};
 	use parabyzantine::buffer::Bufferlike;
 	use std::collections::HashSet;
@@ -77,9 +76,9 @@ mod test {
 		let mut query = query_plan.build(&buffer);
 		assert_eq!(query.next(), Some((entity, &0)));
 
-		buffer.insert(None, ToContainer(0 as i32));
-		buffer.insert(None, ToContainer(TestField(1)));
-		buffer.insert(None, ToContainer(TestField(2)));
+		buffer.insert(None, 0 as i32);
+		buffer.insert(None, TestField(1));
+		buffer.insert(None, TestField(2));
 
 		let mut query = MatchingComponents::<TestField>::new().build(&buffer);
 		let mut matched_entities: HashSet<(ContainerEntity, &TestField)> = HashSet::new();

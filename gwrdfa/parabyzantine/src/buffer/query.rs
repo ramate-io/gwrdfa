@@ -23,9 +23,11 @@ pub trait QueryPlanlike<Entity, Buffer>
 where
 	Buffer: Bufferlike<Entity>,
 {
-	type Query: Querylike<Entity, Buffer>;
+	type Query<'a>: Querylike<Entity, Buffer>
+	where
+		Buffer: 'a;
 
-	fn build<'a>(self, buffer: &'a Buffer) -> Self::Query;
+	fn build<'a>(self, buffer: &'a Buffer) -> Self::Query<'a>;
 }
 
 impl<Entity, Buffer, T> Querylike<Entity, Buffer> for TypedNoOp<T>
@@ -48,9 +50,12 @@ where
 	Buffer: Bufferlike<Entity>,
 	T: 'static,
 {
-	type Query = TypedNoOp<T>;
+	type Query<'a>
+		= TypedNoOp<T>
+	where
+		Buffer: 'a;
 
-	fn build<'a>(self, _buffer: &'a Buffer) -> Self::Query {
+	fn build<'a>(self, _buffer: &'a Buffer) -> Self::Query<'a> {
 		TypedNoOp::new()
 	}
 }

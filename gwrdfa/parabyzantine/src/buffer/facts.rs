@@ -20,7 +20,7 @@ impl<'a, Entity: Sized, Buffer: Bufferlike<Entity>> Facts<'a, Entity, Buffer> {
 	pub fn query<
 		B: 'a,
 		Query: Querylike<Entity, Buffer, Item = B> + 'a,
-		QueryPlan: QueryPlanlike<Entity, Buffer, Query = Query> + 'a,
+		QueryPlan: QueryPlanlike<Entity, Buffer, Query<'a> = Query> + 'a,
 	>(
 		&'a self,
 		query_plan: QueryPlan,
@@ -33,7 +33,7 @@ impl<'a, Entity: Sized, Buffer: Bufferlike<Entity>> Facts<'a, Entity, Buffer> {
 	pub fn get<
 		B: 'a,
 		Query: Querylike<Entity, Buffer, Item = B> + 'a,
-		QueryPlan: QueryPlanlike<Entity, Buffer, Query = Query> + 'a,
+		QueryPlan: QueryPlanlike<Entity, Buffer, Query<'a> = Query> + 'a,
 	>(
 		&self,
 		entity: Entity,

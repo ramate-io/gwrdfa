@@ -16,8 +16,8 @@ impl<'a, T: ContainerGiving<'a, B> + Sized, B> AllComponentsQuery<'a, T, B> {
 	}
 }
 
-impl<'a, T: ContainerGiving<'a, B> + Sized, B>
-	Querylike<'a, ContainerEntity, ContainerEntityBuffer<T>> for AllComponentsQuery<'a, T, B>
+impl<'a, T: ContainerGiving<'a, B> + Sized, B> Querylike<ContainerEntity, ContainerEntityBuffer<T>>
+	for AllComponentsQuery<'a, T, B>
 where
 	B: 'a,
 {
@@ -44,13 +44,10 @@ impl<B> AllComponents<B> {
 
 impl<T, B> QueryPlanlike<ContainerEntity, ContainerEntityBuffer<T>> for AllComponents<B>
 where
-	for<'a> T: ContainerGiving<'a, B> + Sized,
+	for<'a> T: ContainerGiving<'a, B> + Sized + 'a,
 	B: 'static,
 {
-	type Query<'a>
-		= AllComponentsQuery<'a, T, B>
-	where
-		ContainerEntityBuffer<T>: 'a;
+	type Query<'a> = AllComponentsQuery<'a, T, B>;
 
 	fn build<'a>(self, buffer: &'a ContainerEntityBuffer<T>) -> AllComponentsQuery<'a, T, B> {
 		AllComponentsQuery::new(buffer)

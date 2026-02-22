@@ -15,7 +15,7 @@ impl<'a, Container, T> MatchingTupleQuery<'a, Container, T> {
 }
 
 impl<'a, T: ContainerGiving<'a, A> + ContainerGiving<'a, B> + Sized, A: 'a, B: 'a>
-	Querylike<'a, ContainerEntity, ContainerEntityBuffer<T>> for MatchingTupleQuery<'a, T, (A, B)>
+	Querylike<ContainerEntity, ContainerEntityBuffer<T>> for MatchingTupleQuery<'a, T, (A, B)>
 {
 	type Item = (&'a A, &'a B);
 
@@ -68,7 +68,6 @@ where
 #[cfg(test)]
 mod test {
 	use super::*;
-	use crate::buffer::ToContainer;
 	use crate::container::test::{TestContainer, TestField};
 	use parabyzantine::buffer::Bufferlike;
 	use std::collections::HashSet;
@@ -82,9 +81,9 @@ mod test {
 		let mut query = query_plan.build(&buffer);
 		assert_eq!(query.next(), None);
 
-		buffer.insert(None, ToContainer(0 as i32));
-		buffer.insert(None, ToContainer(TestField(1)));
-		buffer.insert(None, ToContainer(TestField(2)));
+		buffer.insert(None, 0 as i32);
+		buffer.insert(None, TestField(1));
+		buffer.insert(None, TestField(2));
 
 		let mut query = MatchingTuple::<(i32, TestField)>::new().build(&buffer);
 		let mut matched_entities: HashSet<(ContainerEntity, (&i32, &TestField))> = HashSet::new();
