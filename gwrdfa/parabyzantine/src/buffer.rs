@@ -98,7 +98,7 @@ pub trait DraftBufferlike<Entity: Sized, Buffer: Bufferlike<Entity>>: Sized {
 }
 
 impl<Entity: Sized> Bufferlike<Entity> for NoOp {
-	fn insert<B>(&mut self, entity: Option<Entity>, bundle: B) -> Option<Entity>
+	fn insert<B>(&mut self, _entity: Option<Entity>, _bundle: B) -> Option<Entity>
 	where
 		Self: Stores<B, Entity>,
 	{

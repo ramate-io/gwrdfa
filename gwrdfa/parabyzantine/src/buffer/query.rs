@@ -9,11 +9,11 @@ impl<T> TypedNoOp<T> {
 	}
 }
 
-pub trait Querylike<'a, Entity, Buffer>
+pub trait Querylike<Entity, Buffer>
 where
 	Buffer: Bufferlike<Entity>,
 {
-	type Item: 'a;
+	type Item;
 
 	fn next(&mut self) -> Option<(Entity, Self::Item)>;
 	fn get(&self, entity: Entity) -> Option<Self::Item>;
@@ -23,17 +23,14 @@ pub trait QueryPlanlike<Entity, Buffer>
 where
 	Buffer: Bufferlike<Entity>,
 {
-	type Query<'a>: Querylike<'a, Entity, Buffer>
-	where
-		Buffer: 'a;
+	type Query: Querylike<Entity, Buffer>;
 
-	fn build<'a>(self, buffer: &'a Buffer) -> Self::Query<'a>;
+	fn build<'a>(self, buffer: &'a Buffer) -> Self::Query;
 }
 
-impl<'a, Entity, Buffer, T> Querylike<'a, Entity, Buffer> for TypedNoOp<T>
+impl<Entity, Buffer, T> Querylike<Entity, Buffer> for TypedNoOp<T>
 where
 	Buffer: Bufferlike<Entity>,
-	T: 'a,
 {
 	type Item = T;
 
@@ -51,12 +48,9 @@ where
 	Buffer: Bufferlike<Entity>,
 	T: 'static,
 {
-	type Query<'a>
-		= TypedNoOp<T>
-	where
-		Buffer: 'a;
+	type Query = TypedNoOp<T>;
 
-	fn build<'a>(self, _buffer: &'a Buffer) -> Self::Query<'a> {
+	fn build<'a>(self, _buffer: &'a Buffer) -> Self::Query {
 		TypedNoOp::new()
 	}
 }
