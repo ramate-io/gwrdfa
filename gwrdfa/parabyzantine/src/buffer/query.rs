@@ -9,31 +9,24 @@ impl<T> TypedNoOp<T> {
 	}
 }
 
-pub trait Querylike<Entity, Buffer>
-where
-	Buffer: Bufferlike<Entity>,
-{
+pub trait Querylike<Entity> {
 	type Item;
 
 	fn next(&mut self) -> Option<(Entity, Self::Item)>;
 	fn get(&self, entity: Entity) -> Option<Self::Item>;
 }
 
-pub trait QueryPlanlike<Entity, Buffer>
+pub trait IntoQuery<Entity, T>
 where
-	Buffer: Bufferlike<Entity>,
+	Self: Bufferlike<Entity>,
 {
-	type Query<'a>: Querylike<Entity, Buffer>
-	where
-		Buffer: 'a;
+	type Item;
+	type Query: Querylike<Entity, Item = Self::Item>;
 
-	fn build<'a>(self, buffer: &'a Buffer) -> Self::Query<'a>;
+	fn into_query(&self, plan: T) -> Self::Query;
 }
 
-impl<Entity, Buffer, T> Querylike<Entity, Buffer> for TypedNoOp<T>
-where
-	Buffer: Bufferlike<Entity>,
-{
+impl<Entity, T> Querylike<Entity> for TypedNoOp<T> {
 	type Item = T;
 
 	fn next(&mut self) -> Option<(Entity, T)> {
@@ -42,20 +35,5 @@ where
 
 	fn get(&self, _entity: Entity) -> Option<T> {
 		None
-	}
-}
-
-impl<Entity, Buffer, T> QueryPlanlike<Entity, Buffer> for TypedNoOp<T>
-where
-	Buffer: Bufferlike<Entity>,
-	T: 'static,
-{
-	type Query<'a>
-		= TypedNoOp<T>
-	where
-		Buffer: 'a;
-
-	fn build<'a>(self, _buffer: &'a Buffer) -> Self::Query<'a> {
-		TypedNoOp::new()
 	}
 }

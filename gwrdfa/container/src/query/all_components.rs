@@ -1,6 +1,6 @@
 use crate::{Component, ContainerEntity, ContainerEntityBuffer, ContainerGiving};
 use core::marker::PhantomData;
-use parabyzantine::buffer::query::{QueryPlanlike, Querylike};
+use parabyzantine::buffer::query::{IntoQuery, Querylike};
 
 /// A query over a container.
 pub struct AllComponentsQuery<'a, T: ContainerGiving<'a, B> + Sized, B> {
@@ -16,7 +16,7 @@ impl<'a, T: ContainerGiving<'a, B> + Sized, B> AllComponentsQuery<'a, T, B> {
 	}
 }
 
-impl<'a, T: ContainerGiving<'a, B> + Sized, B> Querylike<ContainerEntity, ContainerEntityBuffer<T>>
+impl<'a, T: ContainerGiving<'a, B> + Sized, B> Querylike<ContainerEntity>
 	for AllComponentsQuery<'a, T, B>
 where
 	B: 'a,
@@ -42,14 +42,15 @@ impl<B> AllComponents<B> {
 	}
 }
 
-impl<T, B> QueryPlanlike<ContainerEntity, ContainerEntityBuffer<T>> for AllComponents<B>
+impl<'a, T, B> IntoQuery<ContainerEntity, ContainerEntityBuffer<T>> for AllComponents<B>
 where
-	for<'a> T: ContainerGiving<'a, B> + Sized + 'a,
+	T: ContainerGiving<'a, B> + Sized + 'a,
 	B: 'static,
 {
-	type Query<'a> = AllComponentsQuery<'a, T, B>;
+	type Item = Component<&'a B>;
+	type Query = AllComponentsQuery<'a, T, B>;
 
-	fn build<'a>(self, buffer: &'a ContainerEntityBuffer<T>) -> AllComponentsQuery<'a, T, B> {
+	fn build(self, buffer: &ContainerEntityBuffer<T>) -> AllComponentsQuery<'_, T, B> {
 		AllComponentsQuery::new(buffer)
 	}
 }

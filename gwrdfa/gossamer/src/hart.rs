@@ -7,6 +7,7 @@ pub use spec::GossamerSpec;
 use crate::{Broadcast, In, InFlight, Out};
 use crate::{Gossamer, GossamerMessageError};
 use parabyzantine::{
+	buffer::query::IntoQuery,
 	buffer::Stores,
 	hart::{
 		ParabyzantineDataBinding, ParabyzantineDataSpec, ParabyzantineHart, ParabyzantineWorld,
@@ -23,7 +24,12 @@ pub struct GossamerHart<
 		+ Stores<(In, Spec::Message), <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<Out, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<InFlight, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>,
+		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ IntoQuery<
+			<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
+			Spec::MessageOutQueryPlan,
+			Query = Spec::MessageOutQuery,
+		>,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageEntity: Send + Sync + 'a,
 {
 	messages: Spec::Messages,
@@ -39,7 +45,12 @@ where
 		+ Stores<(In, Spec::Message), <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<Out, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<InFlight, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>,
+		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ IntoQuery<
+			<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
+			Spec::MessageOutQueryPlan,
+			Query = Spec::MessageOutQuery,
+		>,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageEntity: Send + Sync + 'a,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageEntity: Send + Sync + 'static,
 {
@@ -64,7 +75,12 @@ where
 		+ Stores<(In, Spec::Message), <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<Out, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<InFlight, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>,
+		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ IntoQuery<
+			<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
+			Spec::MessageOutQueryPlan,
+			Query = Spec::MessageOutQuery,
+		>,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageEntity: Copy + Send + Sync + 'static,
 {
 	type Binding = Binding;
@@ -415,12 +431,9 @@ pub mod tests {
 	#[tokio::test]
 	async fn test_gossamer_hart() {
 		let gossamer = Gossamer::<ContainerEntity>::mock();
-		let messages = GossamerMessages::<
-			ContainerEntity,
-			TestParabyzantineDataBinding,
-			MatchingTupleQuery<'_, GossamerContainer, (Out, TestMessage)>,
-			MatchingTuple<(Out, TestMessage)>,
-		>::new();
-		let hart = GossamerHart::<Binding, Spec>::new(gossamer, messages);
+		let messages = TestGossamerMessages;
+		let hart = GossamerHart::<TestParabyzantineDataBinding, TestGossamerSpec<'_>>::new(
+			gossamer, messages,
+		);
 	}
 }
