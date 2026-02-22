@@ -1,5 +1,5 @@
 use crate::{ContainerAccepting, ContainerEntity, ContainerHoldingOps};
-use parabyzantine::buffer::{Bufferlike, Bundle, Stores};
+use parabyzantine::buffer::{Bufferlike, Stores};
 use std::collections::HashMap;
 
 pub struct ContainerEntityBuffer<T: Sized> {
@@ -54,7 +54,11 @@ impl<T: Sized> Bufferlike<ContainerEntity> for ContainerEntityBuffer<T> {
 }
 
 impl<B, T: ContainerAccepting<B>> Stores<B, ContainerEntity> for ContainerEntityBuffer<T> {
-	fn insert(&mut self, entity: Option<ContainerEntity>, value: B) -> Option<ContainerEntity> {
+	fn insert_record(
+		&mut self,
+		entity: Option<ContainerEntity>,
+		value: B,
+	) -> Option<ContainerEntity> {
 		match entity {
 			Some(entity) => {
 				match self.get_mut(entity) {
@@ -67,42 +71,8 @@ impl<B, T: ContainerAccepting<B>> Stores<B, ContainerEntity> for ContainerEntity
 		}
 	}
 
-	fn remove(&mut self, entity: ContainerEntity) {
+	fn remove_record(&mut self, entity: ContainerEntity) {
 		self.remove_container(entity);
-	}
-}
-
-#[derive(Debug, Clone)]
-pub struct ToContainer<T: Sized>(pub T);
-
-impl<T, B> Bundle<ContainerEntity, ContainerEntityBuffer<T>> for ToContainer<B>
-where
-	T: ContainerAccepting<B>,
-	B: Sized,
-{
-	fn insert_into(
-		self,
-		buffer: &mut ContainerEntityBuffer<T>,
-		entity: Option<ContainerEntity>,
-	) -> Option<ContainerEntity> {
-		match entity {
-			Some(entity) => {
-				match buffer.get_mut(entity) {
-					Some(entity) => entity.update_with_data(self.0),
-					None => buffer.upsert_container(entity, T::from_data(self.0)),
-				}
-				Some(entity)
-			}
-			None => {
-				let entity = buffer.insert_container(T::from_data(self.0));
-				Some(entity)
-			}
-		}
-	}
-
-	fn remove_from(buffer: &mut ContainerEntityBuffer<T>, entity: ContainerEntity) {
-		// TODO: this is too aggressive, we actually want B to define its own removal semantics.
-		buffer.get_mut(entity).map(|container| container.remove_this::<B>());
 	}
 }
 
@@ -133,7 +103,7 @@ pub mod test {
 
 		// Insert a container component as a new entity
 		let num: i32 = 1;
-		let entity = ToContainer(num).insert_into(&mut buffer, None);
+		let entity = buffer.insert_record(None, num);
 		assert_eq!(entity, Some(ContainerEntity::new(1)));
 		assert_eq!(
 			buffer.get(ContainerEntity::new(1)),
@@ -145,7 +115,7 @@ pub mod test {
 		let entity = buffer.insert_container(container);
 		assert_eq!(entity, ContainerEntity::new(2));
 		let num: i32 = 3;
-		let entity = ToContainer(num).insert_into(&mut buffer, Some(entity));
+		let entity = buffer.insert_record(Some(entity), num);
 		assert_eq!(entity, Some(ContainerEntity::new(2)));
 		assert_eq!(
 			buffer.get(ContainerEntity::new(2)),
@@ -153,7 +123,7 @@ pub mod test {
 		);
 
 		// Insert using the bufferlike API
-		let entity = buffer.insert(None, ToContainer(4 as i32));
+		let entity = buffer.insert_record(None, 4 as i32);
 		assert_eq!(entity, Some(ContainerEntity::new(3)));
 		assert_eq!(
 			buffer.get(ContainerEntity::new(3)),
@@ -175,7 +145,7 @@ pub mod test {
 		let mut buffer: ContainerEntityBuffer<TestContainer> = ContainerEntityBuffer::new();
 		let container = TestContainer::default().with_field(Component::Present(TestField(1)));
 		let entity = buffer.insert_container(container);
-		buffer.remove::<ToContainer<TestField>>(entity);
+		buffer.remove::<TestField>(entity);
 		assert_eq!(
 			buffer.get(entity),
 			Some(&TestContainer::default().with_field(Component::Absent))

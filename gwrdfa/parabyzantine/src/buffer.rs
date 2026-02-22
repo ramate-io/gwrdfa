@@ -134,13 +134,3 @@ impl<Entity: Sized, Buffer: Bufferlike<Entity>> DraftBufferlike<Entity, Buffer> 
 
 	fn commit(&mut self, _buffer: &mut Buffer) {}
 }
-
-impl<Entity, Buffer: Bufferlike<Entity>> Stores<NoOp, Entity> for Buffer {
-	fn insert_record(&mut self, _entity: Option<Entity>, _value: NoOp) -> Option<Entity> {
-		None
-	}
-
-	fn remove_record(&mut self, _entity: Entity) {
-		// do nothing
-	}
-}
