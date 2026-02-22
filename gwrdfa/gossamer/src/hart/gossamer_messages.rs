@@ -15,7 +15,7 @@ pub trait GossamerMessages<
 	>,
 	OutQueryPlan,
 > where
-	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: IntoQuery<
+	&'a <Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: IntoQuery<
 		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
 		OutQueryPlan,
 		Query = OutQuery,

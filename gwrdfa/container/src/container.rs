@@ -63,9 +63,9 @@ pub trait ContainerHoldingOps: Sized {
 
 impl<T: Sized> ContainerHoldingOps for T {}
 
-pub trait ContainerGiving<'a, Data: Sized> {
+pub trait ContainerGiving<Data: Sized> {
 	/// Gets a the bundle from a reference to the container
-	fn as_component(&'a self) -> Component<&'a Data>;
+	fn as_component(&self) -> Component<&Data>;
 }
 
 #[cfg(test)]
@@ -103,7 +103,7 @@ pub mod test {
 		}
 	}
 
-	impl ContainerGiving<'_, i32> for TestContainer {
+	impl ContainerGiving<i32> for TestContainer {
 		fn as_component(&'_ self) -> Component<&'_ i32> {
 			Component::Present(&self.num)
 		}
@@ -123,8 +123,8 @@ pub mod test {
 		}
 	}
 
-	impl ContainerGiving<'_, [i32; 10]> for TestContainer {
-		fn as_component(&'_ self) -> Component<&'_ [i32; 10]> {
+	impl ContainerGiving<[i32; 10]> for TestContainer {
+		fn as_component(&self) -> Component<&[i32; 10]> {
 			Component::Present(&self.slice)
 		}
 	}
@@ -143,8 +143,8 @@ pub mod test {
 		}
 	}
 
-	impl<'a> ContainerGiving<'a, TestField> for TestContainer {
-		fn as_component(&'a self) -> Component<&'a TestField> {
+	impl ContainerGiving<TestField> for TestContainer {
+		fn as_component(&self) -> Component<&TestField> {
 			self.field.as_ref()
 		}
 	}

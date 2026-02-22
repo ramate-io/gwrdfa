@@ -1,6 +1,6 @@
 use crate::{Component, ContainerEntity, ContainerEntityBuffer, ContainerGiving};
 use core::marker::PhantomData;
-use parabyzantine::buffer::query::{QueryPlanlike, Querylike};
+use parabyzantine::buffer::query::{IntoQuery, Querylike};
 
 pub struct MatchingTupleQuery<'a, Container, T> {
 	buffer: &'a ContainerEntityBuffer<Container>,
@@ -14,8 +14,8 @@ impl<'a, Container, T> MatchingTupleQuery<'a, Container, T> {
 	}
 }
 
-impl<'a, T: ContainerGiving<'a, A> + ContainerGiving<'a, B> + Sized, A: 'a, B: 'a>
-	Querylike<ContainerEntity, ContainerEntityBuffer<T>> for MatchingTupleQuery<'a, T, (A, B)>
+impl<'a, T: ContainerGiving<A> + ContainerGiving<B> + Sized, A: 'a, B: 'a>
+	Querylike<ContainerEntity> for MatchingTupleQuery<'a, T, (A, B)>
 {
 	type Item = (&'a A, &'a B);
 
@@ -49,19 +49,17 @@ impl<T> MatchingTuple<T> {
 	}
 }
 
-impl<T, A, B> QueryPlanlike<ContainerEntity, ContainerEntityBuffer<T>> for MatchingTuple<(A, B)>
+impl<'a, T, A, B> IntoQuery<ContainerEntity, MatchingTuple<(A, B)>> for &'a ContainerEntityBuffer<T>
 where
-	for<'a> T: ContainerGiving<'a, A> + ContainerGiving<'a, B> + Sized,
-	A: 'static,
-	B: 'static,
+	T: ContainerGiving<A> + ContainerGiving<B> + Sized,
+	A: 'a,
+	B: 'a,
 {
-	type Query<'a>
-		= MatchingTupleQuery<'a, T, (A, B)>
-	where
-		ContainerEntityBuffer<T>: 'a;
+	type Item = (&'a A, &'a B);
+	type Query = MatchingTupleQuery<'a, T, (A, B)>;
 
-	fn build<'a>(self, buffer: &'a ContainerEntityBuffer<T>) -> MatchingTupleQuery<'a, T, (A, B)> {
-		MatchingTupleQuery::new(buffer)
+	fn into_query(&self, _plan: MatchingTuple<(A, B)>) -> MatchingTupleQuery<'a, T, (A, B)> {
+		MatchingTupleQuery::new(self)
 	}
 }
 
@@ -78,14 +76,14 @@ mod test {
 		let container = TestContainer::default();
 		let _entity = buffer.insert_container(container);
 		let query_plan = MatchingTuple::<(i32, TestField)>::new();
-		let mut query = query_plan.build(&buffer);
+		let mut query = (&buffer).into_query(query_plan);
 		assert_eq!(query.next(), None);
 
 		buffer.insert(None, 0 as i32);
 		buffer.insert(None, TestField(1));
 		buffer.insert(None, TestField(2));
 
-		let mut query = MatchingTuple::<(i32, TestField)>::new().build(&buffer);
+		let mut query = (&buffer).into_query(MatchingTuple::<(i32, TestField)>::new());
 		let mut matched_entities: HashSet<(ContainerEntity, (&i32, &TestField))> = HashSet::new();
 
 		while let Some(tuple) = query.next() {

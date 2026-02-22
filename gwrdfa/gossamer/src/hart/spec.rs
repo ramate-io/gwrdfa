@@ -15,12 +15,12 @@ where
 		+ Stores<(In, Self::Message), <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<Out, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<InFlight, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ IntoQuery<
-			<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-			Self::MessageOutQueryPlan,
-			Query = Self::MessageOutQuery,
-		>,
+		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>,
+	&'a <Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: IntoQuery<
+		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
+		Self::MessageOutQueryPlan,
+		Query = Self::MessageOutQuery,
+	>,
 {
 	/// The type of the message.
 	type Message: GossamerMessage + 'a;

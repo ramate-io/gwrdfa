@@ -24,12 +24,12 @@ pub struct GossamerHart<
 		+ Stores<(In, Spec::Message), <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<Out, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<InFlight, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ IntoQuery<
-			<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-			Spec::MessageOutQueryPlan,
-			Query = Spec::MessageOutQuery,
-		>,
+		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>,
+	&'a <Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: IntoQuery<
+		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
+		Spec::MessageOutQueryPlan,
+		Query = Spec::MessageOutQuery,
+	>,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageEntity: Send + Sync + 'a,
 {
 	messages: Spec::Messages,
@@ -45,12 +45,12 @@ where
 		+ Stores<(In, Spec::Message), <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<Out, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<InFlight, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ IntoQuery<
-			<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-			Spec::MessageOutQueryPlan,
-			Query = Spec::MessageOutQuery,
-		>,
+		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>,
+	&'a <Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: IntoQuery<
+		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
+		Spec::MessageOutQueryPlan,
+		Query = Spec::MessageOutQuery,
+	>,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageEntity: Send + Sync + 'a,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageEntity: Send + Sync + 'static,
 {
@@ -75,12 +75,12 @@ where
 		+ Stores<(In, Spec::Message), <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<Out, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<InFlight, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ IntoQuery<
-			<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-			Spec::MessageOutQueryPlan,
-			Query = Spec::MessageOutQuery,
-		>,
+		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>,
+	&'a <Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: IntoQuery<
+		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
+		Spec::MessageOutQueryPlan,
+		Query = Spec::MessageOutQuery,
+	>,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageEntity: Copy + Send + Sync + 'static,
 {
 	type Binding = Binding;
@@ -195,8 +195,8 @@ pub mod tests {
 		}
 	}
 
-	impl<'a> ContainerGiving<'a, TestMessage> for GossamerContainer {
-		fn as_component(&'a self) -> Component<&'a TestMessage> {
+	impl ContainerGiving<TestMessage> for GossamerContainer {
+		fn as_component(&self) -> Component<&TestMessage> {
 			self.message.as_ref()
 		}
 	}
@@ -221,8 +221,8 @@ pub mod tests {
 		}
 	}
 
-	impl<'a> ContainerGiving<'a, In> for GossamerContainer {
-		fn as_component(&'a self) -> Component<&'a In> {
+	impl ContainerGiving<In> for GossamerContainer {
+		fn as_component(&self) -> Component<&In> {
 			self.message_in.as_ref()
 		}
 	}
@@ -247,8 +247,8 @@ pub mod tests {
 		}
 	}
 
-	impl<'a> ContainerGiving<'a, Out> for GossamerContainer {
-		fn as_component(&'a self) -> Component<&'a Out> {
+	impl ContainerGiving<Out> for GossamerContainer {
+		fn as_component(&self) -> Component<&Out> {
 			self.message_out.as_ref()
 		}
 	}
@@ -273,8 +273,8 @@ pub mod tests {
 		}
 	}
 
-	impl<'a> ContainerGiving<'a, InFlight> for GossamerContainer {
-		fn as_component(&'a self) -> Component<&'a InFlight> {
+	impl ContainerGiving<InFlight> for GossamerContainer {
+		fn as_component(&self) -> Component<&InFlight> {
 			self.message_in_flight.as_ref()
 		}
 	}
@@ -299,8 +299,8 @@ pub mod tests {
 		}
 	}
 
-	impl<'a> ContainerGiving<'a, Broadcast> for GossamerContainer {
-		fn as_component(&'a self) -> Component<&'a Broadcast> {
+	impl ContainerGiving<Broadcast> for GossamerContainer {
+		fn as_component(&self) -> Component<&Broadcast> {
 			self.message_broadcast.as_ref()
 		}
 	}

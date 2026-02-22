@@ -16,10 +16,7 @@ pub trait Querylike<Entity> {
 	fn get(&self, entity: Entity) -> Option<Self::Item>;
 }
 
-pub trait IntoQuery<Entity, T>
-where
-	Self: Bufferlike<Entity>,
-{
+pub trait IntoQuery<Entity, T> {
 	type Item;
 	type Query: Querylike<Entity, Item = Self::Item>;
 

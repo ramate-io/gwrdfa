@@ -22,7 +22,7 @@ impl<'a, Entity: Sized, Buffer: Bufferlike<Entity>> Facts<'a, Entity, Buffer> {
 		query_plan: QueryPlan,
 	) -> impl Iterator<Item = (Entity, B)> + 'a
 	where
-		Buffer: IntoQuery<Entity, QueryPlan, Query = Query>,
+		&'a Buffer: IntoQuery<Entity, QueryPlan, Query = Query>,
 	{
 		let mut query = self.inner.into_query(query_plan);
 		core::iter::from_fn(move || query.next())
@@ -35,7 +35,7 @@ impl<'a, Entity: Sized, Buffer: Bufferlike<Entity>> Facts<'a, Entity, Buffer> {
 		query_plan: QueryPlan,
 	) -> Option<B>
 	where
-		Buffer: IntoQuery<Entity, QueryPlan, Query = Query>,
+		&'a Buffer: IntoQuery<Entity, QueryPlan, Query = Query>,
 	{
 		let query = self.inner.into_query(query_plan);
 		query.get(entity)
