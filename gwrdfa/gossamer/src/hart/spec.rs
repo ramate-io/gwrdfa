@@ -8,24 +8,31 @@ use parabyzantine::{
 	hart::{ParabyzantineDataBinding, ParabyzantineDataSpec},
 };
 
-pub trait GossamerSpec<Binding: ParabyzantineDataBinding> {
-	type Message: GossamerMessage;
-	type Binding: ParabyzantineDataBinding;
-	type OutQuery<'a>: Querylike<
-		<<Self::Binding as ParabyzantineDataBinding>::Spec as ParabyzantineDataSpec>::MessageEntity,
-		Item = (&'a Out, &'a Self::Message)
-	> where Self::Message: 'a, &'a <<Self::Binding as ParabyzantineDataBinding>::Spec as ParabyzantineDataSpec>::MessageBuffer:
-	IntoQuery<
-		<<Self::Binding as ParabyzantineDataBinding>::Spec as ParabyzantineDataSpec>::MessageEntity,
+pub trait GossamerSpec<Binding: ParabyzantineDataBinding>
+where
+	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: Stores<GossamerMessageError, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ Stores<Self::Message, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ Stores<(In, Self::Message), <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ Stores<Out, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ Stores<InFlight, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
+		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>,
+	for<'a> &'a <Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: IntoQuery<
+		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
 		Self::OutQueryPlan,
-	>;
+		Query = Self::OutQuery<'a>,
+	>,
+	Self::Messages:
+		GossamerMessages<Binding = Binding, Message = Self::Message, OutPlan = Self::OutQueryPlan>,
+{
+	type Message: GossamerMessage;
 	type OutQueryPlan;
 
-	/// The type of the message builder.
-	type Messages<'a>: GossamerMessages<
-		Binding = Self::Binding,
-		Message = Self::Message,
-		OutQuery<'a> = Self::OutQuery<'a>,
-		OutQueryPlan = Self::OutQueryPlan,
-	>;
+	type OutQuery<'a>: Querylike<
+		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
+		Item = (&'a Out, &'a Self::Message),
+	>
+	where
+		Self::Message: 'a;
+
+	type Messages;
 }
