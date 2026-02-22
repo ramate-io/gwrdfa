@@ -25,10 +25,10 @@ pub struct GossamerHart<
 		+ Stores<Out, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<InFlight, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>,
-	&'a <Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: IntoQuery<
+	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: IntoQuery<
 		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
 		Spec::MessageOutQueryPlan,
-		Query = Spec::MessageOutQuery,
+		Query<'a> = Spec::MessageOutQuery,
 	>,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageEntity: Send + Sync + 'a,
 {
@@ -46,10 +46,10 @@ where
 		+ Stores<Out, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<InFlight, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>,
-	&'a <Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: IntoQuery<
+	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: IntoQuery<
 		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
 		Spec::MessageOutQueryPlan,
-		Query = Spec::MessageOutQuery,
+		Query<'a> = Spec::MessageOutQuery,
 	>,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageEntity: Send + Sync + 'a,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageEntity: Send + Sync + 'static,
@@ -76,10 +76,10 @@ where
 		+ Stores<Out, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<InFlight, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>,
-	&'a <Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: IntoQuery<
+	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: IntoQuery<
 		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
 		Spec::MessageOutQueryPlan,
-		Query = Spec::MessageOutQuery,
+		Query<'a> = Spec::MessageOutQuery,
 	>,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageEntity: Copy + Send + Sync + 'static,
 {

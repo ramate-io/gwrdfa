@@ -47,14 +47,14 @@ impl<B> MatchingComponents<B> {
 	}
 }
 
-impl<T, B> IntoQuery<ContainerEntity, MatchingComponents<B>> for ContainerEntityBuffer<T>
+impl<'a, T, B> IntoQuery<ContainerEntity, MatchingComponents<B>> for &'a ContainerEntityBuffer<T>
 where
 	T: ContainerGiving<B> + Sized + 'static,
 	B: 'static,
 {
-	type Query<'a> = MatchingComponentsQuery<'a, T, B>;
+	type Query = MatchingComponentsQuery<'a, T, B>;
 
-	fn into_query<'a>(&'a self, _plan: MatchingComponents<B>) -> MatchingComponentsQuery<'a, T, B> {
+	fn into_query(self, _plan: MatchingComponents<B>) -> MatchingComponentsQuery<'a, T, B> {
 		MatchingComponentsQuery::new(self)
 	}
 }

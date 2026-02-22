@@ -8,38 +8,24 @@ use parabyzantine::{
 	hart::{ParabyzantineDataBinding, ParabyzantineDataSpec},
 };
 
-pub trait GossamerSpec<'a, Binding: ParabyzantineDataBinding + 'a>
-where
-	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: Stores<GossamerMessageError, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<Self::Message, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<(In, Self::Message), <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<Out, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<InFlight, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>,
-	&'a <Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: IntoQuery<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		Self::MessageOutQueryPlan,
-		Query = Self::MessageOutQuery,
-	>,
-{
-	/// The type of the message.
-	type Message: GossamerMessage + 'a;
-
-	/// The type of the query for the message.
-	type MessageOutQuery: Querylike<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		Item = (&'a Out, &'a Self::Message),
+pub trait GossamerSpec<Binding: ParabyzantineDataBinding> {
+	type Message: GossamerMessage;
+	type Binding: ParabyzantineDataBinding;
+	type OutQuery<'a>: Querylike<
+		<<Self::Binding as ParabyzantineDataBinding>::Spec as ParabyzantineDataSpec>::MessageEntity,
+		Item = (&'a Out, &'a Self::Message)
+	> where Self::Message: 'a, &'a <<Self::Binding as ParabyzantineDataBinding>::Spec as ParabyzantineDataSpec>::MessageBuffer:
+	IntoQuery<
+		<<Self::Binding as ParabyzantineDataBinding>::Spec as ParabyzantineDataSpec>::MessageEntity,
+		Self::OutQueryPlan,
 	>;
-
-	/// The type of the query plan for the message.
-	type MessageOutQueryPlan;
+	type OutQueryPlan;
 
 	/// The type of the message builder.
-	type Messages: GossamerMessages<
-		'a,
-		Self::Message,
-		Binding,
-		Self::MessageOutQuery,
-		Self::MessageOutQueryPlan,
+	type Messages<'a>: GossamerMessages<
+		Binding = Self::Binding,
+		Message = Self::Message,
+		OutQuery<'a> = Self::OutQuery<'a>,
+		OutQueryPlan = Self::OutQueryPlan,
 	>;
 }

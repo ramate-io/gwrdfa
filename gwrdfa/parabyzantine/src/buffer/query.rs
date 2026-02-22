@@ -16,12 +16,29 @@ pub trait Querylike<Entity> {
 	fn get(&self, entity: Entity) -> Option<Self::Item>;
 }
 
-pub trait IntoQuery<Entity, T> {
-	type Query<'a>: Querylike<Entity>
-	where
-		Self: 'a;
+pub struct QueryIterator<Entity, Query: Querylike<Entity>> {
+	__marker: PhantomData<Entity>,
+	query: Query,
+}
 
-	fn into_query<'a>(&'a self, plan: T) -> Self::Query<'a>;
+impl<Entity, Query: Querylike<Entity>> QueryIterator<Entity, Query> {
+	pub fn new(query: Query) -> Self {
+		Self { __marker: PhantomData, query }
+	}
+}
+
+impl<Entity, Query: Querylike<Entity>> Iterator for QueryIterator<Entity, Query> {
+	type Item = (Entity, Query::Item);
+
+	fn next(&mut self) -> Option<Self::Item> {
+		self.query.next()
+	}
+}
+
+pub trait IntoQuery<Entity, T> {
+	type Query: Querylike<Entity>;
+
+	fn into_query(self, plan: T) -> Self::Query;
 }
 
 impl<Entity, T> Querylike<Entity> for TypedNoOp<T> {

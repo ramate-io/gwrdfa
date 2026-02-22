@@ -17,25 +17,25 @@ impl<'a, Entity: Sized, Buffer: Bufferlike<Entity>> Facts<'a, Entity, Buffer> {
 	}
 
 	/// Queries the facts in the buffer.
-	pub fn query<B: 'a, Query: Querylike<Entity, Item = B> + 'a, QueryPlan>(
-		&'a self,
+	pub fn query<B, Query: Querylike<Entity, Item = B>, QueryPlan>(
+		&self,
 		query_plan: QueryPlan,
-	) -> impl Iterator<Item = (Entity, B)> + 'a
+	) -> impl Iterator<Item = (Entity, B)>
 	where
-		Buffer: IntoQuery<Entity, QueryPlan, Query<'a> = Query>,
+		&'a Buffer: IntoQuery<Entity, QueryPlan, Query = Query>,
 	{
 		let mut query = self.inner.into_query(query_plan);
 		core::iter::from_fn(move || query.next())
 	}
 
 	/// Gets a bundle from the facts in the buffer.
-	pub fn get<B: 'a, Query: Querylike<Entity, Item = B> + 'a, QueryPlan>(
+	pub fn get<B, Query: Querylike<Entity, Item = B>, QueryPlan>(
 		&self,
 		entity: Entity,
 		query_plan: QueryPlan,
 	) -> Option<B>
 	where
-		Buffer: IntoQuery<Entity, QueryPlan, Query<'a> = Query>,
+		&'a Buffer: IntoQuery<Entity, QueryPlan, Query = Query>,
 	{
 		let query = self.inner.into_query(query_plan);
 		query.get(entity)

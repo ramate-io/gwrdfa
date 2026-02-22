@@ -5,21 +5,18 @@ use parabyzantine::{
 };
 
 /// A [GossamerMessages] trait is used to build queries over the Gossamer messages.
-pub trait GossamerMessages<
-	'a,
-	Message: GossamerMessage + 'a,
-	Binding: ParabyzantineDataBinding + 'a,
-	OutQuery: Querylike<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		Item = (&'a Out, &'a Message),
-	>,
-	OutQueryPlan,
-> where
-	&'a <Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: IntoQuery<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		OutQueryPlan,
-		Query = OutQuery,
-	>,
-{
-	fn gossamer_messages_out_plan(&mut self) -> OutQueryPlan;
+pub trait GossamerMessages {
+	type Message: GossamerMessage;
+	type Binding: ParabyzantineDataBinding;
+	type OutQuery<'a>: Querylike<
+		<<Self::Binding as ParabyzantineDataBinding>::Spec as ParabyzantineDataSpec>::MessageEntity,
+		Item = (&'a Out, &'a Self::Message)
+	> where Self::Message: 'a, &'a <<Self::Binding as ParabyzantineDataBinding>::Spec as ParabyzantineDataSpec>::MessageBuffer:
+	IntoQuery<
+		<<Self::Binding as ParabyzantineDataBinding>::Spec as ParabyzantineDataSpec>::MessageEntity,
+		Self::OutQueryPlan,
+	>;
+	type OutQueryPlan;
+
+	fn gossamer_messages_out_plan(&mut self) -> Self::OutQueryPlan;
 }
