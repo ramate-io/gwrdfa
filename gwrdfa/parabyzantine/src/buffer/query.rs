@@ -1,13 +1,4 @@
-use crate::buffer::Bufferlike;
-use core::marker::PhantomData;
-
-pub struct TypedNoOp<T>(PhantomData<T>);
-
-impl<T> TypedNoOp<T> {
-	pub fn new() -> Self {
-		Self(PhantomData)
-	}
-}
+use crate::{NoOp, NoOpOn};
 
 pub trait Querylike<Entity> {
 	type Item;
@@ -16,32 +7,33 @@ pub trait Querylike<Entity> {
 	fn get(&self, entity: Entity) -> Option<Self::Item>;
 }
 
-pub struct QueryIterator<Entity, Query: Querylike<Entity>> {
-	__marker: PhantomData<Entity>,
-	query: Query,
-}
-
-impl<Entity, Query: Querylike<Entity>> QueryIterator<Entity, Query> {
-	pub fn new(query: Query) -> Self {
-		Self { __marker: PhantomData, query }
-	}
-}
-
-impl<Entity, Query: Querylike<Entity>> Iterator for QueryIterator<Entity, Query> {
-	type Item = (Entity, Query::Item);
-
-	fn next(&mut self) -> Option<Self::Item> {
-		self.query.next()
-	}
-}
-
 pub trait IntoQuery<Entity, T> {
 	type Query: Querylike<Entity>;
 
 	fn into_query(self, plan: T) -> Self::Query;
 }
 
-impl<Entity, T> Querylike<Entity> for TypedNoOp<T> {
+impl<Entity> Querylike<Entity> for NoOp {
+	type Item = NoOp;
+
+	fn next(&mut self) -> Option<(Entity, NoOp)> {
+		None
+	}
+
+	fn get(&self, _entity: Entity) -> Option<NoOp> {
+		None
+	}
+}
+
+impl<Entity> IntoQuery<Entity, NoOp> for NoOp {
+	type Query = NoOp;
+
+	fn into_query(self, _plan: NoOp) -> Self::Query {
+		NoOp
+	}
+}
+
+impl<Entity, T> Querylike<Entity> for NoOpOn<T> {
 	type Item = T;
 
 	fn next(&mut self) -> Option<(Entity, T)> {
@@ -50,5 +42,13 @@ impl<Entity, T> Querylike<Entity> for TypedNoOp<T> {
 
 	fn get(&self, _entity: Entity) -> Option<T> {
 		None
+	}
+}
+
+impl<Entity, T> IntoQuery<Entity, NoOpOn<T>> for NoOpOn<T> {
+	type Query = NoOpOn<T>;
+
+	fn into_query(self, _plan: NoOpOn<T>) -> Self::Query {
+		NoOpOn::new()
 	}
 }

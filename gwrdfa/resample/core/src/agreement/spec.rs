@@ -5,11 +5,23 @@ use super::{
 use parabyzantine::NoOp;
 use parabyzantine::{
 	agreement::{ParabyzantineAgreementDataBinding, ParabyzantineAgreementDataSpec},
-	buffer::{QueryPlanlike, Querylike},
+	buffer::query::{IntoQuery, Querylike},
 };
 
 /// A [ResampleAgreementSpec] is a specification for ResampleAgreement consensus.
-pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Sized {
+pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Sized
+where
+	for<'a> &'a <Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer: IntoQuery<
+		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
+		Self::IndexSubcommitteeAgreementQueryPlan,
+		Query = Self::IndexSubcommitteeAgreementQuery<'a>,
+	>,
+	for<'a> &'a <Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateBuffer: IntoQuery<
+		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
+		Self::CertificateQueryPlan,
+		Query = Self::CertificateQuery<'a>,
+	>,
+{
 	/// The type of the index.
 	type Index: Eq;
 
@@ -23,51 +35,41 @@ pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Siz
 	type Subcommittee: Subcommittee<Self::Sender>;
 
 	/// The bundle of the agreement in the buffer.
-	type IndexSubcommitteeAgreementQueryData;
+	type IndexSubcommitteeAgreementQueryData<'a>;
 
 	/// The query for the index subcommittee agreement.
-	type IndexSubcommitteeAgreementQuery: Querylike<
+	type IndexSubcommitteeAgreementQuery<'a>: Querylike<
 		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
-		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer,
-		Self::IndexSubcommitteeAgreementQueryData,
+		Item = Self::IndexSubcommitteeAgreementQueryData<'a>,
 	>;
 
 	/// The query plan for the index subcommittee agreement.
-	type IndexSubcommitteeAgreementQueryPlan: QueryPlanlike<
-		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
-		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer,
-		Self::IndexSubcommitteeAgreementQueryData,
-	>;
+	type IndexSubcommitteeAgreementQueryPlan;
 
 	/// The type of the index subcommittee agreement.
 	type IndexSubcommitteeAgreement: IndexSubcommitteeAgreement<Self::Index, Self::Sender, Self::Subcommittee>
 		+ for<'a> From<&'a (
 			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
-			Self::IndexSubcommitteeAgreementQueryData,
+			Self::IndexSubcommitteeAgreementQueryData<'a>,
 		)>;
 
 	/// The bundle of the certificate in the buffer.
-	type CertificateQueryData;
+	type CertificateQueryData<'a>;
 
 	/// The query for the certificate.
-	type CertificateQuery: Querylike<
+	type CertificateQuery<'a>: Querylike<
 		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
-		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateBuffer,
-		Self::CertificateQueryData,
+		Item = Self::CertificateQueryData<'a>,
 	>;
 
 	/// The query plan for the certificate.
-	type CertificateQueryPlan: QueryPlanlike<
-		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
-		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateBuffer,
-		Self::CertificateQueryData,
-	>;
+	type CertificateQueryPlan;
 
 	/// The type of the certificate.
 	type Certificate: Certificate<Self::Index, Self::Value, Self::Sender>
 		+ for<'a> From<&'a (
 			<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
-			Self::CertificateQueryData,
+			Self::CertificateQueryData<'a>,
 		)>;
 
 	/// The type of the certificate set.
@@ -103,12 +105,12 @@ impl ResampleAgreementSpec<NoOp> for NoOp {
 	type Value = NoOp;
 	type Sender = NoOp;
 	type Subcommittee = NoOp;
-	type IndexSubcommitteeAgreementQueryData = NoOp;
-	type IndexSubcommitteeAgreementQuery = NoOp;
+	type IndexSubcommitteeAgreementQueryData<'a> = NoOp;
+	type IndexSubcommitteeAgreementQuery<'a> = NoOp;
 	type IndexSubcommitteeAgreementQueryPlan = NoOp;
 	type IndexSubcommitteeAgreement = NoOp;
-	type CertificateQueryData = NoOp;
-	type CertificateQuery = NoOp;
+	type CertificateQueryData<'a> = NoOp;
+	type CertificateQuery<'a> = NoOp;
 	type CertificateQueryPlan = NoOp;
 	type Certificate = NoOp;
 	type CertificateSet = NoOp;
