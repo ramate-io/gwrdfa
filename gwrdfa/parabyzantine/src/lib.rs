@@ -41,8 +41,8 @@ impl From<&NoOp> for NoOp {
 	}
 }
 
-impl From<&(NoOp, NoOp)> for NoOp {
-	fn from((_entity, _bundle): &(NoOp, NoOp)) -> Self {
+impl<T> From<(T, NoOp)> for NoOp {
+	fn from((_entity, _bundle): (T, NoOp)) -> Self {
 		NoOp
 	}
 }

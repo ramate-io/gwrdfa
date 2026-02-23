@@ -48,7 +48,7 @@ where
 
 	/// The type of the index subcommittee agreement.
 	type IndexSubcommitteeAgreement: IndexSubcommitteeAgreement<Self::Index, Self::Sender, Self::Subcommittee>
-		+ for<'a> From<&'a (
+		+ for<'a> From<(
 			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
 			Self::IndexSubcommitteeAgreementQueryData<'a>,
 		)>;
@@ -67,7 +67,7 @@ where
 
 	/// The type of the certificate.
 	type Certificate: Certificate<Self::Index, Self::Value, Self::Sender>
-		+ for<'a> From<&'a (
+		+ for<'a> From<(
 			<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
 			Self::CertificateQueryData<'a>,
 		)>;
