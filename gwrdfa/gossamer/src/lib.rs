@@ -236,7 +236,7 @@ pub struct Gossamer<Entity: Send + Sync> {
 	entity_into_gossamer_receiver: UnboundedReceiver<Entity>,
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Clone, thiserror::Error, PartialEq, Eq)]
 pub enum GossamerMessageError {
 	#[error("Error serializing message: {0:?}")]
 	SerializeError((String, Vec<u8>)),

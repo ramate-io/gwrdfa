@@ -1,6 +1,6 @@
 use crate::{GossamerMessage, Out};
 use parabyzantine::{
-	buffer::query::{IntoQuery, Querylike},
+	buffer::query::Querylike,
 	hart::{ParabyzantineDataBinding, ParabyzantineDataSpec},
 };
 

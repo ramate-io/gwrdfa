@@ -147,7 +147,6 @@ where
 pub mod tests {
 	use super::*;
 	use crate::GossamerMessage;
-	use core::marker::PhantomData;
 	use gwrdfa_container::{
 		query::matching_tuple::{MatchingTuple, MatchingTupleQuery},
 		Component, ContainerAccepting, ContainerEntity, ContainerEntityBuffer, ContainerGiving,
@@ -174,6 +173,7 @@ pub mod tests {
 		message_out: Component<Out>,
 		message_in_flight: Component<InFlight>,
 		message_broadcast: Component<Broadcast>,
+		message_error: Component<GossamerMessageError>,
 	}
 
 	impl ContainerAccepting<TestMessage> for GossamerContainer {
@@ -184,6 +184,7 @@ pub mod tests {
 				message_out: Component::Absent,
 				message_in_flight: Component::Absent,
 				message_broadcast: Component::Absent,
+				message_error: Component::Absent,
 			}
 		}
 
@@ -202,22 +203,25 @@ pub mod tests {
 		}
 	}
 
-	impl ContainerAccepting<In> for GossamerContainer {
-		fn from_data(data: In) -> Self {
+	impl ContainerAccepting<(In, TestMessage)> for GossamerContainer {
+		fn from_data(data: (In, TestMessage)) -> Self {
 			Self {
-				message: Component::Absent,
-				message_in: Component::Present(data),
+				message: Component::Present(data.1),
+				message_in: Component::Present(data.0),
 				message_out: Component::Absent,
 				message_in_flight: Component::Absent,
 				message_broadcast: Component::Absent,
+				message_error: Component::Absent,
 			}
 		}
 
-		fn update_with_data(&mut self, data: In) {
-			self.message_in = Component::Present(data);
+		fn update_with_data(&mut self, data: (In, TestMessage)) {
+			self.message = Component::Present(data.1);
+			self.message_in = Component::Present(data.0);
 		}
 
 		fn remove_from_container(&mut self) {
+			self.message = Component::Absent;
 			self.message_in = Component::Absent;
 		}
 	}
@@ -236,6 +240,7 @@ pub mod tests {
 				message_out: Component::Present(data),
 				message_in_flight: Component::Absent,
 				message_broadcast: Component::Absent,
+				message_error: Component::Absent,
 			}
 		}
 
@@ -262,6 +267,7 @@ pub mod tests {
 				message_out: Component::Absent,
 				message_in_flight: Component::Present(data),
 				message_broadcast: Component::Absent,
+				message_error: Component::Absent,
 			}
 		}
 
@@ -288,6 +294,7 @@ pub mod tests {
 				message_out: Component::Absent,
 				message_in_flight: Component::Absent,
 				message_broadcast: Component::Present(data),
+				message_error: Component::Absent,
 			}
 		}
 
@@ -306,6 +313,26 @@ pub mod tests {
 		}
 	}
 
+	impl ContainerAccepting<GossamerMessageError> for GossamerContainer {
+		fn from_data(data: GossamerMessageError) -> Self {
+			Self {
+				message: Component::Absent,
+				message_in: Component::Absent,
+				message_out: Component::Absent,
+				message_in_flight: Component::Absent,
+				message_broadcast: Component::Absent,
+				message_error: Component::Present(data),
+			}
+		}
+
+		fn update_with_data(&mut self, data: GossamerMessageError) {
+			self.message_error = Component::Present(data);
+		}
+
+		fn remove_from_container(&mut self) {
+			self.message_error = Component::Absent;
+		}
+	}
 	pub struct TestParabyzantineSpec;
 
 	impl ParabyzantineDataSpec for TestParabyzantineSpec {
@@ -426,10 +453,9 @@ pub mod tests {
 
 	#[tokio::test]
 	async fn test_gossamer_hart() {
-		let gossamer = Gossamer::<ContainerEntity>::mock();
+		let (gossamer, _, _, _) = Gossamer::<ContainerEntity>::mock();
 		let messages = TestGossamerMessages;
-		let hart = GossamerHart::<TestParabyzantineDataBinding, TestGossamerSpec<'_>>::new(
-			gossamer, messages,
-		);
+		let _hart =
+			GossamerHart::<TestParabyzantineDataBinding, TestGossamerSpec>::new(gossamer, messages);
 	}
 }
