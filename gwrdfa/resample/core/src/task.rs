@@ -5,15 +5,20 @@ pub mod task_subcommittee;
 
 pub use data::ResampleTaskData;
 use execution::ResampleTasker;
+use parabyzantine::buffer::query::IntoQuery;
 use parabyzantine::task::{
-	ParabyzantineTask, ParabyzantineTaskData, ParabyzantineTaskDataBinding, TaskWorld,
+	ParabyzantineTask, ParabyzantineTaskData, ParabyzantineTaskDataBinding,
+	ParabyzantineTaskDataSpec, TaskWorld,
 };
 use parabyzantine::NoOp;
 use parabyzantine::NoOpData;
 pub use spec::ResampleTaskSpec;
 pub use task_subcommittee::{IndexTaskSubcommitteeAgreement, TaskSubcommittee};
 
-pub trait ResampleTaskBinding: Sized {
+pub trait ResampleTaskBinding: Sized where
+// Very verbose but we need to manually specify the bounds because where bounds are not inferred on traits
+for<'a> &'a <<Self::ParabyzantineTaskDataBinding as ParabyzantineTaskDataBinding>::Spec as ParabyzantineTaskDataSpec>::AgreementBuffer: IntoQuery<<<Self::ParabyzantineTaskDataBinding as ParabyzantineTaskDataBinding>::Spec as ParabyzantineTaskDataSpec>::AgreementEntity, <Self::ResampleTaskSpec as ResampleTaskSpec<Self::ParabyzantineTaskDataBinding>>::IndexTaskSubcommitteeAgreementQueryPlan, Query = <Self::ResampleTaskSpec as ResampleTaskSpec<Self::ParabyzantineTaskDataBinding>>::IndexTaskSubcommitteeAgreementQuery<'a>>,
+{
 	type ParabyzantineTaskDataBinding: ParabyzantineTaskDataBinding;
 	type ResampleTaskSpec: ResampleTaskSpec<Self::ParabyzantineTaskDataBinding>;
 	type ResampleTaskData: ResampleTaskData<
@@ -23,9 +28,9 @@ pub trait ResampleTaskBinding: Sized {
 }
 
 /// [ResampleTask] wraps around the ResampleTask data indicated by the binding.
-pub struct ResampleTask<Binding: ResampleTaskBinding>(pub Binding::ResampleTaskData);
+pub struct ResampleTask<Binding: ResampleTaskBinding>(pub Binding::ResampleTaskData) where for<'a> &'a <<Binding::ParabyzantineTaskDataBinding as ParabyzantineTaskDataBinding>::Spec as ParabyzantineTaskDataSpec>::AgreementBuffer: IntoQuery<<<Binding::ParabyzantineTaskDataBinding as ParabyzantineTaskDataBinding>::Spec as ParabyzantineTaskDataSpec>::AgreementEntity, <Binding::ResampleTaskSpec as ResampleTaskSpec<Binding::ParabyzantineTaskDataBinding>>::IndexTaskSubcommitteeAgreementQueryPlan, Query = <Binding::ResampleTaskSpec as ResampleTaskSpec<Binding::ParabyzantineTaskDataBinding>>::IndexTaskSubcommitteeAgreementQuery<'a>>,;
 
-impl<Binding: ResampleTaskBinding> ResampleTask<Binding> {
+impl<Binding: ResampleTaskBinding> ResampleTask<Binding> where for<'a> &'a <<Binding::ParabyzantineTaskDataBinding as ParabyzantineTaskDataBinding>::Spec as ParabyzantineTaskDataSpec>::AgreementBuffer: IntoQuery<<<Binding::ParabyzantineTaskDataBinding as ParabyzantineTaskDataBinding>::Spec as ParabyzantineTaskDataSpec>::AgreementEntity, <Binding::ResampleTaskSpec as ResampleTaskSpec<Binding::ParabyzantineTaskDataBinding>>::IndexTaskSubcommitteeAgreementQueryPlan, Query = <Binding::ResampleTaskSpec as ResampleTaskSpec<Binding::ParabyzantineTaskDataBinding>>::IndexTaskSubcommitteeAgreementQuery<'a>>,{
 	pub fn data(&self) -> &Binding::ResampleTaskData {
 		&self.0
 	}
@@ -37,7 +42,7 @@ impl<Binding: ResampleTaskBinding> ResampleTask<Binding> {
 
 impl<Binding: ResampleTaskBinding>
 	ResampleTaskData<Binding::ParabyzantineTaskDataBinding, Binding::ResampleTaskSpec>
-	for ResampleTask<Binding>
+	for ResampleTask<Binding>  where for<'a> &'a <<Binding::ParabyzantineTaskDataBinding as ParabyzantineTaskDataBinding>::Spec as ParabyzantineTaskDataSpec>::AgreementBuffer: IntoQuery<<<Binding::ParabyzantineTaskDataBinding as ParabyzantineTaskDataBinding>::Spec as ParabyzantineTaskDataSpec>::AgreementEntity, <Binding::ResampleTaskSpec as ResampleTaskSpec<Binding::ParabyzantineTaskDataBinding>>::IndexTaskSubcommitteeAgreementQueryPlan, Query = <Binding::ResampleTaskSpec as ResampleTaskSpec<Binding::ParabyzantineTaskDataBinding>>::IndexTaskSubcommitteeAgreementQuery<'a>>,
 {
 	fn me(
 		&self,
@@ -56,7 +61,7 @@ impl<Binding: ResampleTaskBinding>
 	}
 }
 
-impl<Binding: ResampleTaskBinding> ParabyzantineTask for ResampleTask<Binding> {
+impl<Binding: ResampleTaskBinding> ParabyzantineTask for ResampleTask<Binding> where for<'a> &'a <<Binding::ParabyzantineTaskDataBinding as ParabyzantineTaskDataBinding>::Spec as ParabyzantineTaskDataSpec>::AgreementBuffer: IntoQuery<<<Binding::ParabyzantineTaskDataBinding as ParabyzantineTaskDataBinding>::Spec as ParabyzantineTaskDataSpec>::AgreementEntity, <Binding::ResampleTaskSpec as ResampleTaskSpec<Binding::ParabyzantineTaskDataBinding>>::IndexTaskSubcommitteeAgreementQueryPlan, Query = <Binding::ResampleTaskSpec as ResampleTaskSpec<Binding::ParabyzantineTaskDataBinding>>::IndexTaskSubcommitteeAgreementQuery<'a>>,{
 	type Binding = Binding::ParabyzantineTaskDataBinding;
 
 	fn update_parabyzantine_task(
@@ -70,7 +75,7 @@ impl<Binding: ResampleTaskBinding> ParabyzantineTask for ResampleTask<Binding> {
 		for index_data in data.agreement_facts.query(index_task_subcommittee_agreement_query_plan) {
 			let index: <Binding::ResampleTaskSpec as ResampleTaskSpec<
 				Binding::ParabyzantineTaskDataBinding,
-			>>::IndexTaskSubcommitteeAgreement = (&index_data).into();
+			>>::IndexTaskSubcommitteeAgreement = (index_data).into();
 
 			// If the task is assigned to this replica, compute the resample task.
 			if self.is_task_assigned_to_me(&index.subcommittee()) {
@@ -88,7 +93,7 @@ impl<Binding: ResampleTaskBinding> ParabyzantineTask for ResampleTask<Binding> {
 	}
 }
 
-impl<Binding: ResampleTaskBinding> ResampleTask<Binding> {
+impl<Binding: ResampleTaskBinding> ResampleTask<Binding> where for<'a> &'a <<Binding::ParabyzantineTaskDataBinding as ParabyzantineTaskDataBinding>::Spec as ParabyzantineTaskDataSpec>::AgreementBuffer: IntoQuery<<<Binding::ParabyzantineTaskDataBinding as ParabyzantineTaskDataBinding>::Spec as ParabyzantineTaskDataSpec>::AgreementEntity, <Binding::ResampleTaskSpec as ResampleTaskSpec<Binding::ParabyzantineTaskDataBinding>>::IndexTaskSubcommitteeAgreementQueryPlan, Query = <Binding::ResampleTaskSpec as ResampleTaskSpec<Binding::ParabyzantineTaskDataBinding>>::IndexTaskSubcommitteeAgreementQuery<'a>>, {
 	pub fn resample_task(
 		&mut self,
 		task_data: &<Binding::ParabyzantineTaskDataBinding as ParabyzantineTaskDataBinding>::Data,

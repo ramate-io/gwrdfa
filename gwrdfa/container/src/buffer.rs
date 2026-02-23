@@ -146,10 +146,7 @@ pub mod test {
 		let container = TestContainer::default().with_field(Component::Present(TestField(1)));
 		let entity = buffer.insert_container(container);
 		buffer.remove::<TestField>(entity);
-		assert_eq!(
-			buffer.get(entity),
-			Some(&TestContainer::default().with_field(Component::Absent))
-		);
+		assert_eq!(buffer.get(entity), None);
 	}
 
 	#[test]

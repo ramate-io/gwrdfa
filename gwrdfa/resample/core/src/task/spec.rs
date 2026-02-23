@@ -10,7 +10,7 @@ pub trait ResampleTaskSpec<Binding: ParabyzantineTaskDataBinding>: Sized
 where
 	for<'a> &'a <Binding::Spec as ParabyzantineTaskDataSpec>::AgreementBuffer: IntoQuery<
 		<Binding::Spec as ParabyzantineTaskDataSpec>::AgreementEntity,
-		<Binding::Spec as ParabyzantineTaskDataSpec>::AgreementBuffer,
+		Self::IndexTaskSubcommitteeAgreementQueryPlan,
 		Query = Self::IndexTaskSubcommitteeAgreementQuery<'a>,
 	>,
 {
@@ -37,7 +37,7 @@ where
 
 	/// The type of the index subcommittee agreement.
 	type IndexTaskSubcommitteeAgreement: IndexTaskSubcommitteeAgreement<Self::Index, Self::Sender, Self::TaskSubcommittee>
-		+ for<'a> From<&'a (
+		+ for<'a> From<(
 			<Binding::Spec as ParabyzantineTaskDataSpec>::AgreementEntity,
 			Self::IndexTaskSubcommitteeAgreementQueryData<'a>,
 		)>;
