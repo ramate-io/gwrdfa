@@ -25,7 +25,7 @@ impl<Entity> Querylike<Entity> for NoOp {
 	}
 }
 
-impl<Entity> IntoQuery<Entity, NoOp> for NoOp {
+impl<'a, Entity> IntoQuery<Entity, NoOp> for &'a NoOp {
 	type Query = NoOp;
 
 	fn into_query(self, _plan: NoOp) -> Self::Query {
@@ -45,10 +45,10 @@ impl<Entity, T> Querylike<Entity> for NoOpOn<T> {
 	}
 }
 
-impl<Entity, T> IntoQuery<Entity, NoOpOn<T>> for NoOpOn<T> {
-	type Query = NoOpOn<T>;
+impl<'a, Entity, Plan, Item> IntoQuery<Entity, Plan> for &'a NoOpOn<(Plan, Item)> {
+	type Query = NoOpOn<(Plan, Item)>;
 
-	fn into_query(self, _plan: NoOpOn<T>) -> Self::Query {
+	fn into_query(self, _plan: Plan) -> Self::Query {
 		NoOpOn::new()
 	}
 }
