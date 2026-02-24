@@ -5,23 +5,11 @@ use super::{
 use parabyzantine::NoOp;
 use parabyzantine::{
 	agreement::{ParabyzantineAgreementDataBinding, ParabyzantineAgreementDataSpec},
-	buffer::query::{IntoQuery, Querylike},
+	buffer::query::{QueryPlanlike, Querylike},
 };
 
 /// A [ResampleAgreementSpec] is a specification for ResampleAgreement consensus.
-pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Sized
-where
-	for<'a> &'a <Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer: IntoQuery<
-		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
-		Self::IndexSubcommitteeAgreementQueryPlan,
-		Query = Self::IndexSubcommitteeAgreementQuery<'a>,
-	>,
-	for<'a> &'a <Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateBuffer: IntoQuery<
-		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
-		Self::CertificateQueryPlan,
-		Query = Self::CertificateQuery<'a>,
-	>,
-{
+pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Sized {
 	/// The type of the index.
 	type Index: Eq;
 
@@ -44,7 +32,11 @@ where
 	>;
 
 	/// The query plan for the index subcommittee agreement.
-	type IndexSubcommitteeAgreementQueryPlan;
+	type IndexSubcommitteeAgreementQueryPlan: for<'a> QueryPlanlike<
+		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
+		&'a <Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer,
+		Query = Self::IndexSubcommitteeAgreementQuery<'a>,
+	>;
 
 	/// The type of the index subcommittee agreement.
 	type IndexSubcommitteeAgreement: IndexSubcommitteeAgreement<Self::Index, Self::Sender, Self::Subcommittee>
@@ -63,7 +55,11 @@ where
 	>;
 
 	/// The query plan for the certificate.
-	type CertificateQueryPlan;
+	type CertificateQueryPlan: for<'a> QueryPlanlike<
+		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
+		&'a <Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateBuffer,
+		Query = Self::CertificateQuery<'a>,
+	>;
 
 	/// The type of the certificate.
 	type Certificate: Certificate<Self::Index, Self::Value, Self::Sender>

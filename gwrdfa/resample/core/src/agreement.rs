@@ -13,7 +13,6 @@ use parabyzantine::agreement::{
 	AgreementWorld, ParabyzantineAgreement, ParabyzantineAgreementData,
 	ParabyzantineAgreementDataBinding, ParabyzantineAgreementDataSpec,
 };
-use parabyzantine::buffer::query::IntoQuery;
 use parabyzantine::{NoOp, NoOpData};
 pub use sampler::Sampler;
 pub use spec::ResampleAgreementSpec;
@@ -22,13 +21,10 @@ pub use subcommittee::{IndexSubcommitteeAgreement, Subcommittee};
 /// A [ResampleAgreementBinding] is a binding for the [ResampleAgreement] protocol.
 ///
 /// It binds between the [ParabyzantineAgreementDataBinding] and the [ResampleAgreementSpec] and the [ResampleAgreementData].
-pub trait ResampleAgreementBinding: Sized where 
-// We need the buffer to induce into query bounds for the index subcommittee agreement query
-for<'a> &'a <<Self::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer: IntoQuery<<<Self::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity, <Self::ResampleAgreementSpec as ResampleAgreementSpec<Self::ParabyzantineAgreementDataBinding>>::IndexSubcommitteeAgreementQueryPlan, Query = <Self::ResampleAgreementSpec as ResampleAgreementSpec<Self::ParabyzantineAgreementDataBinding>>::IndexSubcommitteeAgreementQuery<'a>>,
-// We need the buffer to induce into query bounds for the certificate query
-for<'a> &'a <<Self::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::CertificateBuffer: IntoQuery<<<Self::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity, <Self::ResampleAgreementSpec as ResampleAgreementSpec<Self::ParabyzantineAgreementDataBinding>>::CertificateQueryPlan, Query = <Self::ResampleAgreementSpec as ResampleAgreementSpec<Self::ParabyzantineAgreementDataBinding>>::CertificateQuery<'a>>,{
-	type ParabyzantineAgreementDataBinding: ParabyzantineAgreementDataBinding;
-	type ResampleAgreementSpec: ResampleAgreementSpec<Self::ParabyzantineAgreementDataBinding>;
+pub trait ResampleAgreementBinding: Sized {
+	type ParabyzantineAgreementDataBinding: ParabyzantineAgreementDataBinding + 'static;
+	type ResampleAgreementSpec: ResampleAgreementSpec<Self::ParabyzantineAgreementDataBinding>
+		+ 'static;
 	type ResampleAgreementData: ResampleAgreementData<
 		Self::ParabyzantineAgreementDataBinding,
 		Self::ResampleAgreementSpec,
@@ -42,20 +38,11 @@ for<'a> &'a <<Self::ParabyzantineAgreementDataBinding as ParabyzantineAgreementD
 /// [ResampleAgreement] does not enforce countability restrictions on the [Sampler].
 /// Hence, it is sort of an abstraction that exists before the more common [CountableResampleAgreement] implementation.
 #[derive(Debug, Clone)]
-pub struct ResampleAgreement<Binding: ResampleAgreementBinding>(pub Binding::ResampleAgreementData)  where 
-// We need the buffer to induce into query bounds for the index subcommittee agreement query
-for<'a> &'a <<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer: IntoQuery<<<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity, <Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::IndexSubcommitteeAgreementQueryPlan, Query = <Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::IndexSubcommitteeAgreementQuery<'a>>,
-// We need the buffer to induce into query bounds for the certificate query
-for<'a> &'a <<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::CertificateBuffer: IntoQuery<<<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity, <Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::CertificateQueryPlan, Query = <Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::CertificateQuery<'a>>,
+pub struct ResampleAgreement<Binding: ResampleAgreementBinding>(pub Binding::ResampleAgreementData);
 // Because where bounds are not inferred on traits we need to manually specify them,
 // this is incredibly ugly and we should find a way to improve this
-;
 
-impl<Binding: ResampleAgreementBinding> ResampleAgreement<Binding>  where 
-// We need the buffer to induce into query bounds for the index subcommittee agreement query
-for<'a> &'a <<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer: IntoQuery<<<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity, <Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::IndexSubcommitteeAgreementQueryPlan, Query = <Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::IndexSubcommitteeAgreementQuery<'a>>,
-// We need the buffer to induce into query bounds for the certificate query
-for<'a> &'a <<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::CertificateBuffer: IntoQuery<<<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity, <Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::CertificateQueryPlan, Query = <Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::CertificateQuery<'a>>,
+impl<Binding: ResampleAgreementBinding> ResampleAgreement<Binding>
 // Because where bounds are not inferred on traits we need to manually specify them,
 // this is incredibly ugly and we should find a way to improve this.
 {
@@ -72,13 +59,7 @@ impl<Binding: ResampleAgreementBinding>
 	ResampleAgreementData<
 		Binding::ParabyzantineAgreementDataBinding,
 		Binding::ResampleAgreementSpec,
-	> for ResampleAgreement<Binding>  where 
-	// We need the buffer to induce into query bounds for the index subcommittee agreement query
-	for<'a> &'a <<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer: IntoQuery<<<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity, <Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::IndexSubcommitteeAgreementQueryPlan, Query = <Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::IndexSubcommitteeAgreementQuery<'a>>,
-	// We need the buffer to induce into query bounds for the certificate query
-	for<'a> &'a <<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::CertificateBuffer: IntoQuery<<<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity, <Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::CertificateQueryPlan, Query = <Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::CertificateQuery<'a>>,
-	// Because where bounds are not inferred on traits we need to manually specify them,
-	// this is incredibly ugly and we should find a way to improve this.
+	> for ResampleAgreement<Binding>
 {
 	/// A [ResampleAgreement] data must be able to provide a [CertificateSet]
 	fn certificate_set(
@@ -157,14 +138,7 @@ impl<Binding: ResampleAgreementBinding>
 	}
 }
 
-impl<Binding: ResampleAgreementBinding> ParabyzantineAgreement for ResampleAgreement<Binding> where 
-// We need the buffer to induce into query bounds for the index subcommittee agreement query
-for<'a> &'a <<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer: IntoQuery<<<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity, <Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::IndexSubcommitteeAgreementQueryPlan, Query = <Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::IndexSubcommitteeAgreementQuery<'a>>,
-// We need the buffer to induce into query bounds for the certificate query
-for<'a> &'a <<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::CertificateBuffer: IntoQuery<<<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity, <Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::CertificateQueryPlan, Query = <Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::CertificateQuery<'a>>,
-// Because where bounds are not inferred on traits we need to manually specify them,
-// this is incredibly ugly and we should find a way to improve this.
-{
+impl<Binding: ResampleAgreementBinding> ParabyzantineAgreement for ResampleAgreement<Binding> {
 	type Binding = Binding::ParabyzantineAgreementDataBinding;
 
 	fn update_parabyzantine_agreement(
@@ -176,7 +150,6 @@ for<'a> &'a <<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreeme
 		// over all the index subcommittee agreements
 		let index_query = self.index_subcommittee_agreement_query_plan();
 		for index_data in agreement_world.agreement_facts.query(index_query) {
-
 			let certificate_query_plan = self.certificate_query_plan(&index_data);
 
 			let index: <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
@@ -232,14 +205,7 @@ for<'a> &'a <<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreeme
 	}
 }
 
-impl<Binding: ResampleAgreementBinding> ResampleAgreement<Binding>  where 
-// We need the buffer to induce into query bounds for the index subcommittee agreement query
-for<'a> &'a <<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer: IntoQuery<<<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity, <Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::IndexSubcommitteeAgreementQueryPlan, Query = <Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::IndexSubcommitteeAgreementQuery<'a>>,
-// We need the buffer to induce into query bounds for the certificate query
-for<'a> &'a <<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::CertificateBuffer: IntoQuery<<<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity, <Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::CertificateQueryPlan, Query = <Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::CertificateQuery<'a>>,
-// Because where bounds are not inferred on traits we need to manually specify them,
-// this is incredibly ugly and we should find a way to improve this.
-{
+impl<Binding: ResampleAgreementBinding> ResampleAgreement<Binding> {
 	/// A direct implementation of resampling on an agreement world.
 	///
 	/// This is most useful for experimenting and testing.

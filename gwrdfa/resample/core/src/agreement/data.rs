@@ -1,23 +1,12 @@
 use super::ResampleAgreementSpec;
 use parabyzantine::agreement::{ParabyzantineAgreementDataBinding, ParabyzantineAgreementDataSpec};
-use parabyzantine::buffer::query::IntoQuery;
 use parabyzantine::NoOp;
 use parabyzantine::NoOpData;
 
 pub trait ResampleAgreementData<
 	Binding: ParabyzantineAgreementDataBinding,
 	Spec: ResampleAgreementSpec<Binding>,
->: Sized where
-	for<'a> &'a <Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer: IntoQuery<
-		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
-		Spec::IndexSubcommitteeAgreementQueryPlan,
-		Query = Spec::IndexSubcommitteeAgreementQuery<'a>,
-	>,
-	for<'a> &'a <Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateBuffer: IntoQuery<
-		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
-		Spec::CertificateQueryPlan,
-		Query = Spec::CertificateQuery<'a>,
-	>,
+>: Sized
 {
 	/// A [ResampleAgreement] data must be able to provide a [CertificateSet]
 	fn certificate_set(&self) -> &Spec::CertificateSet;

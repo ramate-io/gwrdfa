@@ -13,6 +13,12 @@ pub trait IntoQuery<Entity, T> {
 	fn into_query(self, plan: T) -> Self::Query;
 }
 
+pub trait QueryPlanlike<Entity, C> {
+	type Query: Querylike<Entity>;
+
+	fn into_query_plan(self, plan: C) -> Self::Query;
+}
+
 impl<Entity> Querylike<Entity> for NoOp {
 	type Item = NoOp;
 
@@ -29,6 +35,14 @@ impl<'a, Entity> IntoQuery<Entity, NoOp> for &'a NoOp {
 	type Query = NoOp;
 
 	fn into_query(self, _plan: NoOp) -> Self::Query {
+		NoOp
+	}
+}
+
+impl<'a, Entity, C> QueryPlanlike<Entity, C> for NoOp {
+	type Query = NoOp;
+
+	fn into_query_plan(self, _plan: C) -> Self::Query {
 		NoOp
 	}
 }

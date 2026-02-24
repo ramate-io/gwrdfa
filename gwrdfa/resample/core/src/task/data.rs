@@ -1,6 +1,5 @@
 use super::TaskSubcommittee;
-use parabyzantine::buffer::query::IntoQuery;
-use parabyzantine::task::{ParabyzantineTaskDataBinding, ParabyzantineTaskDataSpec};
+use parabyzantine::task::ParabyzantineTaskDataBinding;
 use parabyzantine::{NoOp, NoOpData};
 
 use super::ResampleTaskSpec;
@@ -8,11 +7,7 @@ use super::ResampleTaskSpec;
 pub trait ResampleTaskData<Binding: ParabyzantineTaskDataBinding, Spec: ResampleTaskSpec<Binding>>:
 	Sized
 where
-	for<'a> &'a <Binding::Spec as ParabyzantineTaskDataSpec>::AgreementBuffer: IntoQuery<
-		<Binding::Spec as ParabyzantineTaskDataSpec>::AgreementEntity,
-		Spec::IndexTaskSubcommitteeAgreementQueryPlan,
-		Query = Spec::IndexTaskSubcommitteeAgreementQuery<'a>,
-	>,
+	Binding: 'static,
 {
 	/// Gets the sender identifier for the Hart.
 	fn me(&self) -> &Spec::Sender;
