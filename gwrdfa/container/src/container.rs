@@ -1,4 +1,4 @@
-// pub mod tuple;
+pub mod tuple;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Component<T: Sized> {

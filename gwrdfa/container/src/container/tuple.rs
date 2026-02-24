@@ -1,7 +1,7 @@
 //! This module will contain tuple generalizations of [ContainerHolding] and [ContainerGiving].
-use super::{ContainerGiving, ContainerHolding, ContainerHoldingOps};
+use super::{ContainerAccepting, ContainerHoldingOps};
 
-impl<Container: ContainerHolding<A> + ContainerHolding<B>, A, B> ContainerHolding<(A, B)>
+impl<Container: ContainerAccepting<A> + ContainerAccepting<B>, A, B> ContainerAccepting<(A, B)>
 	for Container
 {
 	fn from_data(data: (A, B)) -> Self {
@@ -18,13 +18,5 @@ impl<Container: ContainerHolding<A> + ContainerHolding<B>, A, B> ContainerHoldin
 	fn remove_from_container(&mut self) {
 		self.remove_this::<A>();
 		self.remove_this::<B>();
-	}
-}
-
-impl<'a, Container: ContainerGiving<'a, A> + ContainerGiving<'a, B>, A, B>
-	ContainerGiving<'a, (A, B)> for Container
-{
-	fn as_item(&'a self) -> (A, B) {
-		(self.as_item(), self.as_item())
 	}
 }
