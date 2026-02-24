@@ -6,10 +6,7 @@ use parabyzantine::{
 	NoOp,
 };
 
-pub trait ResampleTaskSpec<Binding: ParabyzantineTaskDataBinding>: Sized
-where
-	Binding: 'static,
-{
+pub trait ResampleTaskSpec<Binding: ParabyzantineTaskDataBinding>: Sized {
 	/// The type of the index.
 	type Index: Eq;
 

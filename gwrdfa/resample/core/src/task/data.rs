@@ -6,8 +6,6 @@ use super::ResampleTaskSpec;
 
 pub trait ResampleTaskData<Binding: ParabyzantineTaskDataBinding, Spec: ResampleTaskSpec<Binding>>:
 	Sized
-where
-	Binding: 'static,
 {
 	/// Gets the sender identifier for the Hart.
 	fn me(&self) -> &Spec::Sender;

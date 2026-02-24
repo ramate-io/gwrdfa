@@ -14,7 +14,7 @@ pub use spec::ResampleTaskSpec;
 pub use task_subcommittee::{IndexTaskSubcommitteeAgreement, TaskSubcommittee};
 
 pub trait ResampleTaskBinding: Sized {
-	type ParabyzantineTaskDataBinding: ParabyzantineTaskDataBinding + 'static;
+	type ParabyzantineTaskDataBinding: ParabyzantineTaskDataBinding;
 	type ResampleTaskSpec: ResampleTaskSpec<Self::ParabyzantineTaskDataBinding>;
 	type ResampleTaskData: ResampleTaskData<
 		Self::ParabyzantineTaskDataBinding,
@@ -25,10 +25,7 @@ pub trait ResampleTaskBinding: Sized {
 /// [ResampleTask] wraps around the ResampleTask data indicated by the binding.
 pub struct ResampleTask<Binding: ResampleTaskBinding>(pub Binding::ResampleTaskData);
 
-impl<Binding: ResampleTaskBinding> ResampleTask<Binding>
-where
-	Binding: 'static,
-{
+impl<Binding: ResampleTaskBinding> ResampleTask<Binding> {
 	pub fn data(&self) -> &Binding::ResampleTaskData {
 		&self.0
 	}
@@ -41,8 +38,6 @@ where
 impl<Binding: ResampleTaskBinding>
 	ResampleTaskData<Binding::ParabyzantineTaskDataBinding, Binding::ResampleTaskSpec>
 	for ResampleTask<Binding>
-where
-	Binding: 'static,
 {
 	fn me(
 		&self,
@@ -61,10 +56,7 @@ where
 	}
 }
 
-impl<Binding: ResampleTaskBinding> ParabyzantineTask for ResampleTask<Binding>
-where
-	Binding: 'static,
-{
+impl<Binding: ResampleTaskBinding> ParabyzantineTask for ResampleTask<Binding> {
 	type Binding = Binding::ParabyzantineTaskDataBinding;
 
 	fn update_parabyzantine_task(
@@ -96,10 +88,7 @@ where
 	}
 }
 
-impl<Binding: ResampleTaskBinding> ResampleTask<Binding>
-where
-	Binding: 'static,
-{
+impl<Binding: ResampleTaskBinding> ResampleTask<Binding> {
 	pub fn resample_task(
 		&mut self,
 		task_data: &<Binding::ParabyzantineTaskDataBinding as ParabyzantineTaskDataBinding>::Data,
