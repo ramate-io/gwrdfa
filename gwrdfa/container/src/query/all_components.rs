@@ -1,6 +1,6 @@
 use crate::{Component, ContainerEntity, ContainerEntityBuffer, ContainerGiving};
 use core::marker::PhantomData;
-use parabyzantine::buffer::query::{IntoQuery, Querylike};
+use parabyzantine::buffer::query::{QueryPlanlike, Querylike};
 
 /// A query over a container.
 pub struct AllComponentsQuery<'a, T: ContainerGiving<B> + Sized, B> {
@@ -42,15 +42,15 @@ impl<B> AllComponents<B> {
 	}
 }
 
-impl<'a, T, B> IntoQuery<ContainerEntity, AllComponents<B>> for &'a ContainerEntityBuffer<T>
+impl<'a, T, B> QueryPlanlike<ContainerEntity, &'a ContainerEntityBuffer<T>> for AllComponents<B>
 where
-	T: ContainerGiving<B> + Sized + 'static,
-	B: 'static,
+	T: ContainerGiving<B> + Sized,
+	B: 'a,
 {
 	type Query = AllComponentsQuery<'a, T, B>;
 
-	fn into_query(self, _plan: AllComponents<B>) -> AllComponentsQuery<'a, T, B> {
-		AllComponentsQuery::new(self)
+	fn into_query(self, buffer: &'a ContainerEntityBuffer<T>) -> AllComponentsQuery<'a, T, B> {
+		AllComponentsQuery::new(buffer)
 	}
 }
 
@@ -65,7 +65,7 @@ mod test {
 		let container = TestContainer::default();
 		let entity = buffer.insert_container(container);
 		let query_plan = AllComponents::<i32>::new();
-		let mut query = (&buffer).into_query(query_plan);
+		let mut query = query_plan.into_query(&buffer);
 		assert_eq!(query.next(), Some((entity, Component::Present(&0))));
 	}
 }

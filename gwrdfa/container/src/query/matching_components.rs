@@ -1,7 +1,7 @@
 use super::all_components::AllComponentsQuery;
 use crate::{Component, ContainerEntity, ContainerEntityBuffer, ContainerGiving};
 use core::marker::PhantomData;
-use parabyzantine::buffer::query::{IntoQuery, Querylike};
+use parabyzantine::buffer::query::{QueryPlanlike, Querylike};
 
 pub struct MatchingComponentsQuery<'a, T: ContainerGiving<B> + Sized, B> {
 	container_query: AllComponentsQuery<'a, T, B>,
@@ -47,15 +47,16 @@ impl<B> MatchingComponents<B> {
 	}
 }
 
-impl<'a, T, B> IntoQuery<ContainerEntity, MatchingComponents<B>> for &'a ContainerEntityBuffer<T>
+impl<'a, T, B> QueryPlanlike<ContainerEntity, &'a ContainerEntityBuffer<T>>
+	for MatchingComponents<B>
 where
-	T: ContainerGiving<B> + Sized + 'static,
-	B: 'static,
+	T: ContainerGiving<B> + Sized,
+	B: 'a,
 {
 	type Query = MatchingComponentsQuery<'a, T, B>;
 
-	fn into_query(self, _plan: MatchingComponents<B>) -> MatchingComponentsQuery<'a, T, B> {
-		MatchingComponentsQuery::new(self)
+	fn into_query(self, buffer: &'a ContainerEntityBuffer<T>) -> MatchingComponentsQuery<'a, T, B> {
+		MatchingComponentsQuery::new(buffer)
 	}
 }
 
@@ -72,14 +73,14 @@ mod test {
 		let container = TestContainer::default();
 		let entity = buffer.insert_container(container);
 		let query_plan = MatchingComponents::<i32>::new();
-		let mut query = (&buffer).into_query(query_plan);
+		let mut query = query_plan.into_query(&buffer);
 		assert_eq!(query.next(), Some((entity, &0)));
 
 		buffer.insert(None, 0 as i32);
 		buffer.insert(None, TestField(1));
 		buffer.insert(None, TestField(2));
 
-		let mut query = (&buffer).into_query(MatchingComponents::<TestField>::new());
+		let mut query = MatchingComponents::<TestField>::new().into_query(&buffer);
 		let mut matched_entities: HashSet<(ContainerEntity, &TestField)> = HashSet::new();
 		while let Some(tuple) = query.next() {
 			matched_entities.insert(tuple);

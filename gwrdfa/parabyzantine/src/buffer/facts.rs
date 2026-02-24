@@ -1,5 +1,5 @@
 use crate::buffer::{
-	query::{IntoQuery, QueryPlanlike, Querylike},
+	query::{QueryPlanlike, Querylike},
 	Bufferlike,
 };
 use core::marker::PhantomData;
@@ -30,7 +30,7 @@ impl<'a, Entity: Sized, Buffer: Bufferlike<Entity>> Facts<'a, Entity, Buffer> {
 		Entity: 'a,
 		QueryPlan: QueryPlanlike<Entity, &'a Buffer> + 'a,
 	{
-		let mut q = query_plan.into_query_plan(self.inner);
+		let mut q = query_plan.into_query(self.inner);
 		core::iter::from_fn(move || q.next())
 	}
 
@@ -41,9 +41,9 @@ impl<'a, Entity: Sized, Buffer: Bufferlike<Entity>> Facts<'a, Entity, Buffer> {
 		query_plan: QueryPlan,
 	) -> Option<B>
 	where
-		&'a Buffer: IntoQuery<Entity, QueryPlan, Query = Query>,
+		QueryPlan: QueryPlanlike<Entity, &'a Buffer, Query = Query>,
 	{
-		let query = self.inner.into_query(query_plan);
+		let query = query_plan.into_query(self.inner);
 		query.get(entity)
 	}
 }

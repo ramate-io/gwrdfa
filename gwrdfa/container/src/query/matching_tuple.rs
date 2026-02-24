@@ -1,6 +1,6 @@
 use crate::{Component, ContainerEntity, ContainerEntityBuffer, ContainerGiving};
 use core::marker::PhantomData;
-use parabyzantine::buffer::query::{IntoQuery, QueryPlanlike, Querylike};
+use parabyzantine::buffer::query::{QueryPlanlike, Querylike};
 
 pub struct MatchingTupleQuery<'a, Container, T> {
 	buffer: &'a ContainerEntityBuffer<Container>,
@@ -49,19 +49,6 @@ impl<T> MatchingTuple<T> {
 	}
 }
 
-impl<'a, T, A, B> IntoQuery<ContainerEntity, MatchingTuple<(A, B)>> for &'a ContainerEntityBuffer<T>
-where
-	T: ContainerGiving<A> + ContainerGiving<B> + Sized + 'static,
-	A: 'static,
-	B: 'static,
-{
-	type Query = MatchingTupleQuery<'a, T, (A, B)>;
-
-	fn into_query(self, _plan: MatchingTuple<(A, B)>) -> MatchingTupleQuery<'a, T, (A, B)> {
-		MatchingTupleQuery::new(self)
-	}
-}
-
 impl<'a, T, A, B> QueryPlanlike<ContainerEntity, &'a ContainerEntityBuffer<T>>
 	for MatchingTuple<(A, B)>
 where
@@ -71,10 +58,7 @@ where
 {
 	type Query = MatchingTupleQuery<'a, T, (A, B)>;
 
-	fn into_query_plan(
-		self,
-		buffer: &'a ContainerEntityBuffer<T>,
-	) -> MatchingTupleQuery<'a, T, (A, B)> {
+	fn into_query(self, buffer: &'a ContainerEntityBuffer<T>) -> MatchingTupleQuery<'a, T, (A, B)> {
 		MatchingTupleQuery::new(buffer)
 	}
 }
@@ -92,14 +76,14 @@ mod test {
 		let container = TestContainer::default();
 		let _entity = buffer.insert_container(container);
 		let query_plan = MatchingTuple::<(i32, TestField)>::new();
-		let mut query = (&buffer).into_query(query_plan);
+		let mut query = query_plan.into_query(&buffer);
 		assert_eq!(query.next(), None);
 
 		buffer.insert(None, 0 as i32);
 		buffer.insert(None, TestField(1));
 		buffer.insert(None, TestField(2));
 
-		let mut query = (&buffer).into_query(MatchingTuple::<(i32, TestField)>::new());
+		let mut query = MatchingTuple::<(i32, TestField)>::new().into_query(&buffer);
 		let mut matched_entities: HashSet<(ContainerEntity, (&i32, &TestField))> = HashSet::new();
 
 		while let Some(tuple) = query.next() {
