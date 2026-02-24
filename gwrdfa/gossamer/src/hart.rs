@@ -117,11 +117,12 @@ where
 #[cfg(test)]
 pub mod tests {
 	use super::*;
+	use crate::container::GossamerContainer;
 	use crate::GossamerMessage;
 	use crate::GossamerMessageError;
 	use gwrdfa_container::{
 		query::matching_tuple::{MatchingTuple, MatchingTupleQuery},
-		Component, ContainerAccepting, ContainerEntity, ContainerEntityBuffer, ContainerGiving,
+		ContainerEntity, ContainerEntityBuffer,
 	};
 	use parabyzantine::{NoOp, NoOpData, ParabyzantineData};
 
@@ -138,173 +139,6 @@ pub mod tests {
 		}
 	}
 
-	#[derive(Debug, Clone, PartialEq, Eq)]
-	pub struct GossamerContainer {
-		message: Component<TestMessage>,
-		message_in: Component<In>,
-		message_out: Component<Out>,
-		message_in_flight: Component<InFlight>,
-		message_broadcast: Component<Broadcast>,
-		message_error: Component<GossamerMessageError>,
-	}
-
-	impl ContainerAccepting<TestMessage> for GossamerContainer {
-		fn from_data(data: TestMessage) -> Self {
-			Self {
-				message: Component::Present(data),
-				message_in: Component::Absent,
-				message_out: Component::Absent,
-				message_in_flight: Component::Absent,
-				message_broadcast: Component::Absent,
-				message_error: Component::Absent,
-			}
-		}
-
-		fn update_with_data(&mut self, data: TestMessage) {
-			self.message = Component::Present(data);
-		}
-
-		fn remove_from_container(&mut self) {
-			self.message = Component::Absent;
-		}
-	}
-
-	impl ContainerGiving<TestMessage> for GossamerContainer {
-		fn as_component(&self) -> Component<&TestMessage> {
-			self.message.as_ref()
-		}
-	}
-
-	impl ContainerAccepting<(In, TestMessage)> for GossamerContainer {
-		fn from_data(data: (In, TestMessage)) -> Self {
-			Self {
-				message: Component::Present(data.1),
-				message_in: Component::Present(data.0),
-				message_out: Component::Absent,
-				message_in_flight: Component::Absent,
-				message_broadcast: Component::Absent,
-				message_error: Component::Absent,
-			}
-		}
-
-		fn update_with_data(&mut self, data: (In, TestMessage)) {
-			self.message = Component::Present(data.1);
-			self.message_in = Component::Present(data.0);
-		}
-
-		fn remove_from_container(&mut self) {
-			self.message = Component::Absent;
-			self.message_in = Component::Absent;
-		}
-	}
-
-	impl ContainerGiving<In> for GossamerContainer {
-		fn as_component(&self) -> Component<&In> {
-			self.message_in.as_ref()
-		}
-	}
-
-	impl ContainerAccepting<Out> for GossamerContainer {
-		fn from_data(data: Out) -> Self {
-			Self {
-				message: Component::Absent,
-				message_in: Component::Absent,
-				message_out: Component::Present(data),
-				message_in_flight: Component::Absent,
-				message_broadcast: Component::Absent,
-				message_error: Component::Absent,
-			}
-		}
-
-		fn update_with_data(&mut self, data: Out) {
-			self.message_out = Component::Present(data);
-		}
-
-		fn remove_from_container(&mut self) {
-			self.message_out = Component::Absent;
-		}
-	}
-
-	impl ContainerGiving<Out> for GossamerContainer {
-		fn as_component(&self) -> Component<&Out> {
-			self.message_out.as_ref()
-		}
-	}
-
-	impl ContainerAccepting<InFlight> for GossamerContainer {
-		fn from_data(data: InFlight) -> Self {
-			Self {
-				message: Component::Absent,
-				message_in: Component::Absent,
-				message_out: Component::Absent,
-				message_in_flight: Component::Present(data),
-				message_broadcast: Component::Absent,
-				message_error: Component::Absent,
-			}
-		}
-
-		fn update_with_data(&mut self, data: InFlight) {
-			self.message_in_flight = Component::Present(data);
-		}
-
-		fn remove_from_container(&mut self) {
-			self.message_in_flight = Component::Absent;
-		}
-	}
-
-	impl ContainerGiving<InFlight> for GossamerContainer {
-		fn as_component(&self) -> Component<&InFlight> {
-			self.message_in_flight.as_ref()
-		}
-	}
-
-	impl ContainerAccepting<Broadcast> for GossamerContainer {
-		fn from_data(data: Broadcast) -> Self {
-			Self {
-				message: Component::Absent,
-				message_in: Component::Absent,
-				message_out: Component::Absent,
-				message_in_flight: Component::Absent,
-				message_broadcast: Component::Present(data),
-				message_error: Component::Absent,
-			}
-		}
-
-		fn update_with_data(&mut self, data: Broadcast) {
-			self.message_broadcast = Component::Present(data);
-		}
-
-		fn remove_from_container(&mut self) {
-			self.message_broadcast = Component::Absent;
-		}
-	}
-
-	impl ContainerGiving<Broadcast> for GossamerContainer {
-		fn as_component(&self) -> Component<&Broadcast> {
-			self.message_broadcast.as_ref()
-		}
-	}
-
-	impl ContainerAccepting<GossamerMessageError> for GossamerContainer {
-		fn from_data(data: GossamerMessageError) -> Self {
-			Self {
-				message: Component::Absent,
-				message_in: Component::Absent,
-				message_out: Component::Absent,
-				message_in_flight: Component::Absent,
-				message_broadcast: Component::Absent,
-				message_error: Component::Present(data),
-			}
-		}
-
-		fn update_with_data(&mut self, data: GossamerMessageError) {
-			self.message_error = Component::Present(data);
-		}
-
-		fn remove_from_container(&mut self) {
-			self.message_error = Component::Absent;
-		}
-	}
 	pub struct TestParabyzantineSpec;
 
 	impl ParabyzantineDataSpec for TestParabyzantineSpec {
@@ -318,7 +152,7 @@ pub mod tests {
 		type TransactionBuffer = NoOp;
 		type TransactionDraftBuffer = NoOp;
 		type MessageEntity = ContainerEntity;
-		type MessageBuffer = ContainerEntityBuffer<GossamerContainer>;
+		type MessageBuffer = ContainerEntityBuffer<GossamerContainer<TestMessage>>;
 		type MessageDraftBuffer = NoOp;
 		type TaskEntity = NoOp;
 		type TaskBuffer = NoOp;
@@ -326,7 +160,7 @@ pub mod tests {
 	}
 
 	pub struct TestParabyzantineData {
-		gossamer_buffer: ContainerEntityBuffer<GossamerContainer>,
+		gossamer_buffer: ContainerEntityBuffer<GossamerContainer<TestMessage>>,
 		noop_data: NoOpData,
 	}
 
@@ -367,13 +201,15 @@ pub mod tests {
 			NoOp
 		}
 
-		fn parabyzantine_message_buffer(&self) -> &ContainerEntityBuffer<GossamerContainer> {
+		fn parabyzantine_message_buffer(
+			&self,
+		) -> &ContainerEntityBuffer<GossamerContainer<TestMessage>> {
 			&self.gossamer_buffer
 		}
 
 		fn parabyzantine_message_buffer_mut(
 			&mut self,
-		) -> &mut ContainerEntityBuffer<GossamerContainer> {
+		) -> &mut ContainerEntityBuffer<GossamerContainer<TestMessage>> {
 			&mut self.gossamer_buffer
 		}
 
@@ -405,7 +241,8 @@ pub mod tests {
 
 	impl GossamerMessages<TestParabyzantineDataBinding> for TestGossamerMessages {
 		type Message = TestMessage;
-		type OutQuery<'a> = MatchingTupleQuery<'a, GossamerContainer, (Out, TestMessage)>;
+		type OutQuery<'a> =
+			MatchingTupleQuery<'a, GossamerContainer<TestMessage>, (Out, TestMessage)>;
 		type OutQueryPlan = MatchingTuple<(Out, TestMessage)>;
 
 		fn gossamer_messages_out_plan(&mut self) -> MatchingTuple<(Out, TestMessage)> {
@@ -417,7 +254,8 @@ pub mod tests {
 
 	impl GossamerSpec<TestParabyzantineDataBinding> for TestGossamerSpec {
 		type Message = TestMessage;
-		type OutQuery<'a> = MatchingTupleQuery<'a, GossamerContainer, (Out, TestMessage)>;
+		type OutQuery<'a> =
+			MatchingTupleQuery<'a, GossamerContainer<TestMessage>, (Out, TestMessage)>;
 		type OutQueryPlan = MatchingTuple<(Out, TestMessage)>;
 		type Messages = TestGossamerMessages;
 	}

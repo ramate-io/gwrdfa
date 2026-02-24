@@ -38,11 +38,11 @@ impl<T: GossamerMessage> ContainerGiving<T> for GossamerContainer<T> {
 	}
 }
 
-impl<T: GossamerMessage> ContainerAccepting<(In, T)> for GossamerContainer<T> {
-	fn from_data(data: (In, T)) -> Self {
+impl<T: GossamerMessage> ContainerAccepting<In> for GossamerContainer<T> {
+	fn from_data(data: In) -> Self {
 		Self {
-			message: Component::Present(data.1),
-			message_in: Component::Present(data.0),
+			message: Component::Absent,
+			message_in: Component::Present(data),
 			message_out: Component::Absent,
 			message_in_flight: Component::Absent,
 			message_broadcast: Component::Absent,
@@ -50,13 +50,11 @@ impl<T: GossamerMessage> ContainerAccepting<(In, T)> for GossamerContainer<T> {
 		}
 	}
 
-	fn update_with_data(&mut self, data: (In, T)) {
-		self.message = Component::Present(data.1);
-		self.message_in = Component::Present(data.0);
+	fn update_with_data(&mut self, data: In) {
+		self.message_in = Component::Present(data);
 	}
 
 	fn remove_from_container(&mut self) {
-		self.message = Component::Absent;
 		self.message_in = Component::Absent;
 	}
 }
