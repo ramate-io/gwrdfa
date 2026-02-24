@@ -1,7 +1,7 @@
 use crate::{Broadcast, GossamerMessage, GossamerMessageError, In, InFlight, Out};
 use gwrdfa_container::{Component, ContainerAccepting, ContainerGiving};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct GossamerContainer<T: GossamerMessage> {
 	message: Component<T>,
 	message_in: Component<In>,

@@ -126,7 +126,7 @@ pub mod tests {
 	};
 	use parabyzantine::{NoOp, NoOpData, ParabyzantineData};
 
-	#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+	#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 	pub struct TestMessage(String);
 
 	impl GossamerMessage for TestMessage {
@@ -159,9 +159,10 @@ pub mod tests {
 		type TaskDraftBuffer = NoOp;
 	}
 
+	#[derive(Debug, Default)]
 	pub struct TestParabyzantineData {
-		gossamer_buffer: ContainerEntityBuffer<GossamerContainer<TestMessage>>,
-		noop_data: NoOpData,
+		pub gossamer_buffer: ContainerEntityBuffer<GossamerContainer<TestMessage>>,
+		pub noop_data: NoOpData,
 	}
 
 	impl ParabyzantineData<TestParabyzantineSpec> for TestParabyzantineData {
@@ -261,10 +262,34 @@ pub mod tests {
 	}
 
 	#[tokio::test]
-	async fn test_gossamer_hart() {
-		let (gossamer, _, _, _) = Gossamer::<ContainerEntity>::mock();
+	async fn test_gossamer_hart() -> Result<(), anyhow::Error> {
+		let (
+			gossamer,
+			mut message_into_gossamer_sender,
+			mut entity_message_from_gossamer_receiver,
+			mut entity_into_gossamer_sender,
+		) = Gossamer::<ContainerEntity>::mock();
 		let messages = TestGossamerMessages;
-		let _hart =
+		let mut hart =
 			GossamerHart::<TestParabyzantineDataBinding, TestGossamerSpec>::new(gossamer, messages);
+
+		message_into_gossamer_sender
+			.send(TestMessage("Hello, world!".to_string()).to_goassamer_bytes()?)?;
+
+		let mut data = TestParabyzantineData::default();
+
+		hart.act_on_parabyzantine_hart(&mut data);
+
+		// Check that the message was inserted into the buffer
+		{
+			let mut containers = Vec::new();
+			for (entity, container) in data.gossamer_buffer.iter() {
+				containers.push((entity, container));
+			}
+
+			assert_eq!(containers.len(), 1);
+		}
+
+		Ok(())
 	}
 }
