@@ -1,26 +1,23 @@
 pub mod gossamer_messages;
+pub mod gossamer_storage;
 pub mod spec;
 
 use gossamer_messages::GossamerMessages;
+use gossamer_storage::GossamerMessageStorage;
 pub use spec::GossamerSpec;
 
+use crate::Gossamer;
 use crate::{Broadcast, In, InFlight, Out};
-use crate::{Gossamer, GossamerMessageError};
-use parabyzantine::{
-	buffer::Stores,
-	hart::{
-		ParabyzantineDataBinding, ParabyzantineDataSpec, ParabyzantineHart, ParabyzantineWorld,
-	},
+use parabyzantine::hart::{
+	ParabyzantineDataBinding, ParabyzantineDataSpec, ParabyzantineHart, ParabyzantineWorld,
 };
 
 pub struct GossamerHart<Binding: ParabyzantineDataBinding, Spec: GossamerSpec<Binding>>
 where
-	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: Stores<GossamerMessageError, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<Spec::Message, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<(In, Spec::Message), <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<Out, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<InFlight, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>,
+	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: GossamerMessageStorage<
+		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
+		Spec::Message,
+	>,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageEntity: Send + Sync,
 {
 	messages: Spec::Messages,
@@ -30,12 +27,10 @@ where
 
 impl<Binding: ParabyzantineDataBinding, Spec: GossamerSpec<Binding>> GossamerHart<Binding, Spec>
 where
-	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: Stores<GossamerMessageError, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<Spec::Message, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<(In, Spec::Message), <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<Out, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<InFlight, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>,
+	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: GossamerMessageStorage<
+		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
+		Spec::Message,
+	>,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageEntity: Send + Sync,
 {
 	pub fn new(
@@ -54,12 +49,10 @@ where
 impl<Binding: ParabyzantineDataBinding, Spec: GossamerSpec<Binding>> ParabyzantineHart
 	for GossamerHart<Binding, Spec>
 where
-	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: Stores<GossamerMessageError, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<Spec::Message, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<(In, Spec::Message), <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<Out, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<InFlight, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>,
+	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: GossamerMessageStorage<
+		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
+		Spec::Message,
+	>,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageEntity: Copy + Send + Sync + 'static,
 {
 	type Binding = Binding;
@@ -125,6 +118,7 @@ where
 pub mod tests {
 	use super::*;
 	use crate::GossamerMessage;
+	use crate::GossamerMessageError;
 	use gwrdfa_container::{
 		query::matching_tuple::{MatchingTuple, MatchingTupleQuery},
 		Component, ContainerAccepting, ContainerEntity, ContainerEntityBuffer, ContainerGiving,

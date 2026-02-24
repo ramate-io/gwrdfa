@@ -1,21 +1,17 @@
-use crate::{hart::gossamer_messages::GossamerMessages, GossamerMessage, GossamerMessageError};
-use crate::{Broadcast, In, InFlight, Out};
-use parabyzantine::{
-	buffer::{
-		query::{QueryPlanlike, Querylike},
-		Stores,
-	},
-	hart::{ParabyzantineDataBinding, ParabyzantineDataSpec},
+use crate::Out;
+use crate::{
+	hart::gossamer_messages::GossamerMessages, hart::gossamer_storage::GossamerMessageStorage,
+	GossamerMessage,
 };
+use parabyzantine::buffer::query::{QueryPlanlike, Querylike};
+use parabyzantine::hart::{ParabyzantineDataBinding, ParabyzantineDataSpec};
 
 pub trait GossamerSpec<Binding: ParabyzantineDataBinding>
 where
-	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: Stores<GossamerMessageError, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<Self::Message, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<(In, Self::Message), <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<Out, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<InFlight, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
-		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>,
+	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: GossamerMessageStorage<
+		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
+		Self::Message,
+	>,
 {
 	type Message: GossamerMessage;
 
