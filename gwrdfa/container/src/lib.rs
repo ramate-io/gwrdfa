@@ -1,5 +1,5 @@
 pub mod buffer;
-pub use buffer::{ContainerEntityBuffer, ToContainer};
+pub use buffer::ContainerEntityBuffer;
 
 pub mod container;
 pub use container::*;

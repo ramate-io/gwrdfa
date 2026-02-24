@@ -60,7 +60,7 @@ pub trait ParabyzantineTaskData<Spec: ParabyzantineTaskDataSpec>: Sized {
 	fn parabyzantine_task_task_draft_buffer(&self) -> Spec::TaskDraftBuffer;
 
 	/// The world of the task.
-	fn parabyzantine_task_world(&self) -> TaskWorld<Spec> {
+	fn parabyzantine_task_world<'a>(&'a self) -> TaskWorld<'a, Spec> {
 		TaskWorld {
 			agreement_facts: self.parabyzantine_task_agreement_buffer().into(),
 			agreement_inferences: self.parabyzantine_task_agreement_draft_buffer().into(),

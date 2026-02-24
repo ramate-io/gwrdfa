@@ -70,7 +70,7 @@ impl<Binding: ResampleTaskBinding> ParabyzantineTask for ResampleTask<Binding> {
 		for index_data in data.agreement_facts.query(index_task_subcommittee_agreement_query_plan) {
 			let index: <Binding::ResampleTaskSpec as ResampleTaskSpec<
 				Binding::ParabyzantineTaskDataBinding,
-			>>::IndexTaskSubcommitteeAgreement = (&index_data).into();
+			>>::IndexTaskSubcommitteeAgreement = (index_data).into();
 
 			// If the task is assigned to this replica, compute the resample task.
 			if self.is_task_assigned_to_me(&index.subcommittee()) {

@@ -38,8 +38,13 @@ pub trait ResampleAgreementBinding: Sized {
 /// Hence, it is sort of an abstraction that exists before the more common [CountableResampleAgreement] implementation.
 #[derive(Debug, Clone)]
 pub struct ResampleAgreement<Binding: ResampleAgreementBinding>(pub Binding::ResampleAgreementData);
+// Because where bounds are not inferred on traits we need to manually specify them,
+// this is incredibly ugly and we should find a way to improve this
 
-impl<Binding: ResampleAgreementBinding> ResampleAgreement<Binding> {
+impl<Binding: ResampleAgreementBinding> ResampleAgreement<Binding>
+// Because where bounds are not inferred on traits we need to manually specify them,
+// this is incredibly ugly and we should find a way to improve this.
+{
 	pub fn data(&self) -> &Binding::ResampleAgreementData {
 		&self.0
 	}
@@ -123,7 +128,7 @@ impl<Binding: ResampleAgreementBinding>
 		&mut self,
 		index: &(
 			<<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
-			<Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::IndexSubcommitteeAgreementQueryData,
+			<Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::IndexSubcommitteeAgreementQueryData<'_>,
 		),
 	) -> <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
 		Binding::ParabyzantineAgreementDataBinding,
@@ -144,17 +149,18 @@ impl<Binding: ResampleAgreementBinding> ParabyzantineAgreement for ResampleAgree
 		// over all the index subcommittee agreements
 		let index_query = self.index_subcommittee_agreement_query_plan();
 		for index_data in agreement_world.agreement_facts.query(index_query) {
+			let certificate_query_plan = self.certificate_query_plan(&index_data);
+
 			let index: <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
 				Binding::ParabyzantineAgreementDataBinding,
-			>>::IndexSubcommitteeAgreement = (&index_data).into();
+			>>::IndexSubcommitteeAgreement = (index_data).into();
 
 			// insert all of the certificates for this index into the certificate set
-			let certificate_query_plan = self.certificate_query_plan(&index_data);
 			for certificate_data in agreement_world.certificate_facts.query(certificate_query_plan)
 			{
 				let certificate: <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
 					Binding::ParabyzantineAgreementDataBinding,
-				>>::Certificate = (&certificate_data).into();
+				>>::Certificate = (certificate_data).into();
 
 				// This is just for moving the certificate into the certificate set.
 				self.certificate_set_mut().insert(certificate);

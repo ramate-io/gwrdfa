@@ -38,7 +38,7 @@ pub trait ResampleAgreementData<
 		&mut self,
 		index: &(
 			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
-			Spec::IndexSubcommitteeAgreementQueryData,
+			Spec::IndexSubcommitteeAgreementQueryData<'_>,
 		),
 	) -> Spec::CertificateQueryPlan;
 }
@@ -70,7 +70,7 @@ impl ResampleAgreementData<NoOp, NoOp> for NoOpData {
 		&mut self,
 		_index: &(
 			<NoOp as ParabyzantineAgreementDataSpec>::AgreementEntity,
-			<NoOp as ResampleAgreementSpec<NoOp>>::IndexSubcommitteeAgreementQueryData,
+			<NoOp as ResampleAgreementSpec<NoOp>>::IndexSubcommitteeAgreementQueryData<'_>,
 		),
 	) -> <NoOp as ResampleAgreementSpec<NoOp>>::CertificateQueryPlan {
 		NoOp

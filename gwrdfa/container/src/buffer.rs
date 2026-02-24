@@ -1,5 +1,5 @@
-use crate::{ContainerEntity, ContainerHolding, ContainerHoldingOps};
-use parabyzantine::buffer::{Bufferlike, Bundle};
+use crate::{ContainerAccepting, ContainerEntity};
+use parabyzantine::buffer::{Bufferlike, Stores};
 use std::collections::HashMap;
 
 pub struct ContainerEntityBuffer<T: Sized> {
@@ -13,7 +13,7 @@ impl<T: Sized> ContainerEntityBuffer<T> {
 	}
 
 	/// Iterates over the entities in the buffer.
-	pub fn iter(&self) -> std::collections::hash_map::Iter<ContainerEntity, T> {
+	pub fn iter<'a>(&'a self) -> std::collections::hash_map::Iter<'a, ContainerEntity, T> {
 		self.entities.iter()
 	}
 
@@ -53,37 +53,26 @@ impl<T: Sized> Bufferlike<ContainerEntity> for ContainerEntityBuffer<T> {
 	}
 }
 
-#[derive(Debug, Clone)]
-pub struct ToContainer<T: Sized>(pub T);
-
-impl<T, B> Bundle<ContainerEntity, ContainerEntityBuffer<T>> for ToContainer<B>
-where
-	T: ContainerHolding<B>,
-	B: Sized,
-{
-	fn insert_into(
-		self,
-		buffer: &mut ContainerEntityBuffer<T>,
+impl<B, T: ContainerAccepting<B>> Stores<B, ContainerEntity> for ContainerEntityBuffer<T> {
+	fn insert_record(
+		&mut self,
 		entity: Option<ContainerEntity>,
+		value: B,
 	) -> Option<ContainerEntity> {
 		match entity {
 			Some(entity) => {
-				match buffer.get_mut(entity) {
-					Some(entity) => entity.update_with_data(self.0),
-					None => buffer.upsert_container(entity, T::from_data(self.0)),
+				match self.get_mut(entity) {
+					Some(data) => data.update_with_data(value),
+					None => self.upsert_container(entity, T::from_data(value)),
 				}
 				Some(entity)
 			}
-			None => {
-				let entity = buffer.insert_container(T::from_data(self.0));
-				Some(entity)
-			}
+			None => Some(self.insert_container(T::from_data(value))),
 		}
 	}
 
-	fn remove_from(buffer: &mut ContainerEntityBuffer<T>, entity: ContainerEntity) {
-		// TODO: this is too aggressive, we actually want B to define its own removal semantics.
-		buffer.get_mut(entity).map(|container| container.remove_this::<B>());
+	fn remove_record(&mut self, entity: ContainerEntity) {
+		self.remove_container(entity);
 	}
 }
 
@@ -92,6 +81,7 @@ pub mod test {
 	use super::*;
 	use crate::container::test::TestContainer;
 	use crate::container::test::TestField;
+	use crate::Component;
 	use parabyzantine::buffer::Bufferlike;
 
 	#[test]
@@ -113,7 +103,7 @@ pub mod test {
 
 		// Insert a container component as a new entity
 		let num: i32 = 1;
-		let entity = ToContainer(num).insert_into(&mut buffer, None);
+		let entity = buffer.insert_record(None, num);
 		assert_eq!(entity, Some(ContainerEntity::new(1)));
 		assert_eq!(
 			buffer.get(ContainerEntity::new(1)),
@@ -125,7 +115,7 @@ pub mod test {
 		let entity = buffer.insert_container(container);
 		assert_eq!(entity, ContainerEntity::new(2));
 		let num: i32 = 3;
-		let entity = ToContainer(num).insert_into(&mut buffer, Some(entity));
+		let entity = buffer.insert_record(Some(entity), num);
 		assert_eq!(entity, Some(ContainerEntity::new(2)));
 		assert_eq!(
 			buffer.get(ContainerEntity::new(2)),
@@ -133,7 +123,7 @@ pub mod test {
 		);
 
 		// Insert using the bufferlike API
-		let entity = buffer.insert(None, ToContainer(4 as i32));
+		let entity = buffer.insert_record(None, 4 as i32);
 		assert_eq!(entity, Some(ContainerEntity::new(3)));
 		assert_eq!(
 			buffer.get(ContainerEntity::new(3)),
@@ -153,10 +143,10 @@ pub mod test {
 	#[test]
 	fn test_bufferlike_remove() {
 		let mut buffer: ContainerEntityBuffer<TestContainer> = ContainerEntityBuffer::new();
-		let container = TestContainer::default().with_field(Some(TestField(1)));
+		let container = TestContainer::default().with_field(Component::Present(TestField(1)));
 		let entity = buffer.insert_container(container);
-		buffer.remove::<ToContainer<TestField>>(entity);
-		assert_eq!(buffer.get(entity), Some(&TestContainer::default().with_field(None)));
+		buffer.remove::<TestField>(entity);
+		assert_eq!(buffer.get(entity), None);
 	}
 
 	#[test]

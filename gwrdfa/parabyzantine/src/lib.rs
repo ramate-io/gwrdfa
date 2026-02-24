@@ -41,8 +41,17 @@ impl From<&NoOp> for NoOp {
 	}
 }
 
-impl From<&(NoOp, NoOp)> for NoOp {
-	fn from((_entity, _bundle): &(NoOp, NoOp)) -> Self {
+impl<T> From<(T, NoOp)> for NoOp {
+	fn from((_entity, _bundle): (T, NoOp)) -> Self {
 		NoOp
+	}
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+pub struct NoOpOn<T>(PhantomData<T>);
+
+impl<T> NoOpOn<T> {
+	pub fn new() -> Self {
+		Self(PhantomData)
 	}
 }

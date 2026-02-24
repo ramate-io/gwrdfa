@@ -33,7 +33,7 @@ pub trait ParabyzantineMessageOutData<Spec: ParabyzantineMessageOutDataSpec>: Si
 	fn parabyzantine_message_out_message_draft_buffer(&self) -> Spec::MessageDraftBuffer;
 
 	/// The world of the message out.
-	fn parabyzantine_message_out_world(&self) -> MessageOutWorld<Spec> {
+	fn parabyzantine_message_out_world<'a>(&'a self) -> MessageOutWorld<'a, Spec> {
 		MessageOutWorld {
 			task_facts: self.parabyzantine_message_out_task_buffer().into(),
 			task_inferences: self.parabyzantine_message_out_task_draft_buffer().into(),

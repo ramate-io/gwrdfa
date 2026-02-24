@@ -1,0 +1,33 @@
+[package]
+name = "gossamer"
+version = { workspace = true }
+edition = "2021"
+license = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+publish = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+parabyzantine = { workspace = true }
+libp2p = { workspace = true, features = [
+    "tcp",
+    "dns",
+    "noise",
+    "yamux",
+    "kad",
+    "gossipsub",
+    "macros",
+    "async-std"
+] }
+tokio = { workspace = true }
+futures = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+[dev-dependencies]
+gwrdfa-container = { workspace = true }
+
+[lints]
+workspace = true
