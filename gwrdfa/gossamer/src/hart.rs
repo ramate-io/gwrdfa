@@ -21,11 +21,6 @@ where
 		+ Stores<Out, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<InFlight, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>,
-	Spec::Messages: GossamerMessages<
-		Binding = Binding,
-		Message = Spec::Message,
-		OutQueryPlan = Spec::OutQueryPlan,
-	>,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageEntity: Send + Sync,
 {
 	messages: Spec::Messages,
@@ -41,11 +36,6 @@ where
 		+ Stores<Out, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<InFlight, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>,
-	Spec::Messages: GossamerMessages<
-		Binding = Binding,
-		Message = Spec::Message,
-		OutQueryPlan = Spec::OutQueryPlan,
-	>,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageEntity: Send + Sync,
 {
 	pub fn new(
@@ -70,11 +60,6 @@ where
 		+ Stores<Out, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<InFlight, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>,
-	Spec::Messages: GossamerMessages<
-		Binding = Binding,
-		Message = Spec::Message,
-		OutQueryPlan = Spec::OutQueryPlan,
-	>,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageEntity: Copy + Send + Sync + 'static,
 {
 	type Binding = Binding;
@@ -424,9 +409,8 @@ pub mod tests {
 
 	pub struct TestGossamerMessages;
 
-	impl GossamerMessages for TestGossamerMessages {
+	impl GossamerMessages<TestParabyzantineDataBinding> for TestGossamerMessages {
 		type Message = TestMessage;
-		type Binding = TestParabyzantineDataBinding;
 		type OutQuery<'a> = MatchingTupleQuery<'a, GossamerContainer, (Out, TestMessage)>;
 		type OutQueryPlan = MatchingTuple<(Out, TestMessage)>;
 

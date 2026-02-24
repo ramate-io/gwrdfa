@@ -6,21 +6,20 @@ use parabyzantine::{
 
 /// A [GossamerMessages] trait is used to build queries over the Gossamer messages.
 
-pub trait GossamerMessages {
+pub trait GossamerMessages<Binding: ParabyzantineDataBinding> {
 	type Message: GossamerMessage;
-	type Binding: ParabyzantineDataBinding;
 
 	/// The exact query type produced by the plan.
 	type OutQuery<'a>: Querylike<
-		<<Self::Binding as ParabyzantineDataBinding>::Spec as ParabyzantineDataSpec>::MessageEntity,
+		<<Binding as ParabyzantineDataBinding>::Spec as ParabyzantineDataSpec>::MessageEntity,
 		Item = (&'a Out, &'a Self::Message),
 	>
 	where
 		Self::Message: 'a;
 
 	type OutQueryPlan: for<'a> QueryPlanlike<
-		<<Self::Binding as ParabyzantineDataBinding>::Spec as ParabyzantineDataSpec>::MessageEntity,
-		&'a <<Self::Binding as ParabyzantineDataBinding>::Spec as ParabyzantineDataSpec>::MessageBuffer,
+		<<Binding as ParabyzantineDataBinding>::Spec as ParabyzantineDataSpec>::MessageEntity,
+		&'a <<Binding as ParabyzantineDataBinding>::Spec as ParabyzantineDataSpec>::MessageBuffer,
 		Query = Self::OutQuery<'a>,
 	>;
 

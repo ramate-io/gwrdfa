@@ -16,11 +16,6 @@ where
 		+ Stores<Out, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<InFlight, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>
 		+ Stores<Broadcast, <Binding::Spec as ParabyzantineDataSpec>::MessageEntity>,
-	Self::Messages: GossamerMessages<
-		Binding = Binding,
-		Message = Self::Message,
-		OutQueryPlan = Self::OutQueryPlan,
-	>,
 {
 	type Message: GossamerMessage;
 
@@ -38,7 +33,7 @@ where
 	>;
 
 	type Messages: GossamerMessages<
-		Binding = Binding,
+		Binding,
 		Message = Self::Message,
 		OutQueryPlan = Self::OutQueryPlan,
 	>;
