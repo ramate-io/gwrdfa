@@ -1,6 +1,6 @@
 use crate::{Component, ContainerEntity, ContainerEntityBuffer, ContainerGiving};
 use core::marker::PhantomData;
-use parabyzantine::buffer::query::{IntoQuery, Querylike};
+use parabyzantine::buffer::query::{IntoQuery, QueryPlanlike, Querylike};
 
 pub struct MatchingTupleQuery<'a, Container, T> {
 	buffer: &'a ContainerEntityBuffer<Container>,
@@ -59,6 +59,23 @@ where
 
 	fn into_query(self, _plan: MatchingTuple<(A, B)>) -> MatchingTupleQuery<'a, T, (A, B)> {
 		MatchingTupleQuery::new(self)
+	}
+}
+
+impl<'a, T, A, B> QueryPlanlike<ContainerEntity, &'a ContainerEntityBuffer<T>>
+	for MatchingTuple<(A, B)>
+where
+	T: ContainerGiving<A> + ContainerGiving<B>,
+	A: 'a,
+	B: 'a,
+{
+	type Query = MatchingTupleQuery<'a, T, (A, B)>;
+
+	fn into_query_plan(
+		self,
+		buffer: &'a ContainerEntityBuffer<T>,
+	) -> MatchingTupleQuery<'a, T, (A, B)> {
+		MatchingTupleQuery::new(buffer)
 	}
 }
 
