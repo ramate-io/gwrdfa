@@ -22,9 +22,8 @@ pub use subcommittee::{IndexSubcommitteeAgreement, Subcommittee};
 ///
 /// It binds between the [ParabyzantineAgreementDataBinding] and the [ResampleAgreementSpec] and the [ResampleAgreementData].
 pub trait ResampleAgreementBinding: Sized {
-	type ParabyzantineAgreementDataBinding: ParabyzantineAgreementDataBinding + 'static;
-	type ResampleAgreementSpec: ResampleAgreementSpec<Self::ParabyzantineAgreementDataBinding>
-		+ 'static;
+	type ParabyzantineAgreementDataBinding: ParabyzantineAgreementDataBinding;
+	type ResampleAgreementSpec: ResampleAgreementSpec<Self::ParabyzantineAgreementDataBinding>;
 	type ResampleAgreementData: ResampleAgreementData<
 		Self::ParabyzantineAgreementDataBinding,
 		Self::ResampleAgreementSpec,
