@@ -1,5 +1,7 @@
-use crate::agreement::{ParabyzantineAgreementData, ParabyzantineAgreementDataSpec};
-use crate::hart::{ParabyzantineData, ParabyzantineDataSpec};
+use crate::agreement::{
+	AgreementWorld, ParabyzantineAgreementData, ParabyzantineAgreementDataSpec,
+};
+use crate::hart::{ParabyzantineData, ParabyzantineDataSpec, ParabyzantineWorld};
 
 /// Blanket implementation for the agreement spec.
 ///
@@ -10,32 +12,21 @@ use crate::hart::{ParabyzantineData, ParabyzantineDataSpec};
 impl<Spec: ParabyzantineDataSpec> ParabyzantineAgreementDataSpec for Spec {
 	type CertificateEntity = Spec::CertificateEntity;
 	type CertificateBuffer = Spec::CertificateBuffer;
-	type CertificateDraftBuffer = Spec::CertificateDraftBuffer;
 	type AgreementEntity = Spec::AgreementEntity;
 	type AgreementBuffer = Spec::AgreementBuffer;
-	type AgreementDraftBuffer = Spec::AgreementDraftBuffer;
 }
 
 /// Blanket implementation for the agreement data.
 impl<Spec: ParabyzantineDataSpec, Data: ParabyzantineData<Spec>> ParabyzantineAgreementData<Spec>
 	for Data
+where
+	// Spec needs to be static to support the 'a lifetime in the AgreementWorld.
+	Spec: 'static,
 {
-	fn parabyzantine_agreement_certificate_buffer(&self) -> &Spec::CertificateBuffer {
-		self.parabyzantine_certificate_buffer()
-	}
-	fn parabyzantine_agreement_certificate_buffer_mut(&mut self) -> &mut Spec::CertificateBuffer {
-		self.parabyzantine_certificate_buffer_mut()
-	}
-	fn parabyzantine_agreement_certificate_draft_buffer(&self) -> Spec::CertificateDraftBuffer {
-		self.parabyzantine_certificate_draft_buffer()
-	}
-	fn parabyzantine_agreement_agreement_buffer(&self) -> &Spec::AgreementBuffer {
-		self.parabyzantine_agreement_buffer()
-	}
-	fn parabyzantine_agreement_agreement_buffer_mut(&mut self) -> &mut Spec::AgreementBuffer {
-		self.parabyzantine_agreement_buffer_mut()
-	}
-	fn parabyzantine_agreement_agreement_draft_buffer(&self) -> Spec::AgreementDraftBuffer {
-		self.parabyzantine_agreement_draft_buffer()
+	fn parabyzantine_agreement_world<'a>(&'a mut self) -> AgreementWorld<'a, Spec> {
+		let ParabyzantineWorld { certificate_facts, agreement_facts, .. } =
+			self.parabyzantine_world();
+
+		AgreementWorld { certificate_facts, agreement_facts }
 	}
 }

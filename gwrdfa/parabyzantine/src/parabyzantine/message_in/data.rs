@@ -1,4 +1,4 @@
-use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
+use crate::buffer::{facts::Facts, Bufferlike, DraftBufferlike};
 
 #[derive(Debug, Clone, Copy)]
 pub struct MessageIn;
@@ -35,42 +35,14 @@ pub trait ParabyzantineMessageInDataSpec: Sized {
 }
 
 pub trait ParabyzantineMessageInData<Spec: ParabyzantineMessageInDataSpec>: Sized {
-	/// The buffer for the message.
-	fn parabyzantine_message_in_message_buffer(&self) -> &Spec::MessageBuffer;
-	/// The draft buffer for the message.
-	fn parabyzantine_message_in_message_draft_buffer(&self) -> Spec::MessageDraftBuffer;
-	/// The buffer for the transaction.
-	fn parabyzantine_message_in_transaction_buffer(&self) -> &Spec::TransactionBuffer;
-	/// The draft buffer for the transaction.
-	fn parabyzantine_message_in_transaction_draft_buffer(&self) -> Spec::TransactionDraftBuffer;
-	/// The buffer for the certificate.
-	fn parabyzantine_message_in_certificate_buffer(&self) -> &Spec::CertificateBuffer;
-	/// The draft buffer for the certificate.
-	fn parabyzantine_message_in_certificate_draft_buffer(&self) -> Spec::CertificateDraftBuffer;
-
-	fn parabyzantine_message_in_world<'a>(&'a self) -> MessageInWorld<'a, Spec> {
-		MessageInWorld {
-			message_facts: self.parabyzantine_message_in_message_buffer().into(),
-			message_inferences: self.parabyzantine_message_in_message_draft_buffer().into(),
-			transaction_facts: self.parabyzantine_message_in_transaction_buffer().into(),
-			transaction_inferences: self.parabyzantine_message_in_transaction_draft_buffer().into(),
-			certificate_facts: self.parabyzantine_message_in_certificate_buffer().into(),
-			certificate_inferences: self.parabyzantine_message_in_certificate_draft_buffer().into(),
-		}
-	}
+	fn parabyzantine_message_in_world<'a>(&'a self) -> MessageInWorld<'a, Spec>;
 }
 
 /// The world of the message in step of a parabyzantine message in Data.
 pub struct MessageInWorld<'a, Spec: ParabyzantineMessageInDataSpec> {
 	pub message_facts: Facts<'a, Spec::MessageEntity, Spec::MessageBuffer>,
-	pub message_inferences:
-		Inferences<Spec::MessageEntity, Spec::MessageBuffer, Spec::MessageDraftBuffer>,
 	pub transaction_facts: Facts<'a, Spec::TransactionEntity, Spec::TransactionBuffer>,
-	pub transaction_inferences:
-		Inferences<Spec::TransactionEntity, Spec::TransactionBuffer, Spec::TransactionDraftBuffer>,
 	pub certificate_facts: Facts<'a, Spec::CertificateEntity, Spec::CertificateBuffer>,
-	pub certificate_inferences:
-		Inferences<Spec::CertificateEntity, Spec::CertificateBuffer, Spec::CertificateDraftBuffer>,
 }
 
 pub trait ParabyzantineMessageIn: Sized {

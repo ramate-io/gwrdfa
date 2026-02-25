@@ -26,12 +26,27 @@ pub struct NoOp;
 /// A [NoOpData] is a container for the [NoOp] struct.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct NoOpData {
-	pub no_op: NoOp,
+	pub no_op_0: NoOp,
+	pub no_op_1: NoOp,
+	pub no_op_2: NoOp,
+	pub no_op_3: NoOp,
+	pub no_op_4: NoOp,
+	pub no_op_5: NoOp,
+	pub no_op_6: NoOp,
+	pub no_op_7: NoOp,
+	pub no_op_8: NoOp,
+	pub no_op_9: NoOp,
+	pub no_op_10: NoOp,
+	pub no_op_11: NoOp,
+	pub no_op_12: NoOp,
+	pub no_op_13: NoOp,
+	pub no_op_14: NoOp,
+	pub no_op_15: NoOp,
 }
 
 impl NoOpData {
 	pub fn new() -> Self {
-		Self { no_op: NoOp }
+		Self::default()
 	}
 }
 

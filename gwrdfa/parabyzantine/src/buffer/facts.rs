@@ -5,20 +5,20 @@ use crate::buffer::{
 use core::marker::PhantomData;
 
 /// Facts are entities that exist at a particular snapshot of the buffer.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug)]
 pub struct Facts<'a, Entity: Sized, Buffer: Bufferlike<Entity>> {
-	inner: &'a Buffer,
+	inner: &'a mut Buffer,
 	__phantom: PhantomData<Entity>,
 }
 
 impl<'a, Entity: Sized, Buffer: Bufferlike<Entity>> Facts<'a, Entity, Buffer> {
-	pub fn new(inner: &'a Buffer) -> Self {
+	pub fn new(inner: &'a mut Buffer) -> Self {
 		Self { inner, __phantom: PhantomData }
 	}
 
 	/// Queries the facts in the buffer.
 	pub fn query<QueryPlan>(
-		&self,
+		&'a mut self,
 		query_plan: QueryPlan,
 	) -> impl Iterator<
 		Item = (
@@ -36,7 +36,7 @@ impl<'a, Entity: Sized, Buffer: Bufferlike<Entity>> Facts<'a, Entity, Buffer> {
 
 	/// Gets a bundle from the facts in the buffer.
 	pub fn get<B, Query: Querylike<Entity, Item = B>, QueryPlan>(
-		&self,
+		&'a mut self,
 		entity: Entity,
 		query_plan: QueryPlan,
 	) -> Option<B>
@@ -48,8 +48,10 @@ impl<'a, Entity: Sized, Buffer: Bufferlike<Entity>> Facts<'a, Entity, Buffer> {
 	}
 }
 
-impl<'a, Entity: Sized, Buffer: Bufferlike<Entity>> From<&'a Buffer> for Facts<'a, Entity, Buffer> {
-	fn from(inner: &'a Buffer) -> Self {
+impl<'a, Entity: Sized, Buffer: Bufferlike<Entity>> From<&'a mut Buffer>
+	for Facts<'a, Entity, Buffer>
+{
+	fn from(inner: &'a mut Buffer) -> Self {
 		Facts::new(inner)
 	}
 }

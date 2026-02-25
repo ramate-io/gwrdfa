@@ -63,9 +63,9 @@ where
 			match self.gossamer.try_recv_confirmation() {
 				Ok(Some(entity)) => {
 					// This message is no longer in flight...
-					data.message_inferences.remove::<InFlight>(entity);
+					data.message_facts.remove::<InFlight>(entity);
 					// ...for the purpose of Gossamer, it has been broadcast.
-					data.message_inferences.insert(Some(entity), Broadcast);
+					data.message_facts.insert(Some(entity), Broadcast);
 					// NOTE: we do not remove the entity or any other data besides these markers.
 					// We allow a consumeing service to take care of garbage collection.
 				}
@@ -84,12 +84,12 @@ where
 		for (entity, (Out, message)) in data.message_facts.query(gossamer_query_plan) {
 			match self.gossamer.send_message(entity, message) {
 				Ok(_) => {
-					data.message_inferences.remove::<Out>(entity);
-					data.message_inferences.insert(Some(entity), InFlight);
+					data.message_facts.remove::<Out>(entity);
+					data.message_facts.insert(Some(entity), InFlight);
 				}
 				Err(e) => {
 					// Insert the error into the inferences
-					data.message_inferences.insert(Some(entity), e);
+					data.message_facts.insert(Some(entity), e);
 				}
 			}
 		}
@@ -99,7 +99,7 @@ where
 			match self.gossamer.try_recv_message::<Spec::Message>() {
 				Ok(Some(message)) => {
 					// Insert the message into the inferences
-					data.message_inferences.insert(None, (In, message))
+					data.message_facts.insert(None, (In, message))
 				}
 				Ok(None) => {
 					// No message received
@@ -107,7 +107,7 @@ where
 				}
 				Err(e) => {
 					// Insert the error into the inferences
-					data.message_inferences.insert(None, e);
+					data.message_facts.insert(None, e);
 				}
 			}
 		}
