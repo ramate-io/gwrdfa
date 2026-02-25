@@ -141,7 +141,7 @@ pub mod tests {
 	use parabyzantine::{NoOp, NoOpData, ParabyzantineData};
 	use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
-	#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
+	#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 	pub struct TestMessage(String);
 
 	impl GossamerMessage for TestMessage {
@@ -282,7 +282,7 @@ pub mod tests {
 		hart: &mut GossamerHart<TestParabyzantineDataBinding, TestGossamerSpec>,
 		data: &mut TestParabyzantineData,
 		message_into_gossamer_sender: UnboundedSender<Vec<u8>>,
-		messages: Vec<TestMessage>,
+		mut messages: Vec<TestMessage>,
 	) -> Result<(), anyhow::Error> {
 		for message in messages.iter() {
 			message_into_gossamer_sender.send(message.to_goassamer_bytes()?)?;
@@ -291,15 +291,23 @@ pub mod tests {
 		hart.act_on_parabyzantine_hart(data);
 
 		{
+			let mut buffer_messages = Vec::new();
 			let mut containers = Vec::new();
 			for (entity, container) in data.gossamer_buffer.iter() {
 				containers.push((entity, container));
+				match &container.message {
+					Component::Present(message) => {
+						buffer_messages.push(message.clone());
+					}
+					_ => {
+						return Err(anyhow::anyhow!("Message not found in buffer"));
+					}
+				}
 			}
 
-			assert_eq!(containers.len(), messages.len());
-			for (index, message) in messages.into_iter().enumerate() {
-				assert_eq!(containers[index].1.message, Component::Present(message));
-			}
+			messages.sort();
+			buffer_messages.sort();
+			assert_eq!(messages, buffer_messages);
 		}
 
 		Ok(())
@@ -309,7 +317,7 @@ pub mod tests {
 		hart: &mut GossamerHart<TestParabyzantineDataBinding, TestGossamerSpec>,
 		data: &mut TestParabyzantineData,
 		entity_message_from_gossamer_receiver: &mut UnboundedReceiver<(ContainerEntity, Vec<u8>)>,
-		messages: Vec<TestMessage>,
+		mut messages: Vec<TestMessage>,
 	) -> Result<Vec<(ContainerEntity, TestMessage)>, anyhow::Error> {
 		for message in messages.iter() {
 			data.gossamer_buffer.insert_container(GossamerContainer {
@@ -325,14 +333,20 @@ pub mod tests {
 		hart.act_on_parabyzantine_hart(data);
 
 		let mut out_messages = Vec::new();
+		let mut out_messages_with_entities = Vec::new();
 
-		for message in messages.into_iter() {
+		for _ in 0..messages.len() {
 			let (entity, gossamer_bytes) = entity_message_from_gossamer_receiver.try_recv()?;
-			assert_eq!(gossamer_bytes, message.to_goassamer_bytes()?);
-			out_messages.push((entity, message));
+			out_messages.push(TestMessage::from_gossamer_bytes(gossamer_bytes.clone())?);
+			out_messages_with_entities
+				.push((entity, TestMessage::from_gossamer_bytes(gossamer_bytes)?));
 		}
 
-		Ok(out_messages)
+		messages.sort();
+		out_messages.sort();
+		assert_eq!(messages, out_messages);
+
+		Ok(out_messages_with_entities)
 	}
 
 	fn hart_confirm(
@@ -484,6 +498,38 @@ pub mod tests {
 			&mut entity_message_from_gossamer_receiver,
 			entity_into_gossamer_sender,
 			vec![TestMessage("Hello, world out!".to_string())],
+		)?;
+
+		Ok(())
+	}
+
+	#[test]
+	fn test_gossamer_multiple_hart() -> Result<(), anyhow::Error> {
+		let (
+			gossamer,
+			message_into_gossamer_sender,
+			mut entity_message_from_gossamer_receiver,
+			entity_into_gossamer_sender,
+		) = Gossamer::<ContainerEntity>::mock();
+
+		let messages = TestGossamerMessages;
+		let mut hart =
+			GossamerHart::<TestParabyzantineDataBinding, TestGossamerSpec>::new(gossamer, messages);
+
+		let mut data = TestParabyzantineData::default();
+
+		let in_messages: Vec<TestMessage> =
+			(0..32).map(|i| TestMessage(format!("Hello, world! {}", i))).collect();
+		hart_in(&mut hart, &mut data, message_into_gossamer_sender, in_messages)?;
+
+		let out_messages: Vec<TestMessage> =
+			(0..32).map(|i| TestMessage(format!("Hello, world out! {}", i))).collect();
+		hart_out_and_confirm(
+			&mut hart,
+			&mut data,
+			&mut entity_message_from_gossamer_receiver,
+			entity_into_gossamer_sender,
+			out_messages,
 		)?;
 
 		Ok(())
