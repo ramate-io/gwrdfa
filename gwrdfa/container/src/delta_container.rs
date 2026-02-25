@@ -12,11 +12,19 @@ pub enum Delta<T: Sized> {
 }
 
 impl<T: Sized> Delta<T> {
-	fn apply(self, component: &mut Component<T>) {
+	pub fn apply(self, component: &mut Component<T>) {
 		match self {
 			Self::Modified(data) => *component = Component::Present(data),
 			Self::Unchanged => (),
 			Self::Removed => *component = Component::Absent,
+		}
+	}
+
+	pub fn into_component(self) -> Component<T> {
+		match self {
+			Self::Modified(data) => Component::Present(data),
+			Self::Unchanged => Component::Absent,
+			Self::Removed => Component::Absent,
 		}
 	}
 }
