@@ -64,7 +64,7 @@ pub trait ContainerHoldingOps: Sized {
 impl<T: Sized> ContainerHoldingOps for T {}
 
 pub trait ContainerGiving<Data: Sized> {
-	/// Gets a the bundle from a reference to the container
+	/// Gets a the component from a reference to the container
 	fn as_component(&self) -> Component<&Data>;
 }
 

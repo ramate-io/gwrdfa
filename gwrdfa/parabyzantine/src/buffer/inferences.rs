@@ -23,6 +23,7 @@ impl<Entity: Sized, Buffer: Bufferlike<Entity>, D: DraftBufferlike<Entity, Buffe
 	pub fn insert<B>(&mut self, entity: Option<Entity>, bundle: B)
 	where
 		Buffer: Stores<B, Entity>,
+		D: Stores<B, Entity>,
 	{
 		self.inner.draft_insert(entity, bundle);
 	}
@@ -31,6 +32,7 @@ impl<Entity: Sized, Buffer: Bufferlike<Entity>, D: DraftBufferlike<Entity, Buffe
 	pub fn remove<B>(&mut self, entity: Entity)
 	where
 		Buffer: Stores<B, Entity>,
+		D: Stores<B, Entity>,
 	{
 		self.inner.draft_remove::<B>(entity);
 	}

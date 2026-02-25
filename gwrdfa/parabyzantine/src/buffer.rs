@@ -7,7 +7,7 @@ pub use inferences::Inferences;
 
 use crate::NoOp;
 
-pub trait Stores<T, Entity>: Bufferlike<Entity> {
+pub trait Stores<T, Entity> {
 	/// Inserts a value into the store.
 	fn insert_record(&mut self, entity: Option<Entity>, value: T) -> Option<Entity>;
 
@@ -59,7 +59,7 @@ pub trait Bufferlike<Entity: Sized>: Sized {
 		&mut self,
 		inferences: Inferences<Entity, Self, D>,
 	) {
-		let mut draft_buffer = inferences.into_inner();
+		let draft_buffer = inferences.into_inner();
 		draft_buffer.commit(self);
 	}
 }
@@ -83,18 +83,20 @@ pub trait DraftBufferlike<Entity: Sized, Buffer: Bufferlike<Entity>>: Sized {
 	/// data augmentation.
 	fn draft_insert<B>(&mut self, entity: Option<Entity>, bundle: B)
 	where
-		Buffer: Stores<B, Entity>;
+		Buffer: Stores<B, Entity>,
+		Self: Stores<B, Entity>;
 
 	/// Removes a bundle from the draft buffer.
 	fn draft_remove<B>(&mut self, entity: Entity)
 	where
-		Buffer: Stores<B, Entity>;
+		Buffer: Stores<B, Entity>,
+		Self: Stores<B, Entity>;
 
 	/// Removes an entity from the draft buffer.
 	fn draft_remove_entity(&mut self, entity: Entity);
 
 	/// Commits the draft buffer to the main buffer.
-	fn commit(&mut self, buffer: &mut Buffer);
+	fn commit(self, buffer: &mut Buffer);
 }
 
 impl<Entity: Sized> Bufferlike<Entity> for NoOp {
@@ -132,5 +134,5 @@ impl<Entity: Sized, Buffer: Bufferlike<Entity>> DraftBufferlike<Entity, Buffer> 
 
 	fn draft_remove_entity(&mut self, _entity: Entity) {}
 
-	fn commit(&mut self, _buffer: &mut Buffer) {}
+	fn commit(self, _buffer: &mut Buffer) {}
 }

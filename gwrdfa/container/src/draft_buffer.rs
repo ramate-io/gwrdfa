@@ -1,0 +1,86 @@
+use crate::{ContainerAccepting, ContainerEntity, ContainerEntityBuffer, DeltaContainer};
+use parabyzantine::buffer::{DraftBufferlike, Stores};
+use std::collections::HashMap;
+
+#[derive(Debug, Default)]
+pub struct ContainerEntityDraftBuffer<T: Sized> {
+	// NOTE: currently, we don't support double updates on the draft buffer.
+	// So, it is fine to simply stack insertions that don't know their entity yet.
+	new_insertions: Vec<T>,
+	entities: HashMap<ContainerEntity, T>,
+}
+
+impl<T: Sized> ContainerEntityDraftBuffer<T> {
+	pub fn new() -> Self {
+		Self { new_insertions: Vec::new(), entities: HashMap::new() }
+	}
+
+	pub fn add_delta_container(&mut self, value: T) {
+		self.new_insertions.push(value);
+	}
+
+	pub fn upsert_delta_container(&mut self, entity: ContainerEntity, value: T) {
+		self.entities.insert(entity, value);
+	}
+
+	pub fn remove_delta_container(&mut self, entity: ContainerEntity) {
+		self.entities.remove(&entity);
+	}
+
+	pub fn get_delta_container_mut(&mut self, entity: ContainerEntity) -> Option<&mut T> {
+		self.entities.get_mut(&entity)
+	}
+}
+
+impl<B, T: ContainerAccepting<B>> Stores<B, ContainerEntity> for ContainerEntityDraftBuffer<T> {
+	fn insert_record(
+		&mut self,
+		entity: Option<ContainerEntity>,
+		value: B,
+	) -> Option<ContainerEntity> {
+		match entity {
+			Some(entity) => {
+				match self.get_delta_container_mut(entity) {
+					Some(data) => data.update_with_data(value),
+					None => self.upsert_delta_container(entity, T::from_data(value)),
+				}
+				Some(entity)
+			}
+			None => {
+				self.add_delta_container(T::from_data(value));
+				// We return none because we don't assign an entity to the delta container yet.
+				None
+			}
+		}
+	}
+
+	fn remove_record(&mut self, entity: ContainerEntity) {
+		self.remove_container(entity);
+	}
+}
+
+impl<D: DeltaContainer<C>, C: Sized> DraftBufferlike<ContainerEntity, ContainerEntityBuffer<C>>
+	for ContainerEntityDraftBuffer<D>
+{
+	fn draft_insert<B>(&mut self, entity: Option<ContainerEntity>, value: B)
+	where
+		ContainerEntityBuffer<C>: Stores<B, ContainerEntity>,
+		Self: Stores<B, ContainerEntity>,
+	{
+		self.insert_record(entity, value);
+	}
+
+	fn draft_remove<B>(&mut self, entity: ContainerEntity)
+	where
+		ContainerEntityBuffer<C>: Stores<B, ContainerEntity>,
+		Self: Stores<B, ContainerEntity>,
+	{
+		self.remove_record(entity);
+	}
+
+	fn draft_remove_entity(&mut self, entity: ContainerEntity) {
+		self.remove_delta_container(entity);
+	}
+
+	fn commit(self, buffer: &mut ContainerEntityBuffer<C>) {}
+}

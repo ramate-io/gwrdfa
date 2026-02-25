@@ -265,9 +265,9 @@ pub mod tests {
 	async fn test_gossamer_hart() -> Result<(), anyhow::Error> {
 		let (
 			gossamer,
-			mut message_into_gossamer_sender,
+			message_into_gossamer_sender,
 			mut entity_message_from_gossamer_receiver,
-			mut entity_into_gossamer_sender,
+			entity_into_gossamer_sender,
 		) = Gossamer::<ContainerEntity>::mock();
 		let messages = TestGossamerMessages;
 		let mut hart =
