@@ -1,5 +1,4 @@
 use crate::Component;
-use core::mem;
 
 /// A Delta indicates a change on a container.
 ///
@@ -13,33 +12,12 @@ pub enum Delta<T: Sized> {
 }
 
 impl<T: Sized> Delta<T> {
-	fn apply(&mut self, component: &mut Component<T>) {
-		let owned = mem::replace(self, Self::Unchanged);
-		match owned {
+	fn apply(self, component: &mut Component<T>) {
+		match self {
 			Self::Modified(data) => *component = Component::Present(data),
 			Self::Unchanged => (),
 			Self::Removed => *component = Component::Absent,
 		}
-	}
-}
-
-pub trait ContainerModifying<T: Sized> {
-	fn component_mut(&mut self) -> &mut Component<T>;
-}
-
-pub trait DeltaContainerGiving<T: Sized> {
-	fn delta_mut(&mut self) -> &mut Delta<T>;
-}
-
-pub trait DeltaContainerToContainer<T: Sized, C> {
-	fn apply_delta(&mut self, container: &mut C);
-}
-
-impl<T: Sized, D: DeltaContainerGiving<T>, C: ContainerModifying<T>> DeltaContainerToContainer<T, C>
-	for D
-{
-	fn apply_delta(&mut self, container: &mut C) {
-		self.delta_mut().apply(container.component_mut());
 	}
 }
 

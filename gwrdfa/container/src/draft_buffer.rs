@@ -55,7 +55,7 @@ impl<B, T: ContainerAccepting<B>> Stores<B, ContainerEntity> for ContainerEntity
 	}
 
 	fn remove_record(&mut self, entity: ContainerEntity) {
-		self.remove_container(entity);
+		self.remove_delta_container(entity);
 	}
 }
 
