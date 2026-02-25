@@ -333,20 +333,43 @@ pub mod tests {
 			TestMessage("Hello, world out!".to_string()).to_goassamer_bytes()?
 		);
 
-		// Check that it was marked as in flight
-		let inflight_container =
-			data.gossamer_buffer.get(entity).ok_or(anyhow::anyhow!("Entity not found"))?;
-		assert_eq!(
-			inflight_container,
-			&GossamerContainer {
-				message: Component::Present(TestMessage("Hello, world out!".to_string())),
-				message_in: Component::Absent,
-				message_out: Component::Absent,
-				message_in_flight: Component::Present(InFlight),
-				message_broadcast: Component::Absent,
-				message_error: Component::Absent,
-			}
-		);
+		{
+			// Check that it was marked as in flight
+			let inflight_container =
+				data.gossamer_buffer.get(entity).ok_or(anyhow::anyhow!("Entity not found"))?;
+			assert_eq!(
+				inflight_container,
+				&GossamerContainer {
+					message: Component::Present(TestMessage("Hello, world out!".to_string())),
+					message_in: Component::Absent,
+					message_out: Component::Absent,
+					message_in_flight: Component::Present(InFlight),
+					message_broadcast: Component::Absent,
+					message_error: Component::Absent,
+				}
+			);
+		}
+
+		// Confirm the message
+		entity_into_gossamer_sender.send(entity)?;
+
+		hart.act_on_parabyzantine_hart(&mut data);
+
+		{
+			let broadcast_container =
+				data.gossamer_buffer.get(entity).ok_or(anyhow::anyhow!("Entity not found"))?;
+			assert_eq!(
+				broadcast_container,
+				&GossamerContainer {
+					message: Component::Present(TestMessage("Hello, world out!".to_string())),
+					message_in: Component::Absent,
+					message_out: Component::Absent,
+					message_in_flight: Component::Absent,
+					message_broadcast: Component::Present(Broadcast),
+					message_error: Component::Absent,
+				}
+			);
+		}
 
 		Ok(())
 	}

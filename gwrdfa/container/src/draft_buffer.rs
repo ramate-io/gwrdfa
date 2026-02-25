@@ -78,7 +78,6 @@ impl<D: DeltaContainer<C>, C: Sized> DraftBufferlike<ContainerEntity, ContainerE
 		ContainerEntityBuffer<C>: Stores<B, ContainerEntity>,
 		Self: Stores<B, ContainerEntity>,
 	{
-		println!("Removing {} from {:?}", std::any::type_name::<B>(), entity);
 		self.remove_record(entity);
 	}
 
