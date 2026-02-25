@@ -79,15 +79,15 @@ pub trait ParabyzantineHart: Sized {
 	/// Compute the parabyzantine hart.
 	fn update_parabyzantine_hart(
 		&mut self,
-		data: &mut ParabyzantineWorld<<Self::Binding as ParabyzantineDataBinding>::Spec>,
+		data: ParabyzantineWorld<<Self::Binding as ParabyzantineDataBinding>::Spec>,
 	);
 
 	fn act_on_parabyzantine_hart(
 		&mut self,
 		data: &mut <Self::Binding as ParabyzantineDataBinding>::Data,
 	) {
-		let mut world = self.parabyzantine_hart_world(data);
-		self.update_parabyzantine_hart(&mut world);
+		let world = self.parabyzantine_hart_world(data);
+		self.update_parabyzantine_hart(world);
 	}
 }
 

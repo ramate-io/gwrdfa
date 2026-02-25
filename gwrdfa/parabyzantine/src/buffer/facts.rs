@@ -1,6 +1,6 @@
 use crate::buffer::{
 	query::{QueryPlanlike, Querylike},
-	Bufferlike,
+	Bufferlike, Stores,
 };
 use core::marker::PhantomData;
 
@@ -18,7 +18,7 @@ impl<'a, Entity: Sized, Buffer: Bufferlike<Entity>> Facts<'a, Entity, Buffer> {
 
 	/// Queries the facts in the buffer.
 	pub fn query<QueryPlan>(
-		&'a mut self,
+		&'a self,
 		query_plan: QueryPlan,
 	) -> impl Iterator<
 		Item = (
@@ -36,7 +36,7 @@ impl<'a, Entity: Sized, Buffer: Bufferlike<Entity>> Facts<'a, Entity, Buffer> {
 
 	/// Gets a bundle from the facts in the buffer.
 	pub fn get<B, Query: Querylike<Entity, Item = B>, QueryPlan>(
-		&'a mut self,
+		&'a self,
 		entity: Entity,
 		query_plan: QueryPlan,
 	) -> Option<B>
@@ -45,6 +45,27 @@ impl<'a, Entity: Sized, Buffer: Bufferlike<Entity>> Facts<'a, Entity, Buffer> {
 	{
 		let query = query_plan.into_query(self.inner);
 		query.get(entity)
+	}
+
+	/// Inserts an entity and a bundle into the facts.
+	pub fn insert<B>(&mut self, entity: Option<Entity>, bundle: B)
+	where
+		Buffer: Stores<B, Entity>,
+	{
+		self.inner.insert(entity, bundle);
+	}
+
+	/// Removes an entity from the facts.
+	pub fn remove<B>(&mut self, entity: Entity)
+	where
+		Buffer: Stores<B, Entity>,
+	{
+		self.inner.remove::<B>(entity);
+	}
+
+	/// Removes an entity from the facts.
+	pub fn remove_entity(&mut self, entity: Entity) {
+		self.inner.remove_entity(entity);
 	}
 }
 

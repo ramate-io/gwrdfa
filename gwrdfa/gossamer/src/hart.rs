@@ -57,15 +57,18 @@ where
 {
 	type Binding = Binding;
 
-	fn update_parabyzantine_hart(&mut self, data: &mut ParabyzantineWorld<Binding::Spec>) {
+	fn update_parabyzantine_hart(
+		&mut self,
+		ParabyzantineWorld { mut message_facts, .. }: ParabyzantineWorld<Binding::Spec>,
+	) {
 		// Check confirmations on any messages that were in flight
 		for _ in 0..self.max_batch_size {
 			match self.gossamer.try_recv_confirmation() {
 				Ok(Some(entity)) => {
 					// This message is no longer in flight...
-					data.message_facts.remove::<InFlight>(entity);
+					message_facts.remove::<InFlight>(entity);
 					// ...for the purpose of Gossamer, it has been broadcast.
-					data.message_facts.insert(Some(entity), Broadcast);
+					message_facts.insert(Some(entity), Broadcast);
 					// NOTE: we do not remove the entity or any other data besides these markers.
 					// We allow a consumeing service to take care of garbage collection.
 				}
@@ -74,22 +77,22 @@ where
 				}
 				Err(e) => {
 					// Insert the error into the inferences
-					data.message_inferences.insert(None, e);
+					message_facts.insert(None, e);
 				}
 			}
 		}
 
 		// Try to send messages to the swarm via gossamer
 		let gossamer_query_plan = self.messages.gossamer_messages_out_plan();
-		for (entity, (Out, message)) in data.message_facts.query(gossamer_query_plan) {
+		for (entity, (Out, message)) in message_facts.query(gossamer_query_plan) {
 			match self.gossamer.send_message(entity, message) {
 				Ok(_) => {
-					data.message_facts.remove::<Out>(entity);
-					data.message_facts.insert(Some(entity), InFlight);
+					message_facts.remove::<Out>(entity);
+					message_facts.insert(Some(entity), InFlight);
 				}
 				Err(e) => {
 					// Insert the error into the inferences
-					data.message_facts.insert(Some(entity), e);
+					message_facts.insert(Some(entity), e);
 				}
 			}
 		}
@@ -99,7 +102,7 @@ where
 			match self.gossamer.try_recv_message::<Spec::Message>() {
 				Ok(Some(message)) => {
 					// Insert the message into the inferences
-					data.message_facts.insert(None, (In, message))
+					message_facts.insert(None, (In, message))
 				}
 				Ok(None) => {
 					// No message received
@@ -107,7 +110,7 @@ where
 				}
 				Err(e) => {
 					// Insert the error into the inferences
-					data.message_facts.insert(None, e);
+					message_facts.insert(None, e);
 				}
 			}
 		}
