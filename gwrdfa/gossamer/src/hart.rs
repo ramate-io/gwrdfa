@@ -305,7 +305,7 @@ pub mod tests {
 		Ok(())
 	}
 
-	async fn hart_out(
+	fn hart_out(
 		hart: &mut GossamerHart<TestParabyzantineDataBinding, TestGossamerSpec>,
 		data: &mut TestParabyzantineData,
 		entity_message_from_gossamer_receiver: &mut UnboundedReceiver<(ContainerEntity, Vec<u8>)>,
@@ -366,21 +366,20 @@ pub mod tests {
 		Ok(())
 	}
 
-	async fn hart_out_and_confirm(
+	fn hart_out_and_confirm(
 		hart: &mut GossamerHart<TestParabyzantineDataBinding, TestGossamerSpec>,
 		data: &mut TestParabyzantineData,
 		entity_message_from_gossamer_receiver: &mut UnboundedReceiver<(ContainerEntity, Vec<u8>)>,
 		entity_into_gossamer_sender: UnboundedSender<ContainerEntity>,
 		messages: Vec<TestMessage>,
 	) -> Result<(), anyhow::Error> {
-		let out_messages =
-			hart_out(hart, data, entity_message_from_gossamer_receiver, messages).await?;
+		let out_messages = hart_out(hart, data, entity_message_from_gossamer_receiver, messages)?;
 		hart_confirm(hart, data, entity_into_gossamer_sender, out_messages)?;
 		Ok(())
 	}
 
-	#[tokio::test]
-	async fn test_gossamer_hart_in() -> Result<(), anyhow::Error> {
+	#[test]
+	fn test_gossamer_single_hart_in() -> Result<(), anyhow::Error> {
 		let (
 			gossamer,
 			message_into_gossamer_sender,
@@ -405,8 +404,8 @@ pub mod tests {
 	}
 
 	/// Tests just hart out.
-	#[tokio::test]
-	async fn test_gossamer_hart_out() -> Result<(), anyhow::Error> {
+	#[test]
+	fn test_gossamer_single_hart_out() -> Result<(), anyhow::Error> {
 		let (
 			gossamer,
 			_message_into_gossamer_sender,
@@ -425,15 +424,14 @@ pub mod tests {
 			&mut data,
 			&mut entity_message_from_gossamer_receiver,
 			vec![TestMessage("Hello, world out!".to_string())],
-		)
-		.await?;
+		)?;
 
 		Ok(())
 	}
 
 	/// Tests hart out and confirm.
 	#[tokio::test]
-	async fn test_gossamer_hart_out_confirm() -> Result<(), anyhow::Error> {
+	async fn test_gossamer_single_hart_out_confirm() -> Result<(), anyhow::Error> {
 		let (
 			gossamer,
 			_message_into_gossamer_sender,
@@ -453,15 +451,14 @@ pub mod tests {
 			&mut entity_message_from_gossamer_receiver,
 			entity_into_gossamer_sender,
 			vec![TestMessage("Hello, world out!".to_string())],
-		)
-		.await?;
+		)?;
 
 		Ok(())
 	}
 
 	/// Tests the complete lifecycle of a message through the Gossamer Hart.
-	#[tokio::test]
-	async fn test_gossamer_hart() -> Result<(), anyhow::Error> {
+	#[test]
+	fn test_gossamer_single_hart() -> Result<(), anyhow::Error> {
 		let (
 			gossamer,
 			message_into_gossamer_sender,
@@ -487,8 +484,7 @@ pub mod tests {
 			&mut entity_message_from_gossamer_receiver,
 			entity_into_gossamer_sender,
 			vec![TestMessage("Hello, world out!".to_string())],
-		)
-		.await?;
+		)?;
 
 		Ok(())
 	}
