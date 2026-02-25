@@ -1,8 +1,5 @@
-use crate::{
-	Component, ContainerAccepting, ContainerEntity, ContainerEntityBuffer, ContainerGiving,
-};
+use crate::Component;
 use core::mem;
-use parabyzantine::buffer::{DraftBufferlike, Stores};
 
 /// A Delta indicates a change on a container.
 ///
@@ -49,4 +46,7 @@ impl<T: Sized, D: DeltaContainerGiving<T>, C: ContainerModifying<T>> DeltaContai
 pub trait DeltaContainer<C> {
 	/// Applies all deltas to the container.
 	fn apply_deltas(&mut self, container: &mut C);
+
+	/// Builds a new container from the deltas.
+	fn into_container(self) -> C;
 }

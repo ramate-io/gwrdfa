@@ -82,5 +82,20 @@ impl<D: DeltaContainer<C>, C: Sized> DraftBufferlike<ContainerEntity, ContainerE
 		self.remove_delta_container(entity);
 	}
 
-	fn commit(self, buffer: &mut ContainerEntityBuffer<C>) {}
+	fn commit(self, buffer: &mut ContainerEntityBuffer<C>) {
+		// Apply all deltas to the containers in the buffer.
+		for (entity, mut deltas) in self.entities.into_iter() {
+			match buffer.get_mut(entity) {
+				Some(container) => deltas.apply_deltas(container),
+				None => {
+					// for now, do nothing
+				}
+			}
+		}
+
+		// Insert all new containers into the buffer.
+		for delta in self.new_insertions {
+			buffer.insert_container(delta.into_container());
+		}
+	}
 }
