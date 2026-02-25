@@ -132,6 +132,7 @@ pub mod tests {
 	use crate::GossamerMessage;
 	use crate::GossamerMessageError;
 	use crate::{container::GossamerContainer, delta_container::GossamerDeltaContainer};
+	use gwrdfa_container::Component;
 	use gwrdfa_container::{
 		draft_buffer::ContainerEntityDraftBuffer,
 		query::matching_tuple::{MatchingTuple, MatchingTupleQuery},
@@ -303,7 +304,49 @@ pub mod tests {
 			}
 
 			assert_eq!(containers.len(), 1);
+			assert_eq!(
+				containers[0].1.message,
+				Component::Present(TestMessage("Hello, world!".to_string()))
+			);
 		}
+
+		// Insert an out message
+		data.gossamer_buffer.insert_container(GossamerContainer {
+			message: Component::Present(TestMessage("Hello, world out!".to_string())),
+			message_in: Component::Absent,
+			message_out: Component::Present(Out),
+			message_in_flight: Component::Absent,
+			message_broadcast: Component::Absent,
+			message_error: Component::Absent,
+		});
+
+		hart.act_on_parabyzantine_hart(&mut data);
+
+		// Receive the out message
+		let (entity, gossamer_bytes) = entity_message_from_gossamer_receiver
+			.recv()
+			.await
+			.ok_or(anyhow::anyhow!("Failed to receive message"))?;
+
+		assert_eq!(
+			gossamer_bytes,
+			TestMessage("Hello, world out!".to_string()).to_goassamer_bytes()?
+		);
+
+		// Check that it was marked as in flight
+		let inflight_container =
+			data.gossamer_buffer.get(entity).ok_or(anyhow::anyhow!("Entity not found"))?;
+		assert_eq!(
+			inflight_container,
+			&GossamerContainer {
+				message: Component::Present(TestMessage("Hello, world out!".to_string())),
+				message_in: Component::Absent,
+				message_out: Component::Absent,
+				message_in_flight: Component::Present(InFlight),
+				message_broadcast: Component::Absent,
+				message_error: Component::Absent,
+			}
+		);
 
 		Ok(())
 	}

@@ -95,6 +95,7 @@ impl<T: GossamerMessage> ContainerAccepting<Out> for GossamerDeltaContainer<T> {
 	}
 
 	fn remove_from_container(&mut self) {
+		println!("Removing out from {:?}", std::any::type_name::<T>());
 		self.message_out = Delta::Removed;
 	}
 }

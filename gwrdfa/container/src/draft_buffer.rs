@@ -6,7 +6,7 @@ use std::collections::HashMap;
 pub struct ContainerEntityDraftBuffer<T: Sized> {
 	// NOTE: currently, we don't support double updates on the draft buffer.
 	// So, it is fine to simply stack insertions that don't know their entity yet.
-	new_insertions: Vec<T>,
+	new_insertions: Vec<(Option<ContainerEntity>, T)>,
 	entities: HashMap<ContainerEntity, T>,
 }
 
@@ -16,7 +16,7 @@ impl<T: Sized> ContainerEntityDraftBuffer<T> {
 	}
 
 	pub fn add_delta_container(&mut self, value: T) {
-		self.new_insertions.push(value);
+		self.new_insertions.push((None, value));
 	}
 
 	pub fn upsert_delta_container(&mut self, entity: ContainerEntity, value: T) {
@@ -55,7 +55,10 @@ impl<B, T: ContainerAccepting<B>> Stores<B, ContainerEntity> for ContainerEntity
 	}
 
 	fn remove_record(&mut self, entity: ContainerEntity) {
-		self.remove_delta_container(entity);
+		match self.get_delta_container_mut(entity) {
+			Some(container) => container.remove_from_container(),
+			None => self.new_insertions.push((Some(entity), T::from_removed_data())),
+		}
 	}
 }
 
@@ -75,6 +78,7 @@ impl<D: DeltaContainer<C>, C: Sized> DraftBufferlike<ContainerEntity, ContainerE
 		ContainerEntityBuffer<C>: Stores<B, ContainerEntity>,
 		Self: Stores<B, ContainerEntity>,
 	{
+		println!("Removing {} from {:?}", std::any::type_name::<B>(), entity);
 		self.remove_record(entity);
 	}
 
@@ -84,7 +88,7 @@ impl<D: DeltaContainer<C>, C: Sized> DraftBufferlike<ContainerEntity, ContainerE
 
 	fn commit(self, buffer: &mut ContainerEntityBuffer<C>) {
 		// Apply all deltas to the containers in the buffer.
-		for (entity, mut deltas) in self.entities.into_iter() {
+		for (entity, deltas) in self.entities.into_iter() {
 			match buffer.get_mut(entity) {
 				Some(container) => deltas.apply_deltas(container),
 				None => {
@@ -94,8 +98,17 @@ impl<D: DeltaContainer<C>, C: Sized> DraftBufferlike<ContainerEntity, ContainerE
 		}
 
 		// Insert all new containers into the buffer.
-		for delta in self.new_insertions {
-			buffer.insert_container(delta.into_container());
+		for (entity, delta) in self.new_insertions {
+			if let Some(entity) = entity {
+				match buffer.get_mut(entity) {
+					Some(container) => delta.apply_deltas(container),
+					None => {
+						buffer.insert_container(delta.into_container());
+					}
+				}
+			} else {
+				buffer.insert_container(delta.into_container());
+			}
 		}
 	}
 }

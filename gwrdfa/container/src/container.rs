@@ -30,6 +30,9 @@ pub trait ContainerAccepting<Data: Sized> {
 	/// Creates a new container from a bundle.
 	fn from_data(data: Data) -> Self;
 
+	/// Creates a new container with semantically removed data.
+	fn from_removed_data() -> Self;
+
 	/// Updates a container with a bundle.
 	fn update_with_data(&mut self, data: Data);
 
@@ -114,6 +117,10 @@ pub mod test {
 			Self { num: data, slice: [0; 10], field: Component::Absent }
 		}
 
+		fn from_removed_data() -> Self {
+			Self { num: 0, slice: [0; 10], field: Component::Absent }
+		}
+
 		fn update_with_data(&mut self, data: i32) {
 			self.num = data;
 		}
@@ -134,6 +141,10 @@ pub mod test {
 			Self { num: 0, slice: data, field: Component::Absent }
 		}
 
+		fn from_removed_data() -> Self {
+			Self { num: 0, slice: [0; 10], field: Component::Absent }
+		}
+
 		fn update_with_data(&mut self, data: [i32; 10]) {
 			self.slice = data;
 		}
@@ -152,6 +163,10 @@ pub mod test {
 	impl ContainerAccepting<TestField> for TestContainer {
 		fn from_data(data: TestField) -> Self {
 			Self { num: 0, slice: [0; 10], field: Component::Present(data) }
+		}
+
+		fn from_removed_data() -> Self {
+			Self { num: 0, slice: [0; 10], field: Component::Absent }
 		}
 
 		fn update_with_data(&mut self, data: TestField) {
