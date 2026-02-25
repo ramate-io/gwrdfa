@@ -23,6 +23,17 @@ impl<T: GossamerMessage> ContainerAccepting<T> for GossamerContainer<T> {
 		}
 	}
 
+	fn from_removed_data() -> Self {
+		Self {
+			message: Component::Absent,
+			message_in: Component::Absent,
+			message_out: Component::Absent,
+			message_in_flight: Component::Absent,
+			message_broadcast: Component::Absent,
+			message_error: Component::Absent,
+		}
+	}
+
 	fn update_with_data(&mut self, data: T) {
 		self.message = Component::Present(data);
 	}
@@ -43,6 +54,17 @@ impl<T: GossamerMessage> ContainerAccepting<In> for GossamerContainer<T> {
 		Self {
 			message: Component::Absent,
 			message_in: Component::Present(data),
+			message_out: Component::Absent,
+			message_in_flight: Component::Absent,
+			message_broadcast: Component::Absent,
+			message_error: Component::Absent,
+		}
+	}
+
+	fn from_removed_data() -> Self {
+		Self {
+			message: Component::Absent,
+			message_in: Component::Absent,
 			message_out: Component::Absent,
 			message_in_flight: Component::Absent,
 			message_broadcast: Component::Absent,
@@ -77,6 +99,17 @@ impl<T: GossamerMessage> ContainerAccepting<Out> for GossamerContainer<T> {
 		}
 	}
 
+	fn from_removed_data() -> Self {
+		Self {
+			message: Component::Absent,
+			message_in: Component::Absent,
+			message_out: Component::Absent,
+			message_in_flight: Component::Absent,
+			message_broadcast: Component::Absent,
+			message_error: Component::Absent,
+		}
+	}
+
 	fn update_with_data(&mut self, data: Out) {
 		self.message_out = Component::Present(data);
 	}
@@ -99,6 +132,17 @@ impl<T: GossamerMessage> ContainerAccepting<InFlight> for GossamerContainer<T> {
 			message_in: Component::Absent,
 			message_out: Component::Absent,
 			message_in_flight: Component::Present(data),
+			message_broadcast: Component::Absent,
+			message_error: Component::Absent,
+		}
+	}
+
+	fn from_removed_data() -> Self {
+		Self {
+			message: Component::Absent,
+			message_in: Component::Absent,
+			message_out: Component::Absent,
+			message_in_flight: Component::Absent,
 			message_broadcast: Component::Absent,
 			message_error: Component::Absent,
 		}
@@ -131,6 +175,17 @@ impl<T: GossamerMessage> ContainerAccepting<Broadcast> for GossamerContainer<T> 
 		}
 	}
 
+	fn from_removed_data() -> Self {
+		Self {
+			message: Component::Absent,
+			message_in: Component::Absent,
+			message_out: Component::Absent,
+			message_in_flight: Component::Absent,
+			message_broadcast: Component::Absent,
+			message_error: Component::Absent,
+		}
+	}
+
 	fn update_with_data(&mut self, data: Broadcast) {
 		self.message_broadcast = Component::Present(data);
 	}
@@ -155,6 +210,17 @@ impl<T: GossamerMessage> ContainerAccepting<GossamerMessageError> for GossamerCo
 			message_in_flight: Component::Absent,
 			message_broadcast: Component::Absent,
 			message_error: Component::Present(data),
+		}
+	}
+
+	fn from_removed_data() -> Self {
+		Self {
+			message: Component::Absent,
+			message_in: Component::Absent,
+			message_out: Component::Absent,
+			message_in_flight: Component::Absent,
+			message_broadcast: Component::Absent,
+			message_error: Component::Absent,
 		}
 	}
 

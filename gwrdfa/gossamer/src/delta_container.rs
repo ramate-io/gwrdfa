@@ -48,6 +48,17 @@ impl<T: GossamerMessage> ContainerAccepting<T> for GossamerDeltaContainer<T> {
 		}
 	}
 
+	fn from_removed_data() -> Self {
+		Self {
+			message: Delta::Removed,
+			message_in: Delta::Unchanged,
+			message_out: Delta::Unchanged,
+			message_in_flight: Delta::Unchanged,
+			message_broadcast: Delta::Unchanged,
+			message_error: Delta::Unchanged,
+		}
+	}
+
 	fn update_with_data(&mut self, data: T) {
 		self.message = Delta::Modified(data);
 	}
@@ -62,6 +73,17 @@ impl<T: GossamerMessage> ContainerAccepting<In> for GossamerDeltaContainer<T> {
 		Self {
 			message: Delta::Unchanged,
 			message_in: Delta::Modified(data),
+			message_out: Delta::Unchanged,
+			message_in_flight: Delta::Unchanged,
+			message_broadcast: Delta::Unchanged,
+			message_error: Delta::Unchanged,
+		}
+	}
+
+	fn from_removed_data() -> Self {
+		Self {
+			message: Delta::Unchanged,
+			message_in: Delta::Removed,
 			message_out: Delta::Unchanged,
 			message_in_flight: Delta::Unchanged,
 			message_broadcast: Delta::Unchanged,
@@ -90,6 +112,17 @@ impl<T: GossamerMessage> ContainerAccepting<Out> for GossamerDeltaContainer<T> {
 		}
 	}
 
+	fn from_removed_data() -> Self {
+		Self {
+			message: Delta::Unchanged,
+			message_in: Delta::Unchanged,
+			message_out: Delta::Removed,
+			message_in_flight: Delta::Unchanged,
+			message_broadcast: Delta::Unchanged,
+			message_error: Delta::Unchanged,
+		}
+	}
+
 	fn update_with_data(&mut self, data: Out) {
 		self.message_out = Delta::Modified(data);
 	}
@@ -107,6 +140,17 @@ impl<T: GossamerMessage> ContainerAccepting<InFlight> for GossamerDeltaContainer
 			message_in: Delta::Unchanged,
 			message_out: Delta::Unchanged,
 			message_in_flight: Delta::Modified(data),
+			message_broadcast: Delta::Unchanged,
+			message_error: Delta::Unchanged,
+		}
+	}
+
+	fn from_removed_data() -> Self {
+		Self {
+			message: Delta::Unchanged,
+			message_in: Delta::Unchanged,
+			message_out: Delta::Unchanged,
+			message_in_flight: Delta::Removed,
 			message_broadcast: Delta::Unchanged,
 			message_error: Delta::Unchanged,
 		}
@@ -133,6 +177,17 @@ impl<T: GossamerMessage> ContainerAccepting<Broadcast> for GossamerDeltaContaine
 		}
 	}
 
+	fn from_removed_data() -> Self {
+		Self {
+			message: Delta::Unchanged,
+			message_in: Delta::Unchanged,
+			message_out: Delta::Unchanged,
+			message_in_flight: Delta::Unchanged,
+			message_broadcast: Delta::Removed,
+			message_error: Delta::Unchanged,
+		}
+	}
+
 	fn update_with_data(&mut self, data: Broadcast) {
 		self.message_broadcast = Delta::Modified(data);
 	}
@@ -151,6 +206,17 @@ impl<T: GossamerMessage> ContainerAccepting<GossamerMessageError> for GossamerDe
 			message_in_flight: Delta::Unchanged,
 			message_broadcast: Delta::Unchanged,
 			message_error: Delta::Modified(data),
+		}
+	}
+
+	fn from_removed_data() -> Self {
+		Self {
+			message: Delta::Unchanged,
+			message_in: Delta::Unchanged,
+			message_out: Delta::Unchanged,
+			message_in_flight: Delta::Unchanged,
+			message_broadcast: Delta::Unchanged,
+			message_error: Delta::Removed,
 		}
 	}
 
