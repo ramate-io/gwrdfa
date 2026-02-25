@@ -3,12 +3,12 @@ use gwrdfa_container::{Component, ContainerAccepting, ContainerGiving};
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct GossamerContainer<T: GossamerMessage> {
-	message: Component<T>,
-	message_in: Component<In>,
-	message_out: Component<Out>,
-	message_in_flight: Component<InFlight>,
-	message_broadcast: Component<Broadcast>,
-	message_error: Component<GossamerMessageError>,
+	pub message: Component<T>,
+	pub message_in: Component<In>,
+	pub message_out: Component<Out>,
+	pub message_in_flight: Component<InFlight>,
+	pub message_broadcast: Component<Broadcast>,
+	pub message_error: Component<GossamerMessageError>,
 }
 
 impl<T: GossamerMessage> ContainerAccepting<T> for GossamerContainer<T> {

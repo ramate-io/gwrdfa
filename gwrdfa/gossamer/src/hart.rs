@@ -129,10 +129,11 @@ where
 #[cfg(test)]
 pub mod tests {
 	use super::*;
-	use crate::container::GossamerContainer;
 	use crate::GossamerMessage;
 	use crate::GossamerMessageError;
+	use crate::{container::GossamerContainer, delta_container::GossamerDeltaContainer};
 	use gwrdfa_container::{
+		draft_buffer::ContainerEntityDraftBuffer,
 		query::matching_tuple::{MatchingTuple, MatchingTupleQuery},
 		ContainerEntity, ContainerEntityBuffer,
 	};
@@ -165,7 +166,7 @@ pub mod tests {
 		type TransactionDraftBuffer = NoOp;
 		type MessageEntity = ContainerEntity;
 		type MessageBuffer = ContainerEntityBuffer<GossamerContainer<TestMessage>>;
-		type MessageDraftBuffer = NoOp;
+		type MessageDraftBuffer = ContainerEntityDraftBuffer<GossamerDeltaContainer<TestMessage>>;
 		type TaskEntity = NoOp;
 		type TaskBuffer = NoOp;
 		type TaskDraftBuffer = NoOp;
@@ -226,8 +227,10 @@ pub mod tests {
 			&mut self.gossamer_buffer
 		}
 
-		fn parabyzantine_message_draft_buffer(&self) -> NoOp {
-			NoOp
+		fn parabyzantine_message_draft_buffer(
+			&self,
+		) -> ContainerEntityDraftBuffer<GossamerDeltaContainer<TestMessage>> {
+			ContainerEntityDraftBuffer::default()
 		}
 
 		fn parabyzantine_task_buffer(&self) -> &NoOp {

@@ -11,6 +11,12 @@ pub enum Delta<T: Sized> {
 	Removed,
 }
 
+impl<T: Sized> Default for Delta<T> {
+	fn default() -> Self {
+		Self::Unchanged
+	}
+}
+
 impl<T: Sized> Delta<T> {
 	pub fn apply(self, component: &mut Component<T>) {
 		match self {
@@ -31,7 +37,7 @@ impl<T: Sized> Delta<T> {
 
 pub trait DeltaContainer<C> {
 	/// Applies all deltas to the container.
-	fn apply_deltas(&mut self, container: &mut C);
+	fn apply_deltas(self, container: &mut C);
 
 	/// Builds a new container from the deltas.
 	fn into_container(self) -> C;
