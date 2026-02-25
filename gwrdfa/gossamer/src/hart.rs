@@ -139,6 +139,7 @@ pub mod tests {
 		ContainerEntity, ContainerEntityBuffer,
 	};
 	use parabyzantine::{NoOp, NoOpData, ParabyzantineData};
+	use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 	#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 	pub struct TestMessage(String);
@@ -277,6 +278,180 @@ pub mod tests {
 		type Messages = TestGossamerMessages;
 	}
 
+	fn hart_in(
+		hart: &mut GossamerHart<TestParabyzantineDataBinding, TestGossamerSpec>,
+		data: &mut TestParabyzantineData,
+		message_into_gossamer_sender: UnboundedSender<Vec<u8>>,
+		message: TestMessage,
+	) -> Result<(), anyhow::Error> {
+		message_into_gossamer_sender.send(message.to_goassamer_bytes()?)?;
+
+		hart.act_on_parabyzantine_hart(data);
+
+		{
+			let mut containers = Vec::new();
+			for (entity, container) in data.gossamer_buffer.iter() {
+				containers.push((entity, container));
+			}
+
+			assert_eq!(containers.len(), 1);
+			assert_eq!(containers[0].1.message, Component::Present(message));
+		}
+
+		Ok(())
+	}
+
+	async fn hart_out(
+		hart: &mut GossamerHart<TestParabyzantineDataBinding, TestGossamerSpec>,
+		data: &mut TestParabyzantineData,
+		entity_message_from_gossamer_receiver: &mut UnboundedReceiver<(ContainerEntity, Vec<u8>)>,
+		message: TestMessage,
+	) -> Result<(ContainerEntity, TestMessage), anyhow::Error> {
+		// Insert an out message
+		data.gossamer_buffer.insert_container(GossamerContainer {
+			message: Component::Present(message.clone()),
+			message_in: Component::Absent,
+			message_out: Component::Present(Out),
+			message_in_flight: Component::Absent,
+			message_broadcast: Component::Absent,
+			message_error: Component::Absent,
+		});
+
+		hart.act_on_parabyzantine_hart(data);
+
+		// Receive the out message
+		let (entity, gossamer_bytes) = entity_message_from_gossamer_receiver
+			.recv()
+			.await
+			.ok_or(anyhow::anyhow!("Failed to receive message"))?;
+
+		assert_eq!(gossamer_bytes, message.to_goassamer_bytes()?);
+
+		Ok((entity, message))
+	}
+
+	fn hart_confirm(
+		hart: &mut GossamerHart<TestParabyzantineDataBinding, TestGossamerSpec>,
+		data: &mut TestParabyzantineData,
+		entity_into_gossamer_sender: UnboundedSender<ContainerEntity>,
+		entity: ContainerEntity,
+		message: TestMessage,
+	) -> Result<(), anyhow::Error> {
+		// Confirm the message
+		entity_into_gossamer_sender.send(entity)?;
+		hart.act_on_parabyzantine_hart(data);
+
+		let broadcast_container =
+			data.gossamer_buffer.get(entity).ok_or(anyhow::anyhow!("Entity not found"))?;
+		assert_eq!(
+			broadcast_container,
+			&GossamerContainer {
+				message: Component::Present(message),
+				message_in: Component::Absent,
+				message_out: Component::Absent,
+				message_in_flight: Component::Absent,
+				message_broadcast: Component::Present(Broadcast),
+				message_error: Component::Absent,
+			}
+		);
+
+		Ok(())
+	}
+
+	async fn hart_out_and_confirm(
+		hart: &mut GossamerHart<TestParabyzantineDataBinding, TestGossamerSpec>,
+		data: &mut TestParabyzantineData,
+		entity_message_from_gossamer_receiver: &mut UnboundedReceiver<(ContainerEntity, Vec<u8>)>,
+		entity_into_gossamer_sender: UnboundedSender<ContainerEntity>,
+		message: TestMessage,
+	) -> Result<(), anyhow::Error> {
+		let (entity, message) =
+			hart_out(hart, data, entity_message_from_gossamer_receiver, message).await?;
+		hart_confirm(hart, data, entity_into_gossamer_sender, entity, message)?;
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_gossamer_hart_in() -> Result<(), anyhow::Error> {
+		let (
+			gossamer,
+			message_into_gossamer_sender,
+			mut _entity_message_from_gossamer_receiver,
+			_entity_into_gossamer_sender,
+		) = Gossamer::<ContainerEntity>::mock();
+
+		let messages = TestGossamerMessages;
+		let mut hart =
+			GossamerHart::<TestParabyzantineDataBinding, TestGossamerSpec>::new(gossamer, messages);
+
+		let mut data = TestParabyzantineData::default();
+
+		hart_in(
+			&mut hart,
+			&mut data,
+			message_into_gossamer_sender,
+			TestMessage("Hello, world!".to_string()),
+		)?;
+
+		Ok(())
+	}
+
+	/// Tests just hart out.
+	#[tokio::test]
+	async fn test_gossamer_hart_out() -> Result<(), anyhow::Error> {
+		let (
+			gossamer,
+			_message_into_gossamer_sender,
+			mut entity_message_from_gossamer_receiver,
+			_entity_into_gossamer_sender,
+		) = Gossamer::<ContainerEntity>::mock();
+
+		let messages = TestGossamerMessages;
+		let mut hart =
+			GossamerHart::<TestParabyzantineDataBinding, TestGossamerSpec>::new(gossamer, messages);
+
+		let mut data = TestParabyzantineData::default();
+
+		hart_out(
+			&mut hart,
+			&mut data,
+			&mut entity_message_from_gossamer_receiver,
+			TestMessage("Hello, world out!".to_string()),
+		)
+		.await?;
+
+		Ok(())
+	}
+
+	/// Tests hart out and confirm.
+	#[tokio::test]
+	async fn test_gossamer_hart_out_confirm() -> Result<(), anyhow::Error> {
+		let (
+			gossamer,
+			_message_into_gossamer_sender,
+			mut entity_message_from_gossamer_receiver,
+			entity_into_gossamer_sender,
+		) = Gossamer::<ContainerEntity>::mock();
+
+		let messages = TestGossamerMessages;
+		let mut hart =
+			GossamerHart::<TestParabyzantineDataBinding, TestGossamerSpec>::new(gossamer, messages);
+
+		let mut data = TestParabyzantineData::default();
+
+		hart_out_and_confirm(
+			&mut hart,
+			&mut data,
+			&mut entity_message_from_gossamer_receiver,
+			entity_into_gossamer_sender,
+			TestMessage("Hello, world out!".to_string()),
+		)
+		.await?;
+
+		Ok(())
+	}
+
+	/// Tests the complete lifecycle of a message through the Gossamer Hart.
 	#[tokio::test]
 	async fn test_gossamer_hart() -> Result<(), anyhow::Error> {
 		let (
@@ -289,87 +464,23 @@ pub mod tests {
 		let mut hart =
 			GossamerHart::<TestParabyzantineDataBinding, TestGossamerSpec>::new(gossamer, messages);
 
-		message_into_gossamer_sender
-			.send(TestMessage("Hello, world!".to_string()).to_goassamer_bytes()?)?;
-
 		let mut data = TestParabyzantineData::default();
 
-		hart.act_on_parabyzantine_hart(&mut data);
+		hart_in(
+			&mut hart,
+			&mut data,
+			message_into_gossamer_sender,
+			TestMessage("Hello, world!".to_string()),
+		)?;
 
-		// Check that the message was inserted into the buffer
-		{
-			let mut containers = Vec::new();
-			for (entity, container) in data.gossamer_buffer.iter() {
-				containers.push((entity, container));
-			}
-
-			assert_eq!(containers.len(), 1);
-			assert_eq!(
-				containers[0].1.message,
-				Component::Present(TestMessage("Hello, world!".to_string()))
-			);
-		}
-
-		// Insert an out message
-		data.gossamer_buffer.insert_container(GossamerContainer {
-			message: Component::Present(TestMessage("Hello, world out!".to_string())),
-			message_in: Component::Absent,
-			message_out: Component::Present(Out),
-			message_in_flight: Component::Absent,
-			message_broadcast: Component::Absent,
-			message_error: Component::Absent,
-		});
-
-		hart.act_on_parabyzantine_hart(&mut data);
-
-		// Receive the out message
-		let (entity, gossamer_bytes) = entity_message_from_gossamer_receiver
-			.recv()
-			.await
-			.ok_or(anyhow::anyhow!("Failed to receive message"))?;
-
-		assert_eq!(
-			gossamer_bytes,
-			TestMessage("Hello, world out!".to_string()).to_goassamer_bytes()?
-		);
-
-		{
-			// Check that it was marked as in flight
-			let inflight_container =
-				data.gossamer_buffer.get(entity).ok_or(anyhow::anyhow!("Entity not found"))?;
-			assert_eq!(
-				inflight_container,
-				&GossamerContainer {
-					message: Component::Present(TestMessage("Hello, world out!".to_string())),
-					message_in: Component::Absent,
-					message_out: Component::Absent,
-					message_in_flight: Component::Present(InFlight),
-					message_broadcast: Component::Absent,
-					message_error: Component::Absent,
-				}
-			);
-		}
-
-		// Confirm the message
-		entity_into_gossamer_sender.send(entity)?;
-
-		hart.act_on_parabyzantine_hart(&mut data);
-
-		{
-			let broadcast_container =
-				data.gossamer_buffer.get(entity).ok_or(anyhow::anyhow!("Entity not found"))?;
-			assert_eq!(
-				broadcast_container,
-				&GossamerContainer {
-					message: Component::Present(TestMessage("Hello, world out!".to_string())),
-					message_in: Component::Absent,
-					message_out: Component::Absent,
-					message_in_flight: Component::Absent,
-					message_broadcast: Component::Present(Broadcast),
-					message_error: Component::Absent,
-				}
-			);
-		}
+		hart_out_and_confirm(
+			&mut hart,
+			&mut data,
+			&mut entity_message_from_gossamer_receiver,
+			entity_into_gossamer_sender,
+			TestMessage("Hello, world out!".to_string()),
+		)
+		.await?;
 
 		Ok(())
 	}
