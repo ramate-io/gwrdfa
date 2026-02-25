@@ -15,19 +15,6 @@ pub trait Stores<T, Entity> {
 	fn remove_record(&mut self, entity: Entity);
 }
 
-/// Marks when a bundle is just an entity.
-///
-/// This is the canonical way to:
-/// 1. Query a buffer for only entities.
-/// 2. Handle ignorant buffers (buffers that don't support extended bundle semantics).
-///
-/// Ignorant buffers are a useful pattern for simple or highly constrained systems,
-/// wherein implementing bundle arenas is not worthwhile or tractable.
-///
-/// The struct itself does not carry meaninful data. It is simply a marker type.
-#[derive(Debug, Clone, Copy)]
-pub struct JustEntity;
-
 /// Buffers store entities and components associated with those entities.
 /// They are the ultimate source of truth for the system.
 ///
@@ -97,6 +84,14 @@ pub trait DraftBufferlike<Entity: Sized, Buffer: Bufferlike<Entity>>: Sized {
 
 	/// Commits the draft buffer to the main buffer.
 	fn commit(self, buffer: &mut Buffer);
+}
+
+impl<B, Entity> Stores<B, Entity> for NoOp {
+	fn insert_record(&mut self, _entity: Option<Entity>, _bundle: B) -> Option<Entity> {
+		None
+	}
+
+	fn remove_record(&mut self, _entity: Entity) {}
 }
 
 impl<Entity: Sized> Bufferlike<Entity> for NoOp {

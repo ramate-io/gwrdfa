@@ -18,6 +18,10 @@ where
 		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
 		Spec::Message,
 	>,
+	<Binding::Spec as ParabyzantineDataSpec>::MessageDraftBuffer: GossamerMessageStorage<
+		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
+		Spec::Message,
+	>,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageEntity: Send + Sync,
 {
 	messages: Spec::Messages,
@@ -28,6 +32,10 @@ where
 impl<Binding: ParabyzantineDataBinding, Spec: GossamerSpec<Binding>> GossamerHart<Binding, Spec>
 where
 	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: GossamerMessageStorage<
+		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
+		Spec::Message,
+	>,
+	<Binding::Spec as ParabyzantineDataSpec>::MessageDraftBuffer: GossamerMessageStorage<
 		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
 		Spec::Message,
 	>,
@@ -50,6 +58,10 @@ impl<Binding: ParabyzantineDataBinding, Spec: GossamerSpec<Binding>> Parabyzanti
 	for GossamerHart<Binding, Spec>
 where
 	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: GossamerMessageStorage<
+		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
+		Spec::Message,
+	>,
+	<Binding::Spec as ParabyzantineDataSpec>::MessageDraftBuffer: GossamerMessageStorage<
 		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
 		Spec::Message,
 	>,
