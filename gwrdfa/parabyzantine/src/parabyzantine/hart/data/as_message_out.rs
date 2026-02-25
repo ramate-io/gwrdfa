@@ -1,5 +1,7 @@
-use crate::message_out::{ParabyzantineMessageOutData, ParabyzantineMessageOutDataSpec};
-use crate::hart::{ParabyzantineData, ParabyzantineDataSpec};
+use crate::hart::{ParabyzantineData, ParabyzantineDataSpec, ParabyzantineWorld};
+use crate::message_out::{
+	MessageOutWorld, ParabyzantineMessageOutData, ParabyzantineMessageOutDataSpec,
+};
 
 /// Blanket implementation for the message out spec.
 ///
@@ -7,26 +9,19 @@ use crate::hart::{ParabyzantineData, ParabyzantineDataSpec};
 impl<Spec: ParabyzantineDataSpec> ParabyzantineMessageOutDataSpec for Spec {
 	type TaskEntity = Spec::TaskEntity;
 	type TaskBuffer = Spec::TaskBuffer;
-	type TaskDraftBuffer = Spec::TaskDraftBuffer;
 	type MessageEntity = Spec::MessageEntity;
 	type MessageBuffer = Spec::MessageBuffer;
-	type MessageDraftBuffer = Spec::MessageDraftBuffer;
 }
 
 /// Blanket implementation for the message out data.
 impl<Spec: ParabyzantineDataSpec, Data: ParabyzantineData<Spec>> ParabyzantineMessageOutData<Spec>
 	for Data
+where
+	Spec: 'static,
 {
-	fn parabyzantine_message_out_task_buffer(&self) -> &Spec::TaskBuffer {
-		self.parabyzantine_task_buffer()
-	}
-	fn parabyzantine_message_out_task_draft_buffer(&self) -> Spec::TaskDraftBuffer {
-		self.parabyzantine_task_draft_buffer()
-	}
-	fn parabyzantine_message_out_message_buffer(&self) -> &Spec::MessageBuffer {
-		self.parabyzantine_message_buffer()
-	}
-	fn parabyzantine_message_out_message_draft_buffer(&self) -> Spec::MessageDraftBuffer {
-		self.parabyzantine_message_draft_buffer()
+	fn parabyzantine_message_out_world<'a>(&'a mut self) -> MessageOutWorld<'a, Spec> {
+		let ParabyzantineWorld { task_facts, message_facts, .. } = self.parabyzantine_world();
+
+		MessageOutWorld { task_facts, message_facts }
 	}
 }

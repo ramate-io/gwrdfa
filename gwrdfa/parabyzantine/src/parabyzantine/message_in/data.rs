@@ -1,4 +1,4 @@
-use crate::buffer::{facts::Facts, Bufferlike, DraftBufferlike};
+use crate::buffer::{facts::Facts, Bufferlike};
 
 #[derive(Debug, Clone, Copy)]
 pub struct MessageIn;
@@ -16,26 +16,20 @@ pub trait ParabyzantineMessageInDataSpec: Sized {
 	type MessageEntity: Sized;
 	/// The buffer type for the message.
 	type MessageBuffer: Bufferlike<Self::MessageEntity>;
-	/// The draft buffer type for the message.
-	type MessageDraftBuffer: DraftBufferlike<Self::MessageEntity, Self::MessageBuffer>;
 
 	/// The entity type for the transaction.
 	type TransactionEntity: Sized;
 	/// The buffer type for the transaction.
 	type TransactionBuffer: Bufferlike<Self::TransactionEntity>;
-	/// The draft buffer type for the transaction.
-	type TransactionDraftBuffer: DraftBufferlike<Self::TransactionEntity, Self::TransactionBuffer>;
 
 	/// The entity type for the certificate.
 	type CertificateEntity: Sized;
 	/// The buffer type for the certificate.
 	type CertificateBuffer: Bufferlike<Self::CertificateEntity>;
-	/// The draft buffer type for the certificate.
-	type CertificateDraftBuffer: DraftBufferlike<Self::CertificateEntity, Self::CertificateBuffer>;
 }
 
 pub trait ParabyzantineMessageInData<Spec: ParabyzantineMessageInDataSpec>: Sized {
-	fn parabyzantine_message_in_world<'a>(&'a self) -> MessageInWorld<'a, Spec>;
+	fn parabyzantine_message_in_world<'a>(&'a mut self) -> MessageInWorld<'a, Spec>;
 }
 
 /// The world of the message in step of a parabyzantine message in Data.
