@@ -67,7 +67,6 @@ impl<D: DeltaContainer<C>, C: Sized> DraftBufferlike<ContainerEntity, ContainerE
 {
 	fn draft_insert<B>(&mut self, entity: Option<ContainerEntity>, value: B)
 	where
-		ContainerEntityBuffer<C>: Stores<B, ContainerEntity>,
 		Self: Stores<B, ContainerEntity>,
 	{
 		self.insert_record(entity, value);
@@ -75,7 +74,6 @@ impl<D: DeltaContainer<C>, C: Sized> DraftBufferlike<ContainerEntity, ContainerE
 
 	fn draft_remove<B>(&mut self, entity: ContainerEntity)
 	where
-		ContainerEntityBuffer<C>: Stores<B, ContainerEntity>,
 		Self: Stores<B, ContainerEntity>,
 	{
 		self.remove_record(entity);

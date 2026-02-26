@@ -8,7 +8,7 @@ use parabyzantine::hart::{ParabyzantineDataBinding, ParabyzantineDataSpec};
 
 pub trait GossamerSpec<Binding: ParabyzantineDataBinding>
 where
-	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: GossamerMessageStorage<
+	<Binding::Spec as ParabyzantineDataSpec>::MessageDraftBuffer: GossamerMessageStorage<
 		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
 		Self::Message,
 	>,

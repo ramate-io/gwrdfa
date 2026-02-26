@@ -14,10 +14,6 @@ use parabyzantine::hart::{
 
 pub struct GossamerHart<Binding: ParabyzantineDataBinding, Spec: GossamerSpec<Binding>>
 where
-	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: GossamerMessageStorage<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		Spec::Message,
-	>,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageDraftBuffer: GossamerMessageStorage<
 		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
 		Spec::Message,
@@ -31,10 +27,6 @@ where
 
 impl<Binding: ParabyzantineDataBinding, Spec: GossamerSpec<Binding>> GossamerHart<Binding, Spec>
 where
-	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: GossamerMessageStorage<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		Spec::Message,
-	>,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageDraftBuffer: GossamerMessageStorage<
 		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
 		Spec::Message,
@@ -57,10 +49,6 @@ where
 impl<Binding: ParabyzantineDataBinding, Spec: GossamerSpec<Binding>> ParabyzantineHart
 	for GossamerHart<Binding, Spec>
 where
-	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: GossamerMessageStorage<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		Spec::Message,
-	>,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageDraftBuffer: GossamerMessageStorage<
 		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
 		Spec::Message,
