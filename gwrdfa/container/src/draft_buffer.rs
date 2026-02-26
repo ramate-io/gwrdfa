@@ -78,10 +78,10 @@ impl<B, T: ContainerStores<B>> Stores<B, ContainerEntity> for ContainerEntityDra
 	}
 }
 
-/*impl<D: DeltasContainer<C>, C: Sized> DraftBufferlike<ContainerEntity, ContainerEntityBuffer<C>>
+impl<D: DeltasContainer<C>, C: Sized> DraftBufferlike<ContainerEntity, ContainerEntityBuffer<C>>
 	for ContainerEntityDraftBuffer<D>
 {
-	fn draft_insert<B>(&mut self, entity: Option<ContainerEntity>, value: B)
+	/*fn draft_insert<B>(&mut self, entity: Option<ContainerEntity>, value: B)
 	where
 		Self: Stores<B, ContainerEntity>,
 	{
@@ -97,7 +97,7 @@ impl<B, T: ContainerStores<B>> Stores<B, ContainerEntity> for ContainerEntityDra
 
 	fn draft_remove_entity(&mut self, entity: ContainerEntity) {
 		self.remove_delta_container(entity);
-	}
+	}*/
 
 	/// Commits the draft buffer to the main buffer.
 	///
@@ -109,7 +109,7 @@ impl<B, T: ContainerStores<B>> Stores<B, ContainerEntity> for ContainerEntityDra
 	/// we just create a new entity with the corresponding delta in the main buffer.
 	fn commit(self, buffer: &mut ContainerEntityBuffer<C>) {
 		// Apply all deltas to the containers in the buffer.
-		for (entity, deltas) in self.entities.into_iter() {
+		for (entity, deltas) in self.known_entities.into_iter() {
 			match buffer.get_mut(entity) {
 				Some(container) => deltas.apply_deltas(container),
 				None => {
@@ -119,17 +119,13 @@ impl<B, T: ContainerStores<B>> Stores<B, ContainerEntity> for ContainerEntityDra
 		}
 
 		// Insert all new containers into the buffer.
-		for (entity, delta) in self.new_insertions {
-			if let Some(entity) = entity {
-				match buffer.get_mut(entity) {
-					Some(container) => delta.apply_deltas(container),
-					None => {
-						buffer.insert_container(delta.into_container());
-					}
-				}
-			} else {
-				buffer.insert_container(delta.into_container());
-			}
+		for delta in self.new_entities {
+			buffer.insert_container(delta.into_container());
+		}
+
+		// Remove all entities for removal from the buffer.
+		for entity in self.entities_for_removal {
+			buffer.remove_container(entity);
 		}
 	}
-}*/
+}
