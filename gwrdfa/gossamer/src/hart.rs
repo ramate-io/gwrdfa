@@ -145,7 +145,7 @@ pub mod tests {
 	pub struct TestMessage(String);
 
 	impl GossamerMessage for TestMessage {
-		fn to_goassamer_bytes(&self) -> Result<Vec<u8>, GossamerMessageError> {
+		fn to_gossamer_bytes(&self) -> Result<Vec<u8>, GossamerMessageError> {
 			Ok(self.0.as_bytes().to_vec())
 		}
 
@@ -285,7 +285,7 @@ pub mod tests {
 		mut messages: Vec<TestMessage>,
 	) -> Result<(), anyhow::Error> {
 		for message in messages.iter() {
-			message_into_gossamer_sender.send(message.to_goassamer_bytes()?)?;
+			message_into_gossamer_sender.send(message.to_gossamer_bytes()?)?;
 		}
 
 		hart.act_on_parabyzantine_hart(data);
