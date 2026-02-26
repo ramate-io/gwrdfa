@@ -83,13 +83,21 @@ impl<D: DeltaContainer<C>, C: Sized> DraftBufferlike<ContainerEntity, ContainerE
 		self.remove_delta_container(entity);
 	}
 
+	/// Commits the draft buffer to the main buffer.
+	///
+	/// As a last resort, we will insert entities which were known in the draft buffer,
+	/// but not in the main buffer. Typically, this will occur because
+	/// draft buffer conflicts have not been resolves. Higher-order
+	/// systems are responsible for resolving these conflicts.
+	/// At this point, if we see an entity in the draft buffer, but not in the main buffer,
+	/// we just create a new entity with the corresponding delta in the main buffer.
 	fn commit(self, buffer: &mut ContainerEntityBuffer<C>) {
 		// Apply all deltas to the containers in the buffer.
 		for (entity, deltas) in self.entities.into_iter() {
 			match buffer.get_mut(entity) {
 				Some(container) => deltas.apply_deltas(container),
 				None => {
-					// for now, do nothing
+					buffer.insert_container(deltas.into_container());
 				}
 			}
 		}
