@@ -1,4 +1,4 @@
-use crate::{ContainerStores, ContainerEntity};
+use crate::{ContainerEntity, ContainerStores};
 use parabyzantine::buffer::{Bufferlike, Stores};
 use std::collections::HashMap;
 
@@ -54,6 +54,8 @@ impl<T: Sized> Bufferlike<ContainerEntity> for ContainerEntityBuffer<T> {
 	}
 }
 
+/// This is a convenience trait implementation to allow [ContainerEntityBuffer] to be used
+/// [Stores] operations directly.
 impl<B, T: ContainerStores<B>> Stores<B, ContainerEntity> for ContainerEntityBuffer<T> {
 	fn insert_record(
 		&mut self,
