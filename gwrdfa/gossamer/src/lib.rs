@@ -251,7 +251,7 @@ pub enum GossamerMessageError {
 }
 
 pub trait GossamerMessage: Sized {
-	fn to_goassamer_bytes(&self) -> Result<Vec<u8>, GossamerMessageError>;
+	fn to_gossamer_bytes(&self) -> Result<Vec<u8>, GossamerMessageError>;
 	fn from_gossamer_bytes(bytes: Vec<u8>) -> Result<Self, GossamerMessageError>;
 }
 
@@ -309,7 +309,7 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 		entity: Entity,
 		message: &M,
 	) -> Result<(), GossamerMessageError> {
-		let bytes = message.to_goassamer_bytes()?;
+		let bytes = message.to_gossamer_bytes()?;
 		self.entity_message_from_gossamer_sender
 			.send((entity, bytes))
 			.map_err(|_| GossamerMessageError::RelayToSwarm)?;
@@ -359,7 +359,7 @@ mod tests {
 	}
 
 	impl GossamerMessage for TestMessage {
-		fn to_goassamer_bytes(&self) -> Result<Vec<u8>, GossamerMessageError> {
+		fn to_gossamer_bytes(&self) -> Result<Vec<u8>, GossamerMessageError> {
 			Ok(self.0.clone())
 		}
 		fn from_gossamer_bytes(bytes: Vec<u8>) -> Result<Self, GossamerMessageError> {
@@ -379,7 +379,7 @@ mod tests {
 
 		// Send a message into the Gossamer instance.
 		let message1 = TestMessage::new(vec![1, 2, 3]);
-		let message1_bytes = message1.to_goassamer_bytes()?;
+		let message1_bytes = message1.to_gossamer_bytes()?;
 		message_into_gossamer_sender.send(message1_bytes)?;
 
 		// Receive the message from the Gossamer instance.
@@ -389,7 +389,7 @@ mod tests {
 		// Send an out message from the Gossamer instance.
 		let entity1 = 1;
 		let message2 = TestMessage::new(vec![4, 5, 6]);
-		let message2_bytes = message2.to_goassamer_bytes()?;
+		let message2_bytes = message2.to_gossamer_bytes()?;
 		gossamer.send_message(entity1, &message2)?;
 		let (entity, message) = entity_message_from_gossamer_receiver
 			.recv()

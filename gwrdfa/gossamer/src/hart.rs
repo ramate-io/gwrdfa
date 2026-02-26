@@ -14,10 +14,6 @@ use parabyzantine::hart::{
 
 pub struct GossamerHart<Binding: ParabyzantineDataBinding, Spec: GossamerSpec<Binding>>
 where
-	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: GossamerMessageStorage<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		Spec::Message,
-	>,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageDraftBuffer: GossamerMessageStorage<
 		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
 		Spec::Message,
@@ -31,10 +27,6 @@ where
 
 impl<Binding: ParabyzantineDataBinding, Spec: GossamerSpec<Binding>> GossamerHart<Binding, Spec>
 where
-	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: GossamerMessageStorage<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		Spec::Message,
-	>,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageDraftBuffer: GossamerMessageStorage<
 		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
 		Spec::Message,
@@ -57,10 +49,6 @@ where
 impl<Binding: ParabyzantineDataBinding, Spec: GossamerSpec<Binding>> ParabyzantineHart
 	for GossamerHart<Binding, Spec>
 where
-	<Binding::Spec as ParabyzantineDataSpec>::MessageBuffer: GossamerMessageStorage<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		Spec::Message,
-	>,
 	<Binding::Spec as ParabyzantineDataSpec>::MessageDraftBuffer: GossamerMessageStorage<
 		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
 		Spec::Message,
@@ -131,7 +119,7 @@ pub mod tests {
 	use super::*;
 	use crate::GossamerMessage;
 	use crate::GossamerMessageError;
-	use crate::{container::GossamerContainer, delta_container::GossamerDeltaContainer};
+	use crate::{container::GossamerContainer, delta_container::GossamerDeltasContainer};
 	use gwrdfa_container::Component;
 	use gwrdfa_container::{
 		draft_buffer::ContainerEntityDraftBuffer,
@@ -145,7 +133,7 @@ pub mod tests {
 	pub struct TestMessage(String);
 
 	impl GossamerMessage for TestMessage {
-		fn to_goassamer_bytes(&self) -> Result<Vec<u8>, GossamerMessageError> {
+		fn to_gossamer_bytes(&self) -> Result<Vec<u8>, GossamerMessageError> {
 			Ok(self.0.as_bytes().to_vec())
 		}
 
@@ -168,7 +156,7 @@ pub mod tests {
 		type TransactionDraftBuffer = NoOp;
 		type MessageEntity = ContainerEntity;
 		type MessageBuffer = ContainerEntityBuffer<GossamerContainer<TestMessage>>;
-		type MessageDraftBuffer = ContainerEntityDraftBuffer<GossamerDeltaContainer<TestMessage>>;
+		type MessageDraftBuffer = ContainerEntityDraftBuffer<GossamerDeltasContainer<TestMessage>>;
 		type TaskEntity = NoOp;
 		type TaskBuffer = NoOp;
 		type TaskDraftBuffer = NoOp;
@@ -231,7 +219,7 @@ pub mod tests {
 
 		fn parabyzantine_message_draft_buffer(
 			&self,
-		) -> ContainerEntityDraftBuffer<GossamerDeltaContainer<TestMessage>> {
+		) -> ContainerEntityDraftBuffer<GossamerDeltasContainer<TestMessage>> {
 			ContainerEntityDraftBuffer::default()
 		}
 
@@ -285,7 +273,7 @@ pub mod tests {
 		mut messages: Vec<TestMessage>,
 	) -> Result<(), anyhow::Error> {
 		for message in messages.iter() {
-			message_into_gossamer_sender.send(message.to_goassamer_bytes()?)?;
+			message_into_gossamer_sender.send(message.to_gossamer_bytes()?)?;
 		}
 
 		hart.act_on_parabyzantine_hart(data);

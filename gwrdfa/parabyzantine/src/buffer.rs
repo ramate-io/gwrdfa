@@ -70,13 +70,11 @@ pub trait DraftBufferlike<Entity: Sized, Buffer: Bufferlike<Entity>>: Sized {
 	/// data augmentation.
 	fn draft_insert<B>(&mut self, entity: Option<Entity>, bundle: B)
 	where
-		Buffer: Stores<B, Entity>,
 		Self: Stores<B, Entity>;
 
 	/// Removes a bundle from the draft buffer.
 	fn draft_remove<B>(&mut self, entity: Entity)
 	where
-		Buffer: Stores<B, Entity>,
 		Self: Stores<B, Entity>;
 
 	/// Removes an entity from the draft buffer.
@@ -113,17 +111,11 @@ impl<Entity: Sized> Bufferlike<Entity> for NoOp {
 }
 
 impl<Entity: Sized, Buffer: Bufferlike<Entity>> DraftBufferlike<Entity, Buffer> for NoOp {
-	fn draft_insert<B>(&mut self, _entity: Option<Entity>, _bundle: B)
-	where
-		Buffer: Stores<B, Entity>,
-	{
+	fn draft_insert<B>(&mut self, _entity: Option<Entity>, _bundle: B) {
 		// do nothing
 	}
 
-	fn draft_remove<B>(&mut self, _entity: Entity)
-	where
-		Buffer: Stores<B, Entity>,
-	{
+	fn draft_remove<B>(&mut self, _entity: Entity) {
 		// do nothing
 	}
 

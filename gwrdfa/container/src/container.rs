@@ -26,7 +26,7 @@ impl<T: Sized> Component<T> {
 }
 
 /// A trait representing valid containers for bundles.
-pub trait ContainerAccepting<Data: Sized> {
+pub trait ContainerStores<Data: Sized> {
 	/// Creates a new container from a bundle.
 	fn from_data(data: Data) -> Self;
 
@@ -44,21 +44,21 @@ pub trait ContainerAccepting<Data: Sized> {
 pub trait ContainerHoldingOps: Sized {
 	fn from_this_data<Data: Sized>(data: Data) -> Self
 	where
-		Self: ContainerAccepting<Data>,
+		Self: ContainerStores<Data>,
 	{
 		Self::from_data(data)
 	}
 
 	fn update_this_with_data<Data: Sized>(&mut self, data: Data)
 	where
-		Self: ContainerAccepting<Data>,
+		Self: ContainerStores<Data>,
 	{
 		self.update_with_data(data)
 	}
 
 	fn remove_this<Data: Sized>(&mut self)
 	where
-		Self: ContainerAccepting<Data>,
+		Self: ContainerStores<Data>,
 	{
 		self.remove_from_container()
 	}
@@ -80,9 +80,9 @@ pub mod test {
 
 	#[derive(Debug, Clone, Default, PartialEq, Eq)]
 	pub struct TestContainer {
-		num: i32,
-		slice: [i32; 10],
-		field: Component<TestField>,
+		pub num: i32,
+		pub slice: [i32; 10],
+		pub field: Component<TestField>,
 	}
 
 	impl TestContainer {
@@ -112,7 +112,7 @@ pub mod test {
 		}
 	}
 
-	impl ContainerAccepting<i32> for TestContainer {
+	impl ContainerStores<i32> for TestContainer {
 		fn from_data(data: i32) -> Self {
 			Self { num: data, slice: [0; 10], field: Component::Absent }
 		}
@@ -136,7 +136,7 @@ pub mod test {
 		}
 	}
 
-	impl ContainerAccepting<[i32; 10]> for TestContainer {
+	impl ContainerStores<[i32; 10]> for TestContainer {
 		fn from_data(data: [i32; 10]) -> Self {
 			Self { num: 0, slice: data, field: Component::Absent }
 		}
@@ -160,7 +160,7 @@ pub mod test {
 		}
 	}
 
-	impl ContainerAccepting<TestField> for TestContainer {
+	impl ContainerStores<TestField> for TestContainer {
 		fn from_data(data: TestField) -> Self {
 			Self { num: 0, slice: [0; 10], field: Component::Present(data) }
 		}
