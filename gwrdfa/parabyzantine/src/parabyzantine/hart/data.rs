@@ -209,15 +209,22 @@ pub trait ParabyzantineHart: Sized {
 	) {
 		data.commit_parabyzantine_hart(hart_inferences);
 	}
+
+	fn act_on_parabyzantine_hart(
+		&mut self,
+		data: &mut <Self::Binding as ParabyzantineDataBinding>::Data,
+	) {
+		let mut world = self.parabyzantine_hart_world(data);
+		self.update_parabyzantine_hart(&mut world);
+		self.commit_parabyzantine_hart(world.into(), data);
+	}
 }
 
 impl<Binding: ParabyzantineDataBinding, HartHandler: ParabyzantineHart<Binding = Binding>>
 	Act<Hart, Binding::Data> for HartHandler
 {
 	fn act(&mut self, _action: Hart, data: &mut Binding::Data) {
-		let mut world = self.parabyzantine_hart_world(data);
-		self.update_parabyzantine_hart(&mut world);
-		self.commit_parabyzantine_hart(world.into(), data);
+		self.act_on_parabyzantine_hart(data);
 	}
 }
 

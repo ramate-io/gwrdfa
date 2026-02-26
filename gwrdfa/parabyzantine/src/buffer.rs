@@ -7,26 +7,13 @@ pub use inferences::Inferences;
 
 use crate::NoOp;
 
-pub trait Stores<T, Entity>: Bufferlike<Entity> {
+pub trait Stores<T, Entity> {
 	/// Inserts a value into the store.
 	fn insert_record(&mut self, entity: Option<Entity>, value: T) -> Option<Entity>;
 
 	/// Removes a value from the store.
 	fn remove_record(&mut self, entity: Entity);
 }
-
-/// Marks when a bundle is just an entity.
-///
-/// This is the canonical way to:
-/// 1. Query a buffer for only entities.
-/// 2. Handle ignorant buffers (buffers that don't support extended bundle semantics).
-///
-/// Ignorant buffers are a useful pattern for simple or highly constrained systems,
-/// wherein implementing bundle arenas is not worthwhile or tractable.
-///
-/// The struct itself does not carry meaninful data. It is simply a marker type.
-#[derive(Debug, Clone, Copy)]
-pub struct JustEntity;
 
 /// Buffers store entities and components associated with those entities.
 /// They are the ultimate source of truth for the system.
@@ -59,7 +46,7 @@ pub trait Bufferlike<Entity: Sized>: Sized {
 		&mut self,
 		inferences: Inferences<Entity, Self, D>,
 	) {
-		let mut draft_buffer = inferences.into_inner();
+		let draft_buffer = inferences.into_inner();
 		draft_buffer.commit(self);
 	}
 }
@@ -83,18 +70,28 @@ pub trait DraftBufferlike<Entity: Sized, Buffer: Bufferlike<Entity>>: Sized {
 	/// data augmentation.
 	fn draft_insert<B>(&mut self, entity: Option<Entity>, bundle: B)
 	where
-		Buffer: Stores<B, Entity>;
+		Buffer: Stores<B, Entity>,
+		Self: Stores<B, Entity>;
 
 	/// Removes a bundle from the draft buffer.
 	fn draft_remove<B>(&mut self, entity: Entity)
 	where
-		Buffer: Stores<B, Entity>;
+		Buffer: Stores<B, Entity>,
+		Self: Stores<B, Entity>;
 
 	/// Removes an entity from the draft buffer.
 	fn draft_remove_entity(&mut self, entity: Entity);
 
 	/// Commits the draft buffer to the main buffer.
-	fn commit(&mut self, buffer: &mut Buffer);
+	fn commit(self, buffer: &mut Buffer);
+}
+
+impl<B, Entity> Stores<B, Entity> for NoOp {
+	fn insert_record(&mut self, _entity: Option<Entity>, _bundle: B) -> Option<Entity> {
+		None
+	}
+
+	fn remove_record(&mut self, _entity: Entity) {}
 }
 
 impl<Entity: Sized> Bufferlike<Entity> for NoOp {
@@ -132,5 +129,5 @@ impl<Entity: Sized, Buffer: Bufferlike<Entity>> DraftBufferlike<Entity, Buffer> 
 
 	fn draft_remove_entity(&mut self, _entity: Entity) {}
 
-	fn commit(&mut self, _buffer: &mut Buffer) {}
+	fn commit(self, _buffer: &mut Buffer) {}
 }

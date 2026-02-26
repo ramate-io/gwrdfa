@@ -20,11 +20,11 @@ impl<T> Spec<T> {
 }
 
 /// A [NoOp] is a no-op implementation of the [Act] trait.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
 pub struct NoOp;
 
 /// A [NoOpData] is a container for the [NoOp] struct.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct NoOpData {
 	pub no_op: NoOp,
 }

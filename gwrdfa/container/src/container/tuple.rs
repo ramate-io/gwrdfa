@@ -10,6 +10,12 @@ impl<Container: ContainerAccepting<A> + ContainerAccepting<B>, A, B> ContainerAc
 		container
 	}
 
+	fn from_removed_data() -> Self {
+		let mut container = <Container as ContainerAccepting<A>>::from_removed_data();
+		container.remove_this::<B>();
+		container
+	}
+
 	fn update_with_data(&mut self, data: (A, B)) {
 		self.update_with_data(data.0);
 		self.update_with_data(data.1);

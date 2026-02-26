@@ -2,6 +2,7 @@ use crate::{ContainerAccepting, ContainerEntity};
 use parabyzantine::buffer::{Bufferlike, Stores};
 use std::collections::HashMap;
 
+#[derive(Debug, Default)]
 pub struct ContainerEntityBuffer<T: Sized> {
 	next_entity: ContainerEntity,
 	entities: HashMap<ContainerEntity, T>,
