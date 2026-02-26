@@ -1,4 +1,4 @@
-use crate::{ContainerAccepting, ContainerEntity};
+use crate::{ContainerStores, ContainerEntity};
 use parabyzantine::buffer::{Bufferlike, Stores};
 use std::collections::HashMap;
 
@@ -54,7 +54,7 @@ impl<T: Sized> Bufferlike<ContainerEntity> for ContainerEntityBuffer<T> {
 	}
 }
 
-impl<B, T: ContainerAccepting<B>> Stores<B, ContainerEntity> for ContainerEntityBuffer<T> {
+impl<B, T: ContainerStores<B>> Stores<B, ContainerEntity> for ContainerEntityBuffer<T> {
 	fn insert_record(
 		&mut self,
 		entity: Option<ContainerEntity>,

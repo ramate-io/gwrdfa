@@ -1,5 +1,5 @@
 use crate::{Broadcast, GossamerMessage, GossamerMessageError, In, InFlight, Out};
-use gwrdfa_container::{Component, ContainerAccepting, ContainerGiving};
+use gwrdfa_container::{Component, ContainerStores, ContainerGiving};
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct GossamerContainer<T: GossamerMessage> {
@@ -11,7 +11,7 @@ pub struct GossamerContainer<T: GossamerMessage> {
 	pub message_error: Component<GossamerMessageError>,
 }
 
-impl<T: GossamerMessage> ContainerAccepting<T> for GossamerContainer<T> {
+impl<T: GossamerMessage> ContainerStores<T> for GossamerContainer<T> {
 	fn from_data(data: T) -> Self {
 		Self {
 			message: Component::Present(data),
@@ -49,7 +49,7 @@ impl<T: GossamerMessage> ContainerGiving<T> for GossamerContainer<T> {
 	}
 }
 
-impl<T: GossamerMessage> ContainerAccepting<In> for GossamerContainer<T> {
+impl<T: GossamerMessage> ContainerStores<In> for GossamerContainer<T> {
 	fn from_data(data: In) -> Self {
 		Self {
 			message: Component::Absent,
@@ -87,7 +87,7 @@ impl<T: GossamerMessage> ContainerGiving<In> for GossamerContainer<T> {
 	}
 }
 
-impl<T: GossamerMessage> ContainerAccepting<Out> for GossamerContainer<T> {
+impl<T: GossamerMessage> ContainerStores<Out> for GossamerContainer<T> {
 	fn from_data(data: Out) -> Self {
 		Self {
 			message: Component::Absent,
@@ -125,7 +125,7 @@ impl<T: GossamerMessage> ContainerGiving<Out> for GossamerContainer<T> {
 	}
 }
 
-impl<T: GossamerMessage> ContainerAccepting<InFlight> for GossamerContainer<T> {
+impl<T: GossamerMessage> ContainerStores<InFlight> for GossamerContainer<T> {
 	fn from_data(data: InFlight) -> Self {
 		Self {
 			message: Component::Absent,
@@ -163,7 +163,7 @@ impl<T: GossamerMessage> ContainerGiving<InFlight> for GossamerContainer<T> {
 	}
 }
 
-impl<T: GossamerMessage> ContainerAccepting<Broadcast> for GossamerContainer<T> {
+impl<T: GossamerMessage> ContainerStores<Broadcast> for GossamerContainer<T> {
 	fn from_data(data: Broadcast) -> Self {
 		Self {
 			message: Component::Absent,
@@ -201,7 +201,7 @@ impl<T: GossamerMessage> ContainerGiving<Broadcast> for GossamerContainer<T> {
 	}
 }
 
-impl<T: GossamerMessage> ContainerAccepting<GossamerMessageError> for GossamerContainer<T> {
+impl<T: GossamerMessage> ContainerStores<GossamerMessageError> for GossamerContainer<T> {
 	fn from_data(data: GossamerMessageError) -> Self {
 		Self {
 			message: Component::Absent,
