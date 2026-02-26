@@ -117,9 +117,9 @@ where
 #[cfg(test)]
 pub mod tests {
 	use super::*;
+	use crate::container::{GossamerContainer, GossamerDeltasContainer};
 	use crate::GossamerMessage;
 	use crate::GossamerMessageError;
-	use crate::{container::GossamerContainer, delta_container::GossamerDeltasContainer};
 	use gwrdfa_container::Component;
 	use gwrdfa_container::{
 		draft_buffer::ContainerEntityDraftBuffer,
