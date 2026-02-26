@@ -42,6 +42,32 @@ impl<T: Sized> Delta<T> {
 	}
 }
 
+impl<T: Sized + Default> Delta<T> {
+	/// Applies the delta to a type.
+	///
+	/// This is useful when the type is not available, i.e., you provide a
+	/// delta which represents a new type.
+	pub fn apply_to_type(self, container_data: &mut T) {
+		match self {
+			Self::Modified(data) => *container_data = data,
+			Self::Unchanged => (),
+			Self::Removed => *container_data = Default::default(),
+		}
+	}
+
+	/// Converts the delta to a type.
+	///
+	/// This is useful when the type is not available, i.e., you provide a
+	/// delta which represents a new type.
+	pub fn into_type(self) -> T {
+		match self {
+			Self::Modified(data) => data,
+			Self::Unchanged => Default::default(),
+			Self::Removed => Default::default(),
+		}
+	}
+}
+
 /// Delta containers know how to apply themselves to a container.
 ///
 /// Again, note that there is no requirement that the [Delta] API,
@@ -59,4 +85,62 @@ pub trait DeltaContainer<C> {
 
 	/// Builds a new container from the deltas.
 	fn into_container(self) -> C;
+}
+
+#[cfg(test)]
+mod test {
+	use super::*;
+	use crate::container::test::{TestContainer, TestField};
+
+	#[derive(Debug, Clone, Default, PartialEq, Eq)]
+	pub struct TestDeltaContainer {
+		pub num: Delta<i32>,
+		pub slice: Delta<[i32; 10]>,
+		pub field: Delta<TestField>,
+	}
+
+	impl DeltaContainer<TestContainer> for TestDeltaContainer {
+		fn apply_deltas(self, container: &mut TestContainer) {
+			self.num.apply_to_type(&mut container.num);
+			self.slice.apply_to_type(&mut container.slice);
+			self.field.apply(&mut container.field);
+		}
+
+		fn into_container(self) -> TestContainer {
+			TestContainer {
+				num: self.num.into_type(),
+				slice: self.slice.into_type(),
+				field: self.field.into_component(),
+			}
+		}
+	}
+
+	#[test]
+	fn test_delta_container_modify() {
+		let deltas = TestDeltaContainer { num: Delta::Modified(1), ..Default::default() };
+		let mut container = TestContainer::default();
+		deltas.apply_deltas(&mut container);
+		assert_eq!(container, TestContainer { num: 1, slice: [0; 10], field: Component::Absent });
+	}
+
+	#[test]
+	fn test_delta_container_unchanged() {
+		let deltas = TestDeltaContainer { ..Default::default() };
+		let mut container =
+			TestContainer { num: 1, slice: [0; 10], field: Component::Present(TestField(1)) };
+		deltas.apply_deltas(&mut container);
+		assert_eq!(
+			container,
+			TestContainer { num: 1, slice: [0; 10], field: Component::Present(TestField(1)) }
+		);
+	}
+
+	#[test]
+	fn test_delta_container_remove() {
+		let deltas = TestDeltaContainer { field: Delta::Removed, ..Default::default() };
+		let mut container =
+			TestContainer { num: 1, slice: [0; 10], field: Component::Present(TestField(1)) };
+		deltas.apply_deltas(&mut container);
+		assert_eq!(container, TestContainer { num: 1, slice: [0; 10], field: Component::Absent });
+	}
 }

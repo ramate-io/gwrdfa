@@ -80,9 +80,9 @@ pub mod test {
 
 	#[derive(Debug, Clone, Default, PartialEq, Eq)]
 	pub struct TestContainer {
-		num: i32,
-		slice: [i32; 10],
-		field: Component<TestField>,
+		pub num: i32,
+		pub slice: [i32; 10],
+		pub field: Component<TestField>,
 	}
 
 	impl TestContainer {
