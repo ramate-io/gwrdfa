@@ -40,6 +40,17 @@ impl<T: Sized> ContainerEntityDraftBuffer<T> {
 	pub fn insert_delta_container(&mut self, entity: ContainerEntity, value: T) {
 		self.known_entities.insert(entity, value);
 	}
+
+	/// Removes the delta container from the known entities.
+	///
+	/// This implements compaction of draft buffer w.r.t. removals.
+	pub fn remove_delta_container(&mut self, entity: ContainerEntity) {
+		// Add the removal intent for the entity.
+		self.entities_for_removal.insert(entity);
+
+		// Remove the delta container from the known entities.
+		self.known_entities.remove(&entity);
+	}
 }
 
 impl<B, T: ContainerStores<B>> Stores<B, ContainerEntity> for ContainerEntityDraftBuffer<T> {
@@ -70,18 +81,19 @@ impl<B, T: ContainerStores<B>> Stores<B, ContainerEntity> for ContainerEntityDra
 	}
 
 	fn remove_record(&mut self, entity: ContainerEntity) {
-		// Insert the removal intent for the entity.
-		self.entities_for_removal.insert(entity);
-
-		// Remove the delta container from the known entities.
-		self.known_entities.remove(&entity);
+		match self.get_delta_container_mut(entity) {
+			Some(container) => container.remove_from_container(),
+			None => {
+				self.known_entities.insert(entity, T::from_removed_data());
+			}
+		}
 	}
 }
 
 impl<D: DeltasContainer<C>, C: Sized> DraftBufferlike<ContainerEntity, ContainerEntityBuffer<C>>
 	for ContainerEntityDraftBuffer<D>
 {
-	/*fn draft_insert<B>(&mut self, entity: Option<ContainerEntity>, value: B)
+	fn draft_insert<B>(&mut self, entity: Option<ContainerEntity>, value: B)
 	where
 		Self: Stores<B, ContainerEntity>,
 	{
@@ -97,7 +109,7 @@ impl<D: DeltasContainer<C>, C: Sized> DraftBufferlike<ContainerEntity, Container
 
 	fn draft_remove_entity(&mut self, entity: ContainerEntity) {
 		self.remove_delta_container(entity);
-	}*/
+	}
 
 	/// Commits the draft buffer to the main buffer.
 	///
@@ -121,11 +133,6 @@ impl<D: DeltasContainer<C>, C: Sized> DraftBufferlike<ContainerEntity, Container
 		// Insert all new containers into the buffer.
 		for delta in self.new_entities {
 			buffer.insert_container(delta.into_container());
-		}
-
-		// Remove all entities for removal from the buffer.
-		for entity in self.entities_for_removal {
-			buffer.remove_container(entity);
 		}
 	}
 }
