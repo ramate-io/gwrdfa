@@ -1,34 +1,44 @@
-use crate::{ContainerEntity, ContainerEntityBuffer, ContainerStores, DeltaContainer};
+use crate::{ContainerEntity, ContainerEntityBuffer, ContainerStores, DeltasContainer};
 use parabyzantine::buffer::{DraftBufferlike, Stores};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Default)]
 pub struct ContainerEntityDraftBuffer<T: Sized> {
-	// NOTE: currently, we don't support double updates on the draft buffer.
-	// So, it is fine to simply stack insertions that don't know their entity yet.
-	new_insertions: Vec<(Option<ContainerEntity>, T)>,
-	entities: HashMap<ContainerEntity, T>,
+	/// NOTE: currently, we don't support double updates on the draft buffer.
+	/// So, it is fine to simply stack insertions that don't know their entity yet.
+	/// In the future, we would assign an entity here and simply
+	/// put everything into [ContainerEntityDraftBuffer::known_entities].
+	new_entities: Vec<T>,
+	/// The hash map allows for compaction.
+	known_entities: HashMap<ContainerEntity, T>,
+	/// Keep track of the entities for removal.
+	///
+	/// An known entity modification that occurs after removal,
+	/// will compact away the removal.
+	///
+	/// A removal that occurs after a modification will compact away the modification.
+	entities_for_removal: HashSet<ContainerEntity>,
 }
 
 impl<T: Sized> ContainerEntityDraftBuffer<T> {
 	pub fn new() -> Self {
-		Self { new_insertions: Vec::new(), entities: HashMap::new() }
+		Self {
+			new_entities: Vec::new(),
+			known_entities: HashMap::new(),
+			entities_for_removal: HashSet::new(),
+		}
 	}
 
 	pub fn add_delta_container(&mut self, value: T) {
-		self.new_insertions.push((None, value));
-	}
-
-	pub fn upsert_delta_container(&mut self, entity: ContainerEntity, value: T) {
-		self.entities.insert(entity, value);
-	}
-
-	pub fn remove_delta_container(&mut self, entity: ContainerEntity) {
-		self.entities.remove(&entity);
+		self.new_entities.push(value);
 	}
 
 	pub fn get_delta_container_mut(&mut self, entity: ContainerEntity) -> Option<&mut T> {
-		self.entities.get_mut(&entity)
+		self.known_entities.get_mut(&entity)
+	}
+
+	pub fn insert_delta_container(&mut self, entity: ContainerEntity, value: T) {
+		self.known_entities.insert(entity, value);
 	}
 }
 
@@ -40,10 +50,15 @@ impl<B, T: ContainerStores<B>> Stores<B, ContainerEntity> for ContainerEntityDra
 	) -> Option<ContainerEntity> {
 		match entity {
 			Some(entity) => {
+				// Update or insert the delta container.
 				match self.get_delta_container_mut(entity) {
 					Some(data) => data.update_with_data(value),
-					None => self.upsert_delta_container(entity, T::from_data(value)),
+					None => self.insert_delta_container(entity, T::from_data(value)),
 				}
+
+				// Remove the removal intent from the entities for removal.
+				self.entities_for_removal.remove(&entity);
+
 				Some(entity)
 			}
 			None => {
@@ -55,14 +70,15 @@ impl<B, T: ContainerStores<B>> Stores<B, ContainerEntity> for ContainerEntityDra
 	}
 
 	fn remove_record(&mut self, entity: ContainerEntity) {
-		match self.get_delta_container_mut(entity) {
-			Some(container) => container.remove_from_container(),
-			None => self.new_insertions.push((Some(entity), T::from_removed_data())),
-		}
+		// Insert the removal intent for the entity.
+		self.entities_for_removal.insert(entity);
+
+		// Remove the delta container from the known entities.
+		self.known_entities.remove(&entity);
 	}
 }
 
-impl<D: DeltaContainer<C>, C: Sized> DraftBufferlike<ContainerEntity, ContainerEntityBuffer<C>>
+/*impl<D: DeltasContainer<C>, C: Sized> DraftBufferlike<ContainerEntity, ContainerEntityBuffer<C>>
 	for ContainerEntityDraftBuffer<D>
 {
 	fn draft_insert<B>(&mut self, entity: Option<ContainerEntity>, value: B)
@@ -116,4 +132,4 @@ impl<D: DeltaContainer<C>, C: Sized> DraftBufferlike<ContainerEntity, ContainerE
 			}
 		}
 	}
-}
+}*/

@@ -119,7 +119,7 @@ pub mod tests {
 	use super::*;
 	use crate::GossamerMessage;
 	use crate::GossamerMessageError;
-	use crate::{container::GossamerContainer, delta_container::GossamerDeltaContainer};
+	use crate::{container::GossamerContainer, delta_container::GossamerDeltasContainer};
 	use gwrdfa_container::Component;
 	use gwrdfa_container::{
 		draft_buffer::ContainerEntityDraftBuffer,
@@ -156,7 +156,7 @@ pub mod tests {
 		type TransactionDraftBuffer = NoOp;
 		type MessageEntity = ContainerEntity;
 		type MessageBuffer = ContainerEntityBuffer<GossamerContainer<TestMessage>>;
-		type MessageDraftBuffer = ContainerEntityDraftBuffer<GossamerDeltaContainer<TestMessage>>;
+		type MessageDraftBuffer = ContainerEntityDraftBuffer<GossamerDeltasContainer<TestMessage>>;
 		type TaskEntity = NoOp;
 		type TaskBuffer = NoOp;
 		type TaskDraftBuffer = NoOp;
@@ -219,7 +219,7 @@ pub mod tests {
 
 		fn parabyzantine_message_draft_buffer(
 			&self,
-		) -> ContainerEntityDraftBuffer<GossamerDeltaContainer<TestMessage>> {
+		) -> ContainerEntityDraftBuffer<GossamerDeltasContainer<TestMessage>> {
 			ContainerEntityDraftBuffer::default()
 		}
 

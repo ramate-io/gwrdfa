@@ -3,7 +3,7 @@ use crate::Component;
 /// A Delta indicates a change on a container.
 ///
 /// While we don't use this directly herein,
-/// it is useful when implement custom [DeltaContainer] types.
+/// it is useful when implement custom [DeltasContainer] types.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Delta<T: Sized> {
 	Modified(T),
@@ -71,15 +71,15 @@ impl<T: Sized + Default> Delta<T> {
 /// Delta containers know how to apply themselves to a container.
 ///
 /// Again, note that there is no requirement that the [Delta] API,
-/// be used here. A [DeltaContainer] can decide to apply itself to a container
+/// be used here. A [DeltasContainer] can decide to apply itself to a container
 /// in any way it seems fit.
 ///
 /// Further, obeserve that if we wanted to have blanket implementation,
 /// we would need to enumerate all the possible deltas on
-/// a [DeltaContainer] type and enumerate all the possible
+/// a [DeltasContainer] type and enumerate all the possible
 /// components on a Container type. Rust does not yet support this kind
 /// of pattern matching.
-pub trait DeltaContainer<C> {
+pub trait DeltasContainer<C> {
 	/// Applies all deltas to the container.
 	fn apply_deltas(self, container: &mut C);
 
@@ -93,13 +93,13 @@ mod test {
 	use crate::container::test::{TestContainer, TestField};
 
 	#[derive(Debug, Clone, Default, PartialEq, Eq)]
-	pub struct TestDeltaContainer {
+	pub struct TestDeltasContainer {
 		pub num: Delta<i32>,
 		pub slice: Delta<[i32; 10]>,
 		pub field: Delta<TestField>,
 	}
 
-	impl DeltaContainer<TestContainer> for TestDeltaContainer {
+	impl DeltasContainer<TestContainer> for TestDeltasContainer {
 		fn apply_deltas(self, container: &mut TestContainer) {
 			self.num.apply_to_type(&mut container.num);
 			self.slice.apply_to_type(&mut container.slice);
@@ -117,7 +117,7 @@ mod test {
 
 	#[test]
 	fn test_delta_container_modify() {
-		let deltas = TestDeltaContainer { num: Delta::Modified(1), ..Default::default() };
+		let deltas = TestDeltasContainer { num: Delta::Modified(1), ..Default::default() };
 		let mut container = TestContainer::default();
 		deltas.apply_deltas(&mut container);
 		assert_eq!(container, TestContainer { num: 1, slice: [0; 10], field: Component::Absent });
@@ -125,7 +125,7 @@ mod test {
 
 	#[test]
 	fn test_delta_container_unchanged() {
-		let deltas = TestDeltaContainer { ..Default::default() };
+		let deltas = TestDeltasContainer { ..Default::default() };
 		let mut container =
 			TestContainer { num: 1, slice: [0; 10], field: Component::Present(TestField(1)) };
 		deltas.apply_deltas(&mut container);
@@ -137,7 +137,7 @@ mod test {
 
 	#[test]
 	fn test_delta_container_remove() {
-		let deltas = TestDeltaContainer { field: Delta::Removed, ..Default::default() };
+		let deltas = TestDeltasContainer { field: Delta::Removed, ..Default::default() };
 		let mut container =
 			TestContainer { num: 1, slice: [0; 10], field: Component::Present(TestField(1)) };
 		deltas.apply_deltas(&mut container);

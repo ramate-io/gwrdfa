@@ -2,10 +2,10 @@ use crate::{
 	container::GossamerContainer, Broadcast, GossamerMessage, GossamerMessageError, In, InFlight,
 	Out,
 };
-use gwrdfa_container::{ContainerStores, Delta, DeltaContainer};
+use gwrdfa_container::{ContainerStores, Delta, DeltasContainer};
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct GossamerDeltaContainer<T: GossamerMessage> {
+pub struct GossamerDeltasContainer<T: GossamerMessage> {
 	pub message: Delta<T>,
 	pub message_in: Delta<In>,
 	pub message_out: Delta<Out>,
@@ -14,7 +14,7 @@ pub struct GossamerDeltaContainer<T: GossamerMessage> {
 	pub message_error: Delta<GossamerMessageError>,
 }
 
-impl<T: GossamerMessage> DeltaContainer<GossamerContainer<T>> for GossamerDeltaContainer<T> {
+impl<T: GossamerMessage> DeltasContainer<GossamerContainer<T>> for GossamerDeltasContainer<T> {
 	fn apply_deltas(self, container: &mut GossamerContainer<T>) {
 		self.message.apply(&mut container.message);
 		self.message_in.apply(&mut container.message_in);
@@ -36,7 +36,7 @@ impl<T: GossamerMessage> DeltaContainer<GossamerContainer<T>> for GossamerDeltaC
 	}
 }
 
-impl<T: GossamerMessage> ContainerStores<T> for GossamerDeltaContainer<T> {
+impl<T: GossamerMessage> ContainerStores<T> for GossamerDeltasContainer<T> {
 	fn from_data(data: T) -> Self {
 		Self {
 			message: Delta::Modified(data),
@@ -68,7 +68,7 @@ impl<T: GossamerMessage> ContainerStores<T> for GossamerDeltaContainer<T> {
 	}
 }
 
-impl<T: GossamerMessage> ContainerStores<In> for GossamerDeltaContainer<T> {
+impl<T: GossamerMessage> ContainerStores<In> for GossamerDeltasContainer<T> {
 	fn from_data(data: In) -> Self {
 		Self {
 			message: Delta::Unchanged,
@@ -100,7 +100,7 @@ impl<T: GossamerMessage> ContainerStores<In> for GossamerDeltaContainer<T> {
 	}
 }
 
-impl<T: GossamerMessage> ContainerStores<Out> for GossamerDeltaContainer<T> {
+impl<T: GossamerMessage> ContainerStores<Out> for GossamerDeltasContainer<T> {
 	fn from_data(data: Out) -> Self {
 		Self {
 			message: Delta::Unchanged,
@@ -132,7 +132,7 @@ impl<T: GossamerMessage> ContainerStores<Out> for GossamerDeltaContainer<T> {
 	}
 }
 
-impl<T: GossamerMessage> ContainerStores<InFlight> for GossamerDeltaContainer<T> {
+impl<T: GossamerMessage> ContainerStores<InFlight> for GossamerDeltasContainer<T> {
 	fn from_data(data: InFlight) -> Self {
 		Self {
 			message: Delta::Unchanged,
@@ -164,7 +164,7 @@ impl<T: GossamerMessage> ContainerStores<InFlight> for GossamerDeltaContainer<T>
 	}
 }
 
-impl<T: GossamerMessage> ContainerStores<Broadcast> for GossamerDeltaContainer<T> {
+impl<T: GossamerMessage> ContainerStores<Broadcast> for GossamerDeltasContainer<T> {
 	fn from_data(data: Broadcast) -> Self {
 		Self {
 			message: Delta::Unchanged,
@@ -196,7 +196,7 @@ impl<T: GossamerMessage> ContainerStores<Broadcast> for GossamerDeltaContainer<T
 	}
 }
 
-impl<T: GossamerMessage> ContainerStores<GossamerMessageError> for GossamerDeltaContainer<T> {
+impl<T: GossamerMessage> ContainerStores<GossamerMessageError> for GossamerDeltasContainer<T> {
 	fn from_data(data: GossamerMessageError) -> Self {
 		Self {
 			message: Delta::Unchanged,
