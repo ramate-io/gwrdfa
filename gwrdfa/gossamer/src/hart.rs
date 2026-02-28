@@ -12,6 +12,8 @@ use parabyzantine::hart::{
 	ParabyzantineDataBinding, ParabyzantineDataSpec, ParabyzantineHart, ParabyzantineWorld,
 };
 
+/// A [GossamerHart] refers to  a [Hart] system that is responsible for sending and receiving messages
+/// via Gossamer.
 pub struct GossamerHart<Binding: ParabyzantineDataBinding, Spec: GossamerSpec<Binding>>
 where
 	<Binding::Spec as ParabyzantineDataSpec>::MessageDraftBuffer: GossamerMessageStorage<
@@ -46,6 +48,7 @@ where
 	}
 }
 
+/// A [GossamerHart] implements the [ParabyzantineHart] trait.
 impl<Binding: ParabyzantineDataBinding, Spec: GossamerSpec<Binding>> ParabyzantineHart
 	for GossamerHart<Binding, Spec>
 where
