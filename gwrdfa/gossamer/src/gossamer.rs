@@ -8,7 +8,8 @@ use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 pub struct Gossamer<Entity: Send + Sync> {
 	pub(crate) message_into_gossamer_receiver: UnboundedReceiver<Vec<u8>>,
 	pub(crate) entity_message_from_gossamer_sender: UnboundedSender<(Entity, Vec<u8>)>,
-	pub(crate) entity_into_gossamer_receiver: UnboundedReceiver<Result<Entity, GossamerTaskError>>,
+	pub(crate) entity_into_gossamer_receiver:
+		UnboundedReceiver<Result<Entity, (Entity, GossamerTaskError)>>,
 }
 
 #[derive(Debug, Clone, thiserror::Error, PartialEq, Eq)]
@@ -53,7 +54,7 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 		Self,
 		UnboundedSender<Vec<u8>>,
 		UnboundedReceiver<(Entity, Vec<u8>)>,
-		UnboundedSender<Result<Entity, GossamerTaskError>>,
+		UnboundedSender<Result<Entity, (Entity, GossamerTaskError)>>,
 	) {
 		let (message_into_gossamer_sender, message_into_gossamer_receiver) = unbounded_channel();
 		let (entity_message_from_gossamer_sender, entity_message_from_gossamer_receiver) =
@@ -127,7 +128,7 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 	pub fn try_recv_confirmation(&mut self) -> Result<Option<Entity>, GossamerMessageError> {
 		match self.entity_into_gossamer_receiver.try_recv() {
 			Ok(Ok(entity)) => Ok(Some(entity)),
-			Ok(Err(e)) => Err(GossamerMessageError::InternalError(e.to_string())),
+			Ok(Err((_entity, e))) => Err(GossamerMessageError::InternalError(e.to_string())),
 			Err(TryRecvError::Empty) => Ok(None),
 			Err(TryRecvError::Disconnected) => {
 				Err(GossamerMessageError::ReceiveFromSwarmError(TryRecvError::Disconnected))
@@ -139,21 +140,19 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 	pub async fn wait_for_confirmation(&mut self) -> Result<Option<Entity>, GossamerMessageError> {
 		match self.entity_into_gossamer_receiver.recv().await {
 			Some(Ok(entity)) => Ok(Some(entity)),
-			Some(Err(e)) => Err(GossamerMessageError::InternalError(e.to_string())),
+			Some(Err((_entity, e))) => Err(GossamerMessageError::InternalError(e.to_string())),
 			None => Ok(None),
 		}
 	}
 
 	/// Sends a message and waits for a confirmation.
-	pub async fn send_message_and_wait_for_confirmation<M: GossamerMessage>(
+	pub async fn send_and_confirm<M: GossamerMessage>(
 		&mut self,
 		entity: Entity,
 		message: &M,
 	) -> Result<(), GossamerMessageError> {
 		self.send_message(entity, message)?;
-		if let Some(_entity) = self.wait_for_confirmation().await? {
-			return Ok(());
-		}
+		self.wait_for_confirmation().await?;
 		Ok(())
 	}
 }

@@ -15,7 +15,8 @@ use tokio::sync::oneshot::Sender;
 pub struct GossamerTask<Entity: Send + Sync + 'static> {
 	pub(crate) message_into_gossamer_sender: UnboundedSender<Vec<u8>>,
 	pub(crate) entity_message_from_gossamer_receiver: UnboundedReceiver<(Entity, Vec<u8>)>,
-	pub(crate) entity_into_gossamer_sender: UnboundedSender<Result<Entity, GossamerTaskError>>,
+	pub(crate) entity_into_gossamer_sender:
+		UnboundedSender<Result<Entity, (Entity, GossamerTaskError)>>,
 	pub(crate) topic_hash: TopicHash,
 	pub(crate) swarm: Swarm<GossamerBehaviour>,
 	pub(crate) listen_addr_sender: Option<Sender<Multiaddr>>,
@@ -50,15 +51,13 @@ impl<Entity: Send + Sync + 'static> Future for GossamerTask<Entity> {
 			// 1. Poll outbound channel
 			match Pin::new(&mut self.entity_message_from_gossamer_receiver).poll_recv(cx) {
 				Poll::Ready(Some((entity, msg))) => {
-					let res = self
-						.swarm
-						.behaviour_mut()
-						.gossipsub
-						.publish(topic_hash, msg)
-						.map_err(|e| GossamerTaskError::BroadcastError(e.to_string()));
+					let res = match self.swarm.behaviour_mut().gossipsub.publish(topic_hash, msg) {
+						Ok(_) => Ok(entity),
+						Err(e) => Err((entity, GossamerTaskError::BroadcastError(e.to_string()))),
+					};
 
 					self.entity_into_gossamer_sender
-						.send(res.map(|_| entity))
+						.send(res)
 						.map_err(|e| GossamerTaskError::BroadcastError(e.to_string()))?;
 					progressed = true;
 				}

@@ -100,14 +100,17 @@ mod tests {
 		// Try to send the message a few times.
 		// We often have to wait for the peers to come online.
 		for i in 0..32 {
-			if let Err(_e) = sender.0.send_message_and_wait_for_confirmation(i, &message).await {
+			if let Err(_e) = sender.0.send_and_confirm(i, &message).await {
 				tokio::time::sleep(Duration::from_secs(1)).await;
 			} else {
 				break;
 			}
 		}
 
+		// Check both the peers
 		let received_message = gossamers[0].0.recv_message::<TestMessage>().await?;
+		assert_eq!(received_message, Some(message));
+		let received_message = gossamers[1].0.recv_message::<TestMessage>().await?;
 		assert_eq!(received_message, Some(message));
 		Ok(())
 	}
