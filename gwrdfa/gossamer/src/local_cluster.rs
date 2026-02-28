@@ -82,6 +82,7 @@ mod tests {
 	}
 
 	#[tokio::test]
+	#[ignore = "This acquires empheral ports. Run with --ignored if you want to opt in."]
 	async fn test_local_cluster_sends_and_receives_message() -> Result<(), anyhow::Error> {
 		let config = LocalClusterConfig::default();
 		let mut gossamers = config.build::<u32>().await?;
