@@ -96,21 +96,16 @@ mod tests {
 
 		// Keep sending messages from the sender gossamer instance.
 		let mut sender = gossamers.pop().ok_or(anyhow::anyhow!("No sender found"))?;
-		tokio::spawn(async move {
-			tokio::time::sleep(Duration::from_secs(10)).await;
-			loop {
-				println!("Sending message from sender: {:?}", message);
-				match sender.0.send_message(0, &message) {
-					Ok(_) => {}
-					Err(e) => {
-						println!("Error sending message from sender: {:?}", e);
-					}
-				}
-				tokio::time::sleep(Duration::from_secs(1)).await;
-			}
 
-			Ok(()) as Result<(), anyhow::Error>
-		});
+		// Try to send the message a few times.
+		// We often have to wait for the peers to come online.
+		for i in 0..32 {
+			if let Err(_e) = sender.0.send_message_and_wait_for_confirmation(i, &message).await {
+				tokio::time::sleep(Duration::from_secs(1)).await;
+			} else {
+				break;
+			}
+		}
 
 		let received_message = gossamers[0].0.recv_message::<TestMessage>().await?;
 		assert_eq!(received_message, Some(message));

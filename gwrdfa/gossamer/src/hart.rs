@@ -123,6 +123,7 @@ pub mod tests {
 	use crate::container::{GossamerContainer, GossamerDeltasContainer};
 	use crate::GossamerMessage;
 	use crate::GossamerMessageError;
+	use crate::GossamerTaskError;
 	use gwrdfa_container::Component;
 	use gwrdfa_container::{
 		draft_buffer::ContainerEntityDraftBuffer,
@@ -343,11 +344,11 @@ pub mod tests {
 	fn hart_confirm(
 		hart: &mut GossamerHart<TestParabyzantineDataBinding, TestGossamerSpec>,
 		data: &mut TestParabyzantineData,
-		entity_into_gossamer_sender: UnboundedSender<ContainerEntity>,
+		entity_into_gossamer_sender: UnboundedSender<Result<ContainerEntity, GossamerTaskError>>,
 		messages: Vec<(ContainerEntity, TestMessage)>,
 	) -> Result<(), anyhow::Error> {
 		for (entity, _message) in messages.iter() {
-			entity_into_gossamer_sender.send(*entity)?;
+			entity_into_gossamer_sender.send(Ok(*entity))?;
 		}
 
 		hart.act_on_parabyzantine_hart(data);
@@ -375,7 +376,7 @@ pub mod tests {
 		hart: &mut GossamerHart<TestParabyzantineDataBinding, TestGossamerSpec>,
 		data: &mut TestParabyzantineData,
 		entity_message_from_gossamer_receiver: &mut UnboundedReceiver<(ContainerEntity, Vec<u8>)>,
-		entity_into_gossamer_sender: UnboundedSender<ContainerEntity>,
+		entity_into_gossamer_sender: UnboundedSender<Result<ContainerEntity, GossamerTaskError>>,
 		messages: Vec<TestMessage>,
 	) -> Result<(), anyhow::Error> {
 		let out_messages = hart_out(hart, data, entity_message_from_gossamer_receiver, messages)?;
