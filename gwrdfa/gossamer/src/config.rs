@@ -1,3 +1,5 @@
+pub mod local_cluster;
+
 use crate::{Gossamer, GossamerBehaviour, GossamerTask};
 use libp2p::{
 	gossipsub::{self, IdentTopic, MessageAuthenticity},
@@ -7,6 +9,7 @@ use libp2p::{
 	noise, tcp, yamux, Multiaddr, PeerId,
 };
 use tokio::sync::mpsc::unbounded_channel;
+use tokio::sync::oneshot::{self, Receiver};
 
 #[derive(Debug, Clone)]
 pub struct GossamerConfig {
@@ -31,6 +34,8 @@ impl Default for GossamerConfig {
 pub enum GossamerConfigError {
 	#[error("Error building Gossamer: {0}")]
 	BuildError(String),
+	#[error("Error receiving listen address from the Gossamer task: {0}")]
+	ReceiveFromGossamerTaskError(#[from] tokio::sync::oneshot::error::RecvError),
 }
 
 impl GossamerConfig {
@@ -56,7 +61,8 @@ impl GossamerConfig {
 
 	pub async fn build<Entity: Send + Sync + 'static>(
 		self,
-	) -> Result<(GossamerTask<Entity>, Gossamer<Entity>), GossamerConfigError> {
+	) -> Result<(GossamerTask<Entity>, Receiver<Multiaddr>, Gossamer<Entity>), GossamerConfigError>
+	{
 		let peer_id = PeerId::from(self.identity.public());
 
 		// ---- GOSSIPSUB ----
@@ -120,6 +126,9 @@ impl GossamerConfig {
 			unbounded_channel();
 		let (entity_into_gossamer_sender, entity_into_gossamer_receiver) = unbounded_channel();
 
+		// Allocate the listen address sender
+		let (listen_addr_sender, listen_addr_receiver) = oneshot::channel();
+
 		Ok((
 			GossamerTask {
 				message_into_gossamer_sender,
@@ -127,7 +136,9 @@ impl GossamerConfig {
 				entity_into_gossamer_sender,
 				topic_hash: topic.hash(),
 				swarm,
+				listen_addr_sender: Some(listen_addr_sender),
 			},
+			listen_addr_receiver,
 			Gossamer {
 				message_into_gossamer_receiver,
 				entity_message_from_gossamer_sender,

@@ -6,11 +6,11 @@ use futures::{
 use libp2p::{
 	gossipsub::{self, TopicHash},
 	swarm::SwarmEvent,
-	Swarm,
+	Multiaddr, Swarm,
 };
 use std::pin::Pin;
-use tokio::sync::mpsc::UnboundedReceiver;
-use tokio::sync::mpsc::UnboundedSender;
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
+use tokio::sync::oneshot::Sender;
 
 pub struct GossamerTask<Entity: Send + Sync + 'static> {
 	pub(crate) message_into_gossamer_sender: UnboundedSender<Vec<u8>>,
@@ -18,6 +18,7 @@ pub struct GossamerTask<Entity: Send + Sync + 'static> {
 	pub(crate) entity_into_gossamer_sender: UnboundedSender<Entity>,
 	pub(crate) topic_hash: TopicHash,
 	pub(crate) swarm: Swarm<GossamerBehaviour>,
+	pub(crate) listen_addr_sender: Option<Sender<Multiaddr>>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -30,6 +31,8 @@ pub enum GossamerTaskError {
 	BroadcastReceiverDisconnected,
 	#[error("The swarm stream is disconnected")]
 	SwarmStreamDisconnected,
+	#[error("Error sending listen address to the sender: {0}")]
+	ListenAddrSenderError(String),
 }
 
 impl<Entity: Send + Sync + 'static> Future for GossamerTask<Entity> {
@@ -72,6 +75,14 @@ impl<Entity: Send + Sync + 'static> Future for GossamerTask<Entity> {
 						return Poll::Ready(Err(GossamerTaskError::RelayToGossamerError(e)));
 					}
 					progressed = true;
+				}
+
+				Poll::Ready(Some(SwarmEvent::NewListenAddr { address, .. })) => {
+					if let Some(sender) = self.listen_addr_sender.take() {
+						let _ = sender
+							.send(address)
+							.map_err(|e| GossamerTaskError::ListenAddrSenderError(e.to_string()))?;
+					}
 				}
 
 				Poll::Ready(Some(_)) => continue,

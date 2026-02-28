@@ -1,4 +1,5 @@
 use crate::config::{GossamerConfig, GossamerConfigError};
+use libp2p::Multiaddr;
 use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
@@ -29,10 +30,11 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 	/// Spawns a Gossamer task in a tokio runtime.
 	pub async fn spawn_tokio(
 		config: GossamerConfig,
-	) -> Result<Gossamer<Entity>, GossamerConfigError> {
-		let (gossamer_task, gossamer) = config.build().await?;
+	) -> Result<(Gossamer<Entity>, Multiaddr), GossamerConfigError> {
+		let (gossamer_task, listen_addr_receiver, gossamer) = config.build().await?;
 		tokio::spawn(gossamer_task);
-		Ok(gossamer)
+		let listen_addr = listen_addr_receiver.await?;
+		Ok((gossamer, listen_addr))
 	}
 
 	/// Produces a mock instance, mostly used for testing purposes.
