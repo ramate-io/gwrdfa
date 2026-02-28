@@ -50,20 +50,24 @@ impl<Entity: Send + Sync + 'static> Future for GossamerTask<Entity> {
 			// 1. Poll outbound channel
 			match Pin::new(&mut self.entity_message_from_gossamer_receiver).poll_recv(cx) {
 				Poll::Ready(Some((entity, msg))) => {
-					self.swarm
-						.behaviour_mut()
-						.gossipsub
-						.publish(topic_hash, msg)
-						.map_err(|e| GossamerTaskError::BroadcastError(e.to_string()))?;
-					self.entity_into_gossamer_sender
-						.send(entity)
-						.map_err(|e| GossamerTaskError::BroadcastError(e.to_string()))?;
+					println!("Broadcasting message to swarm: {:?}", msg);
+					self.swarm.behaviour_mut().gossipsub.publish(topic_hash, msg).map_err(|e| {
+						println!("Error broadcasting message to swarm: {:?}", e);
+						GossamerTaskError::BroadcastError(e.to_string())
+					})?;
+					self.entity_into_gossamer_sender.send(entity).map_err(|e| {
+						println!("Error sending entity to gossamer: {:?}", e);
+						GossamerTaskError::BroadcastError(e.to_string())
+					})?;
 					progressed = true;
 				}
 				Poll::Ready(None) => {
-					return Poll::Ready(Err(GossamerTaskError::BroadcastReceiverDisconnected))
+					println!("Broadcast receiver disconnected");
+					return Poll::Ready(Err(GossamerTaskError::BroadcastReceiverDisconnected));
 				}
-				Poll::Pending => {}
+				Poll::Pending => {
+					println!("Broadcast receiver pending");
+				}
 			}
 
 			// Drain while there are messages to receive.
@@ -71,6 +75,7 @@ impl<Entity: Send + Sync + 'static> Future for GossamerTask<Entity> {
 				Poll::Ready(Some(SwarmEvent::Behaviour(GossamerBehaviourEvent::Gossipsub(
 					gossipsub::Event::Message { message, .. },
 				)))) => {
+					println!("Receiving message from swarm: {:?}", message.data);
 					if let Err(e) = self.message_into_gossamer_sender.send(message.data) {
 						return Poll::Ready(Err(GossamerTaskError::RelayToGossamerError(e)));
 					}
@@ -79,16 +84,18 @@ impl<Entity: Send + Sync + 'static> Future for GossamerTask<Entity> {
 
 				Poll::Ready(Some(SwarmEvent::NewListenAddr { address, .. })) => {
 					if let Some(sender) = self.listen_addr_sender.take() {
-						let _ = sender
-							.send(address)
-							.map_err(|e| GossamerTaskError::ListenAddrSenderError(e.to_string()))?;
+						let _ = sender.send(address).map_err(|e| {
+							println!("Error sending listen address to sender: {:?}", e);
+							GossamerTaskError::ListenAddrSenderError(e.to_string())
+						})?;
 					}
 				}
 
-				Poll::Ready(Some(_)) => continue,
+				Poll::Ready(Some(_)) => {}
 
 				Poll::Ready(None) => {
-					return Poll::Ready(Err(GossamerTaskError::SwarmStreamDisconnected))
+					println!("Swarm stream disconnected");
+					return Poll::Ready(Err(GossamerTaskError::SwarmStreamDisconnected));
 				}
 
 				Poll::Pending => {}

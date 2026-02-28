@@ -19,7 +19,8 @@ libp2p = { workspace = true, features = [
     "kad",
     "gossipsub",
     "macros",
-    "async-std"
+    "async-std",
+    "ping"
 ] }
 tokio = { workspace = true }
 futures = { workspace = true }

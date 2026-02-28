@@ -1,12 +1,10 @@
-pub mod local_cluster;
-
 use crate::{Gossamer, GossamerBehaviour, GossamerTask};
 use libp2p::{
 	gossipsub::{self, IdentTopic, MessageAuthenticity},
 	identity::Keypair,
 	kad::{self, store::MemoryStore},
 	multiaddr::Protocol,
-	noise, tcp, yamux, Multiaddr, PeerId,
+	noise, ping, tcp, yamux, Multiaddr, PeerId,
 };
 use tokio::sync::mpsc::unbounded_channel;
 use tokio::sync::oneshot::{self, Receiver};
@@ -83,7 +81,9 @@ impl GossamerConfig {
 		let store = MemoryStore::new(peer_id);
 		let kad = kad::Behaviour::new(peer_id, store);
 
-		let behaviour = GossamerBehaviour { gossipsub, kad };
+		let ping = ping::Behaviour::new(ping::Config::default());
+
+		let behaviour = GossamerBehaviour { gossipsub, kad, ping };
 
 		let mut swarm = libp2p::SwarmBuilder::with_existing_identity(self.identity)
 			.with_async_std()

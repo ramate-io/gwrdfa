@@ -1,5 +1,5 @@
 use crate::{Gossamer, GossamerConfig, GossamerConfigError};
-use libp2p::Multiaddr;
+use libp2p::{identity::Keypair, Multiaddr};
 
 #[derive(thiserror::Error, Debug)]
 pub enum LocalClusterError {
@@ -9,7 +9,9 @@ pub enum LocalClusterError {
 
 #[derive(Debug, Clone)]
 pub struct LocalClusterConfig {
+	/// The number of Gossamer instances to start.
 	pub count: usize,
+	/// The topic to use for the Gossamer instances.
 	pub topic: String,
 }
 
@@ -45,7 +47,10 @@ impl LocalClusterConfig {
 		let mut gossamers = Vec::new();
 
 		for _ in 0..count {
-			let config = base_config.clone().with_bootstrap_peers(peers.clone());
+			let config = base_config
+				.clone()
+				.with_bootstrap_peers(peers.clone())
+				.with_identity(Keypair::generate_ed25519());
 			let (gossamer, multiaddr) = Gossamer::spawn_tokio(config).await?;
 			peers.push(multiaddr.clone());
 			gossamers.push((gossamer, multiaddr));
@@ -59,6 +64,7 @@ impl LocalClusterConfig {
 mod tests {
 	use super::*;
 	use crate::{GossamerMessage, GossamerMessageError};
+	use tokio::time::Duration;
 
 	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 	pub struct TestMessage(u32);
@@ -87,8 +93,26 @@ mod tests {
 		let config = LocalClusterConfig::default();
 		let mut gossamers = config.build::<u32>().await?;
 		let message = TestMessage(1);
-		gossamers[0].0.send_message(0, &message)?;
-		let received_message = gossamers[1].0.recv_message::<TestMessage>().await?;
+
+		// Keep sending messages from the sender gossamer instance.
+		let mut sender = gossamers.pop().ok_or(anyhow::anyhow!("No sender found"))?;
+		tokio::spawn(async move {
+			tokio::time::sleep(Duration::from_secs(10)).await;
+			loop {
+				println!("Sending message from sender: {:?}", message);
+				match sender.0.send_message(0, &message) {
+					Ok(_) => {}
+					Err(e) => {
+						println!("Error sending message from sender: {:?}", e);
+					}
+				}
+				tokio::time::sleep(Duration::from_secs(1)).await;
+			}
+
+			Ok(()) as Result<(), anyhow::Error>
+		});
+
+		let received_message = gossamers[0].0.recv_message::<TestMessage>().await?;
 		assert_eq!(received_message, Some(message));
 		Ok(())
 	}

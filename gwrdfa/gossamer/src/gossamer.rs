@@ -1,4 +1,5 @@
 use crate::config::{GossamerConfig, GossamerConfigError};
+use crate::GossamerTaskError;
 use libp2p::Multiaddr;
 use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
@@ -16,8 +17,8 @@ pub enum GossamerMessageError {
 	SerializeError((String, Vec<u8>)),
 	#[error("Error deserializing message: {0:?}")]
 	DeserializeError((String, Vec<u8>)),
-	#[error("Error sending message from Gossamer to the swarm")]
-	RelayToSwarm,
+	#[error("Error sending message from Gossamer to the swarm: {0}")]
+	RelayToSwarm(String),
 	#[error("Error receiving message from the swarm: {0}")]
 	ReceiveFromSwarmError(#[from] tokio::sync::mpsc::error::TryRecvError),
 }
@@ -33,7 +34,14 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 		config: GossamerConfig,
 	) -> Result<(Gossamer<Entity>, Multiaddr), GossamerConfigError> {
 		let (gossamer_task, listen_addr_receiver, gossamer) = config.build().await?;
-		tokio::spawn(gossamer_task);
+		tokio::spawn(async move {
+			if let Err(e) = gossamer_task.await {
+				println!("Error in Gossamer task: {:?}", e);
+				return Err(e);
+			}
+
+			Ok(()) as Result<(), GossamerTaskError>
+		});
 		let listen_addr = listen_addr_receiver.await?;
 		Ok((gossamer, listen_addr))
 	}
@@ -101,9 +109,11 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 		message: &M,
 	) -> Result<(), GossamerMessageError> {
 		let bytes = message.to_gossamer_bytes()?;
+		println!("Sending message to swarm: {:?}", bytes);
 		self.entity_message_from_gossamer_sender
 			.send((entity, bytes))
-			.map_err(|_| GossamerMessageError::RelayToSwarm)?;
+			.map_err(|e| GossamerMessageError::RelayToSwarm(e.to_string()))?;
+		println!("Sent message to swarm");
 		Ok(())
 	}
 
