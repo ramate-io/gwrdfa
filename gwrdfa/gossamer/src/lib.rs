@@ -1,4 +1,6 @@
 pub mod config;
+pub use config::*;
+
 pub mod container;
 pub mod hart;
 
@@ -10,3 +12,5 @@ pub use gossamer::*;
 
 pub mod task;
 pub use task::*;
+
+pub mod local_cluster;

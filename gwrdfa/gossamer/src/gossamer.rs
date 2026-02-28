@@ -61,6 +61,7 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 		)
 	}
 
+	/// Receives a message from the Gossamer swarm.
 	pub fn try_recv_message<M: GossamerMessage>(
 		&mut self,
 	) -> Result<Option<M>, GossamerMessageError> {
@@ -76,6 +77,10 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 		}
 	}
 
+	/// Sends a message to the Gossamer swarm.
+	///
+	/// The entity can be whatever the user wants to identify the message by.
+	/// It should be local in most all use cases, never actually broadcasted.
 	pub fn send_message<M: GossamerMessage>(
 		&mut self,
 		entity: Entity,
@@ -88,6 +93,13 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 		Ok(())
 	}
 
+	/// Confirms that the message has been broadcasted by the Gossamer swarm.
+	///
+	/// NOTE: this does not confirm behavior associated with the message.
+	/// That is considered a higher-order concern.
+	///
+	/// For example, if you use Gossamer as a client to send a transaction,
+	/// you will want to confirm the transaction has been received via enough peers.
 	pub fn try_recv_confirmation(&mut self) -> Result<Option<Entity>, GossamerMessageError> {
 		match self.entity_into_gossamer_receiver.try_recv() {
 			Ok(entity) => Ok(Some(entity)),
