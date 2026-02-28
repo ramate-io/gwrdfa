@@ -54,3 +54,41 @@ impl LocalClusterConfig {
 		Ok(gossamers)
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::{GossamerMessage, GossamerMessageError};
+
+	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+	pub struct TestMessage(u32);
+
+	impl GossamerMessage for TestMessage {
+		fn to_gossamer_bytes(&self) -> Result<Vec<u8>, GossamerMessageError> {
+			Ok(self.0.to_le_bytes().to_vec())
+		}
+		fn from_gossamer_bytes(bytes: Vec<u8>) -> Result<Self, GossamerMessageError> {
+			Ok(TestMessage(u32::from_le_bytes(bytes.try_into().unwrap())))
+		}
+	}
+
+	#[tokio::test]
+	#[ignore = "This acquires empheral ports. Run with --ignored if you want to opt in."]
+	async fn test_local_cluster_starts() -> Result<(), LocalClusterError> {
+		let config = LocalClusterConfig::default();
+		let gossamers = config.build::<u32>().await?;
+		assert!(gossamers.len() == 3);
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_local_cluster_sends_and_receives_message() -> Result<(), anyhow::Error> {
+		let config = LocalClusterConfig::default();
+		let mut gossamers = config.build::<u32>().await?;
+		let message = TestMessage(1);
+		gossamers[0].0.send_message(0, &message)?;
+		let received_message = gossamers[1].0.recv_message::<TestMessage>().await?;
+		assert_eq!(received_message, Some(message));
+		Ok(())
+	}
+}

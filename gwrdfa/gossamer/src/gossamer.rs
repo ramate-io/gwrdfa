@@ -3,6 +3,7 @@ use libp2p::Multiaddr;
 use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
+#[derive(Debug)]
 pub struct Gossamer<Entity: Send + Sync> {
 	pub(crate) message_into_gossamer_receiver: UnboundedReceiver<Vec<u8>>,
 	pub(crate) entity_message_from_gossamer_sender: UnboundedSender<(Entity, Vec<u8>)>,
@@ -61,7 +62,20 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 		)
 	}
 
-	/// Receives a message from the Gossamer swarm.
+	/// Receives a message from the Gossamer swarm asynchronously.
+	pub async fn recv_message<M: GossamerMessage>(
+		&mut self,
+	) -> Result<Option<M>, GossamerMessageError> {
+		match self.message_into_gossamer_receiver.recv().await {
+			Some(bytes) => {
+				let message = M::from_gossamer_bytes(bytes)?;
+				Ok(Some(message))
+			}
+			None => Ok(None),
+		}
+	}
+
+	/// Receives a message from the Gossamer swarm immediately.
 	pub fn try_recv_message<M: GossamerMessage>(
 		&mut self,
 	) -> Result<Option<M>, GossamerMessageError> {
