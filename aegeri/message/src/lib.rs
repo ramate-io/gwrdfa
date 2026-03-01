@@ -144,7 +144,7 @@ impl<P> Message<P> {
 	}
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Clone, thiserror::Error, PartialEq, Eq)]
 pub enum VerificationError {
 	#[error("Signature verification failed")]
 	SignatureVerificationFailed,
@@ -268,5 +268,33 @@ impl From<Message<Transaction>> for UnifiedMessage {
 impl From<Message<Certificate>> for UnifiedMessage {
 	fn from(message: Message<Certificate>) -> Self {
 		UnifiedMessage::Certificate(message)
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use ml_dsa::B32;
+
+	use super::*;
+
+	#[test]
+	fn test_message_verifies() -> Result<(), anyhow::Error> {
+		let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![1; 32]));
+		let transaction = Transaction::ElfScript(ElfScript::new(b"hello, world"));
+		let nonce = Nonce::new(b"nonce");
+		let message = Message::<Transaction>::try_new(&signer, transaction, nonce)?;
+		message.verify()?;
+		Ok(())
+	}
+
+	#[test]
+	fn test_message_rejects_invalid_signature() -> Result<(), anyhow::Error> {
+		let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![1; 32]));
+		let transaction = Transaction::ElfScript(ElfScript::new(b"hello, world"));
+		let nonce = Nonce::new(b"nonce");
+		let mut message = Message::<Transaction>::try_new(&signer, transaction, nonce)?;
+		message.signature.0[0] = !message.signature.0[0];
+		assert!(message.verify() == Err(VerificationError::SignatureVerificationFailed));
+		Ok(())
 	}
 }
