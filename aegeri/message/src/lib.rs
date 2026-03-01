@@ -250,3 +250,23 @@ impl Message<Certificate> {
 		Ok(Self { id, public_key, signature, payload, nonce })
 	}
 }
+
+/// A unified message for designs wherein we want to
+/// store the certificates and transactions together.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum UnifiedMessage {
+	Transaction(Message<Transaction>),
+	Certificate(Message<Certificate>),
+}
+
+impl From<Message<Transaction>> for UnifiedMessage {
+	fn from(message: Message<Transaction>) -> Self {
+		UnifiedMessage::Transaction(message)
+	}
+}
+
+impl From<Message<Certificate>> for UnifiedMessage {
+	fn from(message: Message<Certificate>) -> Self {
+		UnifiedMessage::Certificate(message)
+	}
+}
