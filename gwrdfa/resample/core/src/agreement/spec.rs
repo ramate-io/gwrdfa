@@ -62,7 +62,7 @@ pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Siz
 	>;
 
 	/// The type of the certificate.
-	type Certificate: Certificate<Self::Index, Self::Value>
+	type Certificate: Certificate<Self::Index, Self::Value, Self::Subcommittee>
 		+ for<'a> From<(
 			<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
 			Self::CertificateQueryData<'a>,
