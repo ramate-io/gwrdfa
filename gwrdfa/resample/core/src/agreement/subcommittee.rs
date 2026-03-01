@@ -1,5 +1,6 @@
 use super::Condition;
-use parabyzantine::NoOp;
+use core::marker::PhantomData;
+use parabyzantine::{NoOp, NO_OP};
 
 pub trait Subcommittee<Value: Eq + 'static>: Eq {
 	fn condition<'a>(
@@ -22,19 +23,37 @@ pub trait IndexSubcommitteeAgreement<Index: Eq, Sub: Subcommittee<Value>, Value:
 	Eq
 {
 	/// The index of the agreement.
-	fn index(&self) -> Index;
+	fn index(&self) -> &Index;
 
 	/// The subcommittee of the agreement.
-	fn subcommittee(&self) -> Sub;
+	fn subcommittee(&self) -> &Sub;
 }
 
 /// A [IndexSubcommitteeAgreement] for the [NoOp] struct.
 impl<T: Eq + 'static> IndexSubcommitteeAgreement<NoOp, NoOp, T> for NoOp {
-	fn index(&self) -> NoOp {
-		NoOp
+	fn index(&self) -> &NoOp {
+		&NO_OP
 	}
-	fn subcommittee(&self) -> NoOp {
-		NoOp
+	fn subcommittee(&self) -> &NoOp {
+		&NO_OP
+	}
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Agr<Index: Eq, Sub: Subcommittee<Value>, Value: Eq + 'static> {
+	pub index: Index,
+	pub subcommittee: Sub,
+	__marker: PhantomData<Value>,
+}
+
+impl<Index: Eq, Sub: Subcommittee<Value>, Value: Eq + 'static>
+	IndexSubcommitteeAgreement<Index, Sub, Value> for Agr<Index, Sub, Value>
+{
+	fn index(&self) -> &Index {
+		&self.index
+	}
+	fn subcommittee(&self) -> &Sub {
+		&self.subcommittee
 	}
 }
 
