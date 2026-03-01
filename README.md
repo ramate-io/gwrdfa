@@ -20,6 +20,7 @@ Gwrdfa is a Rust implementation of Parabyzantine consensus protocols.
 ## Organization
 
 - **[`gwrdfa`](/gwrdfa/):** contains the implementations for various Parabyzantine protocols in Rust. You'll find building blocks that start up from the base Parabyzantine assumptions. 
+- **[`aegeri`](/aegeri/):** a toy programmable transaction system built with [`fuste`](https://github.com/ramate-io/fuste).
 
 
 ## Contributing
