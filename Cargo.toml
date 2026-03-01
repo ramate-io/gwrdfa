@@ -6,7 +6,10 @@ members = [
   "gwrdfa/parabyzantine",
   "gwrdfa/container",
   "gwrdfa/resample/core",
-  "gwrdfa/gossamer"
+  "gwrdfa/gossamer", 
+
+  # aegeri
+  "aegeri/message"
 ]
 
 [workspace.package]
