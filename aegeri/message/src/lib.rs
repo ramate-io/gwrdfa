@@ -15,7 +15,7 @@ use sha3::Digest;
 /// The ID of a message
 ///
 /// This will be a hash of the payload.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Id(Vec<u8>);
 
 impl Id {
@@ -36,7 +36,7 @@ impl Id {
 }
 
 /// The signer of a message.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct PublicKey(Vec<u8>);
 
 impl PublicKey {
@@ -68,7 +68,7 @@ impl PublicKey {
 }
 
 /// The signature of a message for a given signer.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Signature(Vec<u8>);
 
 impl Signature {
@@ -97,7 +97,7 @@ impl Signature {
 }
 
 /// The nonce of a message.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Nonce(Vec<u8>);
 
 impl Nonce {
@@ -113,7 +113,7 @@ impl Nonce {
 }
 
 /// The message itself.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Message<P> {
 	id: Id,
 	public_key: PublicKey,
@@ -155,7 +155,7 @@ pub enum VerificationError {
 }
 
 /// A Verified instance of a message.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct VerifiedMessage<P>(Message<P>);
 
 impl<P> VerifiedMessage<P> {
@@ -253,7 +253,7 @@ impl Message<Certificate> {
 
 /// A unified message for designs wherein we want to
 /// store the certificates and transactions together.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub enum UnifiedMessage {
 	Transaction(Message<Transaction>),
 	Certificate(Message<Certificate>),
