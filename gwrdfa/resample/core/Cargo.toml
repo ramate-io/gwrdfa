@@ -12,5 +12,8 @@ rust-version = { workspace = true }
 [dependencies]
 parabyzantine = { workspace = true }
 
+[dev-dependencies]
+gwrdfa-container = { workspace = true }
+
 [lints]
 workspace = true

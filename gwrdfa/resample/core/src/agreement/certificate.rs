@@ -14,10 +14,10 @@ pub trait Certificate<Index: Eq, Value: Eq, Sender: Eq>: Eq + Sized {
 
 pub trait CertificateSet<
 	Index: Eq,
-	Value: Eq,
+	Value: Eq + 'static,
 	Sender: Eq,
 	Item: Certificate<Index, Value, Sender>,
-	Sub: Subcommittee<Sender>,
+	Sub: Subcommittee<Sender, Value>,
 >: Eq + Sized
 {
 	fn contains(&self, item: &Item) -> bool;

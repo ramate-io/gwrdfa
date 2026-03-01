@@ -77,3 +77,10 @@ impl<
 	) {
 	}
 }
+
+#[cfg(test)]
+pub mod test {
+	use std::collections::HashSet;
+
+	pub struct TestSampler {}
+}

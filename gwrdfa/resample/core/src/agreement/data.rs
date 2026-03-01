@@ -76,3 +76,6 @@ impl ResampleAgreementData<NoOp, NoOp> for NoOpData {
 		NoOp
 	}
 }
+
+#[cfg(test)]
+pub mod test {}
