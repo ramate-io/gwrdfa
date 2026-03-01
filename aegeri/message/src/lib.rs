@@ -40,8 +40,10 @@ pub struct PublicKey(Vec<u8>);
 
 impl PublicKey {
 	/// Builds a signer from the given bytes.
-	pub fn new(public_key: impl Into<Vec<u8>>) -> Self {
-		Self(public_key.into())
+	pub fn new(signer: &SigningKey<MlDsa44>) -> Self {
+		let encoded_verifying_key = signer.verifying_key().encode();
+
+		Self(encoded_verifying_key.as_slice().to_vec())
 	}
 
 	/// Borrow the bytes of the signer.
@@ -70,9 +72,9 @@ pub struct Signature(Vec<u8>);
 
 impl Signature {
 	/// Builds a signature from the given bytes.
-	pub fn new(signer: &SigningKey<MlDsa44>, id: &Id) -> Self {
+	pub fn new(signer: &SigningKey<MlDsa44>, id: &Id) -> (Self, PublicKey) {
 		let signature = signer.sign(id.as_bytes());
-		Self(signature.to_bytes().to_vec())
+		(Self(signature.to_bytes().to_vec()), PublicKey::new(signer))
 	}
 
 	/// Borrow the bytes of the signature.
@@ -113,10 +115,32 @@ impl Nonce {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Message<P> {
 	id: Id,
-	signer: PublicKey,
+	public_key: PublicKey,
 	signature: Signature,
 	payload: P,
 	nonce: Nonce,
+}
+
+impl<P> Message<P> {
+	pub fn payload(&self) -> &P {
+		&self.payload
+	}
+
+	pub fn nonce(&self) -> &Nonce {
+		&self.nonce
+	}
+
+	pub fn id(&self) -> &Id {
+		&self.id
+	}
+
+	pub fn public_key(&self) -> &PublicKey {
+		&self.public_key
+	}
+
+	pub fn signature(&self) -> &Signature {
+		&self.signature
+	}
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -133,14 +157,36 @@ pub enum VerificationError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VerifiedMessage<P>(Message<P>);
 
+impl<P> VerifiedMessage<P> {
+	pub fn payload(&self) -> &P {
+		&self.0.payload()
+	}
+
+	pub fn nonce(&self) -> &Nonce {
+		&self.0.nonce()
+	}
+
+	pub fn id(&self) -> &Id {
+		&self.0.id()
+	}
+
+	pub fn public_key(&self) -> &PublicKey {
+		&self.0.public_key()
+	}
+
+	pub fn signature(&self) -> &Signature {
+		&self.0.signature()
+	}
+}
+
 impl<P: Serialize + for<'a> Deserialize<'a>> Message<P> {
-	pub fn verify(&self, public_key: &PublicKey) -> Result<(), VerificationError> {
+	pub fn verify(&self) -> Result<(), VerificationError> {
 		// Convert the public key to an encoded verifying key.
-		let verifying_key = public_key.to_verifying_key()?;
+		let verifying_key = self.public_key().to_verifying_key()?;
 
 		// Verify the signature.
 		verifying_key
-			.verify(self.id.as_bytes(), &self.signature.to_ml_dsa_signature()?)
+			.verify(self.id.as_bytes(), &self.signature().to_ml_dsa_signature()?)
 			.map_err(|_| VerificationError::SignatureVerificationFailed)?;
 
 		// Check that the id matches the hash
@@ -152,5 +198,50 @@ impl<P: Serialize + for<'a> Deserialize<'a>> Message<P> {
 		}
 
 		Ok(())
+	}
+
+	pub fn into_verified(self) -> Result<VerifiedMessage<P>, VerificationError> {
+		self.verify()?;
+		Ok(VerifiedMessage(self))
+	}
+}
+
+#[derive(thiserror::Error, Debug, Clone)]
+pub enum TransactionMessageError {
+	#[error("Payload serialization failed")]
+	PayloadSerializationFailed,
+}
+
+impl Message<Transaction> {
+	/// Builds a new transaction message.
+	pub fn try_new(
+		signer: &SigningKey<MlDsa44>,
+		payload: Transaction,
+		nonce: Nonce,
+	) -> Result<Self, TransactionMessageError> {
+		let id = Id::new(
+			&serde_json::to_vec(&payload)
+				.map_err(|_| TransactionMessageError::PayloadSerializationFailed)?,
+			&nonce,
+		);
+		let (signature, public_key) = Signature::new(signer, &id);
+		Ok(Self { id, public_key, signature, payload, nonce })
+	}
+}
+
+impl Message<Certificate> {
+	/// Builds a new certificate message.
+	pub fn try_new(
+		signer: &SigningKey<MlDsa44>,
+		payload: Certificate,
+		nonce: Nonce,
+	) -> Result<Self, TransactionMessageError> {
+		let id = Id::new(
+			&serde_json::to_vec(&payload)
+				.map_err(|_| TransactionMessageError::PayloadSerializationFailed)?,
+			&nonce,
+		);
+		let (signature, public_key) = Signature::new(signer, &id);
+		Ok(Self { id, public_key, signature, payload, nonce })
 	}
 }
