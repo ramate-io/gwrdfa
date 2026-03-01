@@ -41,6 +41,8 @@ impl<T: Eq + 'static> IndexSubcommitteeAgreement<NoOp, NoOp, T> for NoOp {
 #[cfg(test)]
 pub mod test {
 
+	use crate::agreement::subcommittee;
+
 	use super::*;
 	use std::{
 		collections::{HashMap, HashSet},
@@ -77,7 +79,7 @@ pub mod test {
 		}
 
 		pub fn byzantine_quorum_size(&self) -> usize {
-			(self.size() + 2) / 3
+			(self.size() * 2).div_ceil(3) + 1
 		}
 
 		pub fn intersection_size<'a>(
@@ -159,5 +161,30 @@ pub mod test {
 		let condition = subcommittee.condition(vec![(&subcommittee, &1)].into_iter());
 
 		assert_eq!(condition, Condition::Consensus(1));
+	}
+
+	#[test]
+	fn test_subcommittee_hung_condition() {
+		let mut subcommittee = TestSubcommittee::<u32>::new();
+		subcommittee.add_member(1);
+		subcommittee.add_member(2);
+		subcommittee.add_member(3);
+		subcommittee.add_member(4);
+		subcommittee.add_member(5);
+		subcommittee.add_member(6);
+
+		let mut subcommittee_on_1 = TestSubcommittee::<u32>::new();
+		subcommittee_on_1.add_member(1);
+		subcommittee_on_1.add_member(2);
+		subcommittee_on_1.add_member(3);
+
+		let mut subcommittee_on_2 = TestSubcommittee::<u32>::new();
+		subcommittee_on_2.add_member(4);
+		subcommittee_on_2.add_member(5);
+		subcommittee_on_2.add_member(6);
+
+		let condition = subcommittee
+			.condition(vec![(&subcommittee_on_1, &1), (&subcommittee_on_2, &2)].into_iter());
+		assert_eq!(condition, Condition::Hung);
 	}
 }
