@@ -10,6 +10,11 @@ publish = { workspace = true }
 rust-version = { workspace = true }
 
 [dependencies]
+thiserror = { workspace = true }
+ml-dsa = { workspace = true }
+sha3 = { workspace = true }
+serde = { workspace = true, features = [ "derive" ] }
+# serde_json = { workspace = true }
 
 [lints]
 workspace = true

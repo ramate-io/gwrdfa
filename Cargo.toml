@@ -39,6 +39,9 @@ quote = "1.0.23"
 proc-macro2 = "1.0.32"
 paste = { version = "1.0", default-features = false }
 libp2p = { version = "0.53.2" }
+ml-dsa = { version = "0.1.0-rc.7" }
+sha3 = { version = "0.10.8" }
+
 
 orfile = { git = "https://github.com/movementlabsxyz/orfile.git", rev = "d02299214e5aa202130cd1eb9593ce8064d1ec69" }
 orfile-util = { git = "https://github.com/movementlabsxyz/orfile.git", rev = "d02299214e5aa202130cd1eb9593ce8064d1ec69" }
