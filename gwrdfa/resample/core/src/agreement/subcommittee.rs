@@ -43,20 +43,20 @@ pub mod test {
 
 	use super::*;
 	use std::{
-		collections::{HashMap, HashSet},
+		collections::{BTreeSet, HashMap},
 		hash::Hash,
 		vec,
 		vec::Vec,
 	};
 
-	#[derive(Eq, PartialEq, Clone)]
-	pub struct TestSubcommittee<Sender: PartialEq + Eq + Hash + Clone> {
-		members: HashSet<Sender>,
+	#[derive(Debug, Eq, PartialEq, Clone, Hash)]
+	pub struct TestSubcommittee<Sender: PartialEq + Eq + PartialOrd + Ord + Hash + Clone> {
+		members: BTreeSet<Sender>,
 	}
 
-	impl<Sender: PartialEq + Eq + Hash + Clone> TestSubcommittee<Sender> {
+	impl<Sender: PartialEq + Eq + PartialOrd + Ord + Hash + Clone> TestSubcommittee<Sender> {
 		pub fn new() -> Self {
-			Self { members: HashSet::new() }
+			Self { members: BTreeSet::new() }
 		}
 
 		pub fn senders(&self) -> impl Iterator<Item = &Sender> {
@@ -94,8 +94,10 @@ pub mod test {
 		}
 	}
 
-	impl<Sender: PartialEq + Eq + Hash + Clone, Value: PartialEq + Eq + Hash + Clone + 'static>
-		Subcommittee<Value> for TestSubcommittee<Sender>
+	impl<
+			Sender: PartialEq + Eq + PartialOrd + Ord + Hash + Clone,
+			Value: PartialEq + Eq + Hash + Clone + 'static,
+		> Subcommittee<Value> for TestSubcommittee<Sender>
 	{
 		fn condition<'a>(
 			&'a self,
