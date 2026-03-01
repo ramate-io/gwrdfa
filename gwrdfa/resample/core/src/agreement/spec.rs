@@ -14,13 +14,13 @@ pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Siz
 	type Index: Eq;
 
 	/// The type of the value.
-	type Value: Eq;
+	type Value: Eq + 'static;
 
 	/// The type of the sender of a certificate.
 	type Sender: Eq;
 
 	/// The type of the subcommittee.
-	type Subcommittee: Subcommittee<Self::Sender>;
+	type Subcommittee: Subcommittee<Self::Value>;
 
 	/// The bundle of the agreement in the buffer.
 	type IndexSubcommitteeAgreementQueryData<'a>;
@@ -39,7 +39,7 @@ pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Siz
 	>;
 
 	/// The type of the index subcommittee agreement.
-	type IndexSubcommitteeAgreement: IndexSubcommitteeAgreement<Self::Index, Self::Sender, Self::Subcommittee>
+	type IndexSubcommitteeAgreement: IndexSubcommitteeAgreement<Self::Index, Self::Subcommittee, Self::Value>
 		+ for<'a> From<(
 			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
 			Self::IndexSubcommitteeAgreementQueryData<'a>,
@@ -62,7 +62,7 @@ pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Siz
 	>;
 
 	/// The type of the certificate.
-	type Certificate: Certificate<Self::Index, Self::Value, Self::Sender>
+	type Certificate: Certificate<Self::Index, Self::Value>
 		+ for<'a> From<(
 			<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
 			Self::CertificateQueryData<'a>,
@@ -72,7 +72,6 @@ pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Siz
 	type CertificateSet: CertificateSet<
 		Self::Index,
 		Self::Value,
-		Self::Sender,
 		Self::Certificate,
 		Self::Subcommittee,
 	>;
@@ -81,7 +80,6 @@ pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Siz
 	type Sampler: Sampler<
 		Self::Index,
 		Self::Value,
-		Self::Sender,
 		Self::Subcommittee,
 		Self::IndexSubcommitteeAgreement,
 		Binding,

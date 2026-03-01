@@ -1,23 +1,19 @@
 use super::Subcommittee;
 use parabyzantine::NoOp;
 
-pub trait Certificate<Index: Eq, Value: Eq, Sender: Eq>: Eq + Sized {
+pub trait Certificate<Index: Eq, Value: Eq>: Eq + Sized {
 	/// The index of the message.
 	fn index(&self) -> Index;
 
 	/// The value of the message.
 	fn value(&self) -> Value;
-
-	/// The sender of the message.
-	fn sender(&self) -> Sender;
 }
 
 pub trait CertificateSet<
 	Index: Eq,
 	Value: Eq + 'static,
-	Sender: Eq,
-	Item: Certificate<Index, Value, Sender>,
-	Sub: Subcommittee<Sender, Value>,
+	Item: Certificate<Index, Value>,
+	Sub: Subcommittee<Value>,
 >: Eq + Sized
 {
 	fn contains(&self, item: &Item) -> bool;
@@ -47,20 +43,17 @@ pub trait CertificateSet<
 }
 
 /// A [Certificate] for the [NoOp] struct.
-impl Certificate<NoOp, NoOp, NoOp> for NoOp {
+impl Certificate<NoOp, NoOp> for NoOp {
 	fn index(&self) -> NoOp {
 		NoOp
 	}
 	fn value(&self) -> NoOp {
 		NoOp
 	}
-	fn sender(&self) -> NoOp {
-		NoOp
-	}
 }
 
 /// A [CertificateSet] for the [NoOp] struct.
-impl CertificateSet<NoOp, NoOp, NoOp, NoOp, NoOp> for NoOp {
+impl CertificateSet<NoOp, NoOp, NoOp, NoOp> for NoOp {
 	fn contains(&self, _item: &NoOp) -> bool {
 		false
 	}

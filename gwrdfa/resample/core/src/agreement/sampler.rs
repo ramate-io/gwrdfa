@@ -7,10 +7,9 @@ use parabyzantine::{
 
 pub trait Sampler<
 	Index: Eq,
-	Value: Eq,
-	Sender: Eq,
-	Sub: Subcommittee<Sender>,
-	SubAgree: IndexSubcommitteeAgreement<Index, Sender, Sub>,
+	Value: Eq + 'static,
+	Sub: Subcommittee<Value>,
+	SubAgree: IndexSubcommitteeAgreement<Index, Sub, Value>,
 	Binding: ParabyzantineAgreementDataBinding,
 >: Sized
 {
@@ -48,12 +47,11 @@ pub trait Sampler<
 
 impl<
 		Index: Eq,
-		Value: Eq,
-		Sender: Eq,
-		Sub: Subcommittee<Sender>,
-		SubAgree: IndexSubcommitteeAgreement<Index, Sender, Sub>,
+		Value: Eq + 'static,
+		Sub: Subcommittee<Value>,
+		SubAgree: IndexSubcommitteeAgreement<Index, Sub, Value>,
 		Binding: ParabyzantineAgreementDataBinding,
-	> Sampler<Index, Value, Sender, Sub, SubAgree, Binding> for NoOp
+	> Sampler<Index, Value, Sub, SubAgree, Binding> for NoOp
 {
 	fn elect_subcommittees_from_consensus_value(
 		&mut self,
