@@ -20,10 +20,11 @@ pub struct Id(Vec<u8>);
 
 impl Id {
 	/// Builds a new ID from the payload bytes.
-	fn new(payload_bytes: &[u8], nonce: &Nonce) -> Self {
+	fn new(payload_bytes: &[u8], nonce: &Nonce, public_key: &PublicKey) -> Self {
 		let mut hasher = sha3::Sha3_256::new();
 		hasher.update(payload_bytes);
 		hasher.update(nonce.as_bytes());
+		hasher.update(public_key.as_bytes());
 		let hash = hasher.finalize();
 		Self(hash.to_vec())
 	}
@@ -72,9 +73,9 @@ pub struct Signature(Vec<u8>);
 
 impl Signature {
 	/// Builds a signature from the given bytes.
-	pub fn new(signer: &SigningKey<MlDsa44>, id: &Id) -> (Self, PublicKey) {
+	pub fn new(signer: &SigningKey<MlDsa44>, id: &Id) -> Self {
 		let signature = signer.sign(id.as_bytes());
-		(Self(signature.to_bytes().to_vec()), PublicKey::new(signer))
+		Self(signature.to_bytes().to_vec())
 	}
 
 	/// Borrow the bytes of the signature.
@@ -192,7 +193,7 @@ impl<P: Serialize + for<'a> Deserialize<'a>> Message<P> {
 		// Check that the id matches the hash
 		let serialized_payload = serde_json::to_vec(&self.payload)
 			.map_err(|_| VerificationError::PayloadSerializationFailed)?;
-		let computed_id = Id::new(&serialized_payload, &self.nonce);
+		let computed_id = Id::new(&serialized_payload, &self.nonce, &self.public_key());
 		if computed_id != self.id {
 			return Err(VerificationError::IdMismatch);
 		}
@@ -219,12 +220,14 @@ impl Message<Transaction> {
 		payload: Transaction,
 		nonce: Nonce,
 	) -> Result<Self, TransactionMessageError> {
+		let public_key = PublicKey::new(signer);
 		let id = Id::new(
 			&serde_json::to_vec(&payload)
 				.map_err(|_| TransactionMessageError::PayloadSerializationFailed)?,
 			&nonce,
+			&public_key,
 		);
-		let (signature, public_key) = Signature::new(signer, &id);
+		let signature = Signature::new(signer, &id);
 		Ok(Self { id, public_key, signature, payload, nonce })
 	}
 }
@@ -236,12 +239,14 @@ impl Message<Certificate> {
 		payload: Certificate,
 		nonce: Nonce,
 	) -> Result<Self, TransactionMessageError> {
+		let public_key = PublicKey::new(signer);
 		let id = Id::new(
 			&serde_json::to_vec(&payload)
 				.map_err(|_| TransactionMessageError::PayloadSerializationFailed)?,
 			&nonce,
+			&public_key,
 		);
-		let (signature, public_key) = Signature::new(signer, &id);
+		let signature = Signature::new(signer, &id);
 		Ok(Self { id, public_key, signature, payload, nonce })
 	}
 }
