@@ -42,27 +42,21 @@ impl<T: Eq + 'static> IndexSubcommitteeAgreement<NoOp, NoOp, T> for NoOp {
 pub mod test {
 
 	use super::*;
-	use core::marker::PhantomData;
 	use std::{
 		collections::{HashMap, HashSet},
 		hash::Hash,
+		vec,
 		vec::Vec,
 	};
 
 	#[derive(Eq, PartialEq, Clone)]
-	pub struct TestSubcommittee<
-		Sender: PartialEq + Eq + Hash + Clone,
-		Value: PartialEq + Eq + Hash + Clone,
-	> {
+	pub struct TestSubcommittee<Sender: PartialEq + Eq + Hash + Clone> {
 		members: HashSet<Sender>,
-		__marker: PhantomData<Value>,
 	}
 
-	impl<Sender: PartialEq + Eq + Hash + Clone, Value: PartialEq + Eq + Hash + Clone>
-		TestSubcommittee<Sender, Value>
-	{
+	impl<Sender: PartialEq + Eq + Hash + Clone> TestSubcommittee<Sender> {
 		pub fn new() -> Self {
-			Self { members: HashSet::new(), __marker: PhantomData }
+			Self { members: HashSet::new() }
 		}
 
 		pub fn senders(&self) -> impl Iterator<Item = &Sender> {
@@ -101,7 +95,7 @@ pub mod test {
 	}
 
 	impl<Sender: PartialEq + Eq + Hash + Clone, Value: PartialEq + Eq + Hash + Clone + 'static>
-		Subcommittee<Value> for TestSubcommittee<Sender, Value>
+		Subcommittee<Value> for TestSubcommittee<Sender>
 	{
 		fn condition<'a>(
 			&'a self,
@@ -124,6 +118,7 @@ pub mod test {
 					}
 				}
 			}
+			let senders_count = sender_to_values.len();
 
 			// Invert the mapping to get values to senders.
 			let mut values_to_senders: HashMap<&Value, Vec<&Sender>> = HashMap::new();
@@ -132,14 +127,37 @@ pub mod test {
 			}
 
 			// Flatten see if there is a subcommittee satisfying 2f + 1 members.
+			let mut max_senders = 0;
 			let byzantine_quorum_size = self.byzantine_quorum_size();
 			for (value, senders) in values_to_senders {
+				max_senders = max_senders.max(senders.len());
 				if senders.len() >= byzantine_quorum_size {
 					return Condition::Consensus(value.clone());
 				}
 			}
 
+			// If there aren't enough unaccounted for senders, return Condition::Hung.
+			if (self.size() - senders_count) < (byzantine_quorum_size - max_senders) {
+				return Condition::Hung;
+			}
+
+			// Otherwise, we're still in progress.
 			Condition::InProgress
 		}
+	}
+
+	#[test]
+	fn test_subcommittee_consensus_condition() {
+		let mut subcommittee = TestSubcommittee::<u32>::new();
+		subcommittee.add_member(1);
+		subcommittee.add_member(2);
+		subcommittee.add_member(3);
+		subcommittee.add_member(4);
+		subcommittee.add_member(5);
+		subcommittee.add_member(6);
+
+		let condition = subcommittee.condition(vec![(&subcommittee, &1)].into_iter());
+
+		assert_eq!(condition, Condition::Consensus(1));
 	}
 }
