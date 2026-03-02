@@ -1,4 +1,4 @@
-use super::{Certificate, CertificateSet, Sampler, Subcommittee};
+use super::{Certificate, CertificateSet, ResampleAgreementStorage, Sampler, Subcommittee};
 use parabyzantine::NoOp;
 use parabyzantine::{
 	agreement::{ParabyzantineAgreementDataBinding, ParabyzantineAgreementDataSpec},
@@ -6,18 +6,27 @@ use parabyzantine::{
 };
 
 /// A [ResampleAgreementSpec] is a specification for ResampleAgreement consensus.
-pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Sized {
+pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Sized
+where
+	<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementDraftBuffer:
+		ResampleAgreementStorage<
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
+			Self::Index,
+			Self::Subcommittee,
+			Self::Value,
+		>,
+{
 	/// The type of the index.
-	type Index: Eq;
+	/// The index must be clonable in order to be able to insert index subcommittee agreement facts.
+	type Index: Clone + Eq;
 
 	/// The type of the value.
-	type Value: Eq + 'static;
-
-	/// The type of the sender of a certificate.
-	type Sender: Eq;
+	/// The value must be clonable in order to be able to insert value agreement facts.
+	type Value: Clone + Eq + 'static;
 
 	/// The type of the subcommittee.
-	type Subcommittee: Subcommittee<Self::Value>;
+	/// The subcommittee must be clonable in order to be able to insert subcommittee agreement facts.
+	type Subcommittee: Subcommittee<Self::Value> + Clone;
 
 	/// The bundle of the agreement in the buffer.
 	type IndexSubcommitteeAgreementQueryData<'a>;
@@ -73,7 +82,6 @@ pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Siz
 impl ResampleAgreementSpec<NoOp> for NoOp {
 	type Index = NoOp;
 	type Value = NoOp;
-	type Sender = NoOp;
 	type Subcommittee = NoOp;
 	type IndexSubcommitteeAgreementQueryData<'a> = NoOp;
 	type IndexSubcommitteeAgreementQuery<'a> = NoOp;

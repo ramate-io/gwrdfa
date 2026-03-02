@@ -8,7 +8,7 @@ pub mod storage;
 pub mod subcommittee;
 
 pub use certificate::{Certificate, CertificateSet};
-pub use consensus::{Condition, ResampleAgreementConsensusUpdate};
+pub use consensus::Condition;
 pub use data::ResampleAgreementData;
 use parabyzantine::agreement::{
 	AgreementWorld, ParabyzantineAgreement, ParabyzantineAgreementData,
@@ -17,12 +17,19 @@ use parabyzantine::agreement::{
 use parabyzantine::{NoOp, NoOpData};
 pub use sampler::Sampler;
 pub use spec::ResampleAgreementSpec;
-pub use subcommittee::{IndexSubcommitteeAgreement, Subcommittee};
+pub use storage::ResampleAgreementStorage;
+pub use subcommittee::Subcommittee;
 
 /// A [ResampleAgreementBinding] is a binding for the [ResampleAgreement] protocol.
 ///
 /// It binds between the [ParabyzantineAgreementDataBinding] and the [ResampleAgreementSpec] and the [ResampleAgreementData].
-pub trait ResampleAgreementBinding: Sized {
+pub trait ResampleAgreementBinding: Sized where <<Self::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::AgreementDraftBuffer: ResampleAgreementStorage<
+			<<Self::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
+			<Self::ResampleAgreementSpec as ResampleAgreementSpec<Self::ParabyzantineAgreementDataBinding>>::Index,
+			<Self::ResampleAgreementSpec as ResampleAgreementSpec<Self::ParabyzantineAgreementDataBinding>>::Subcommittee,
+			<Self::ResampleAgreementSpec as ResampleAgreementSpec<Self::ParabyzantineAgreementDataBinding>>::Value,
+		>,
+{
 	type ParabyzantineAgreementDataBinding: ParabyzantineAgreementDataBinding;
 	type ResampleAgreementSpec: ResampleAgreementSpec<Self::ParabyzantineAgreementDataBinding>;
 	type ResampleAgreementData: ResampleAgreementData<
@@ -95,24 +102,6 @@ impl<Binding: ResampleAgreementBinding>
 		Binding::ParabyzantineAgreementDataBinding,
 	>>::Sampler {
 		self.data_mut().sampler_mut()
-	}
-
-	/// A [ResampleAgreement] data must be able to provide a [ResampleAgreementConsensusUpdate]
-	fn resample_agreement_consensus_update(
-		&self,
-	) -> &<Binding::ResampleAgreementSpec as ResampleAgreementSpec<
-		Binding::ParabyzantineAgreementDataBinding,
-	>>::ResampleAgreementConsensusUpdate {
-		self.data().resample_agreement_consensus_update()
-	}
-
-	/// A [ResampleAgreement] data must be able to provide a mutable [ResampleAgreementConsensusUpdate]
-	fn resample_agreement_consensus_update_mut(
-		&mut self,
-	) -> &mut <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
-		Binding::ParabyzantineAgreementDataBinding,
-	>>::ResampleAgreementConsensusUpdate {
-		self.data_mut().resample_agreement_consensus_update_mut()
 	}
 
 	/// A [ResampleAgreement] data must be able to provide a [IndexSubcommitteeAgreementQuery]

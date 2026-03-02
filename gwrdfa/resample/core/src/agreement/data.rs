@@ -1,4 +1,4 @@
-use super::ResampleAgreementSpec;
+use super::{ResampleAgreementSpec, ResampleAgreementStorage};
 use parabyzantine::agreement::{ParabyzantineAgreementDataBinding, ParabyzantineAgreementDataSpec};
 use parabyzantine::NoOp;
 use parabyzantine::NoOpData;
@@ -6,7 +6,14 @@ use parabyzantine::NoOpData;
 pub trait ResampleAgreementData<
 	Binding: ParabyzantineAgreementDataBinding,
 	Spec: ResampleAgreementSpec<Binding>,
->: Sized
+>: Sized where
+	<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementDraftBuffer:
+		ResampleAgreementStorage<
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
+			Spec::Index,
+			Spec::Subcommittee,
+			Spec::Value,
+		>,
 {
 	/// A [ResampleAgreement] data must be able to provide a [CertificateSet]
 	fn certificate_set(&self) -> &Spec::CertificateSet;
