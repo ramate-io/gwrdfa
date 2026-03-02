@@ -1,4 +1,5 @@
 use super::{CertificateSet, ResampleAgreementStorage, Sampler, Subcommittee};
+use parabyzantine::NoOp;
 use parabyzantine::{
 	agreement::{ParabyzantineAgreementDataBinding, ParabyzantineAgreementDataSpec},
 	buffer::query::{QueryPlanlike, Querylike},
@@ -67,4 +68,25 @@ where
 
 	/// The type of the sampler.
 	type Sampler: Sampler<Self::Index, Self::Value, Self::Subcommittee>;
+}
+
+impl<Binding: ParabyzantineAgreementDataBinding> ResampleAgreementSpec<Binding> for NoOp
+where
+	<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementDraftBuffer:
+		ResampleAgreementStorage<
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
+			NoOp,
+			NoOp,
+			NoOp,
+		>,
+{
+	type Index = NoOp;
+	type Value = NoOp;
+	type Subcommittee = NoOp;
+	type IndexSubcommitteeAgreementQuery<'a> = NoOp;
+	type IndexSubcommitteeAgreementQueryPlan = NoOp;
+	type CertificateQuery<'a> = NoOp;
+	type CertificateQueryPlan = NoOp;
+	type CertificateSet = NoOp;
+	type Sampler = NoOp;
 }

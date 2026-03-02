@@ -1,4 +1,4 @@
-use crate::{NoOp, NoOpOn};
+use crate::NoOp;
 
 pub trait Querylike<Entity, Item> {
 	fn next(&mut self) -> Option<(Entity, Item)>;
