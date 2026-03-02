@@ -12,7 +12,7 @@ pub trait GossamerMessages<Binding: ParabyzantineDataBinding> {
 	/// The exact query type produced by the plan.
 	type OutQuery<'a>: Querylike<
 		<<Binding as ParabyzantineDataBinding>::Spec as ParabyzantineDataSpec>::MessageEntity,
-		Item = (&'a Out, &'a Self::Message),
+		(&'a Out, &'a Self::Message),
 	>
 	where
 		Self::Message: 'a;
@@ -20,7 +20,8 @@ pub trait GossamerMessages<Binding: ParabyzantineDataBinding> {
 	type OutQueryPlan: for<'a> QueryPlanlike<
 		<<Binding as ParabyzantineDataBinding>::Spec as ParabyzantineDataSpec>::MessageEntity,
 		&'a <<Binding as ParabyzantineDataBinding>::Spec as ParabyzantineDataSpec>::MessageBuffer,
-		Query = Self::OutQuery<'a>,
+		(&'a Out, &'a Self::Message),
+		Self::OutQuery<'a>,
 	>;
 
 	fn gossamer_messages_out_plan(&mut self) -> Self::OutQueryPlan;

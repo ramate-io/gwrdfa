@@ -15,10 +15,8 @@ impl<'a, Container, T> MatchingTupleQuery<'a, Container, T> {
 }
 
 impl<'a, T: ContainerGiving<A> + ContainerGiving<B> + Sized, A: 'a, B: 'a>
-	Querylike<ContainerEntity> for MatchingTupleQuery<'a, T, (A, B)>
+	Querylike<ContainerEntity, (&'a A, &'a B)> for MatchingTupleQuery<'a, T, (A, B)>
 {
-	type Item = (&'a A, &'a B);
-
 	fn next(&mut self) -> Option<(ContainerEntity, (&'a A, &'a B))> {
 		while let Some((entity, container)) = self.iter.next() {
 			if let (Component::Present(a), Component::Present(b)) =
@@ -49,15 +47,18 @@ impl<T> MatchingTuple<T> {
 	}
 }
 
-impl<'a, T, A, B> QueryPlanlike<ContainerEntity, &'a ContainerEntityBuffer<T>>
-	for MatchingTuple<(A, B)>
+impl<'a, T, A, B>
+	QueryPlanlike<
+		ContainerEntity,
+		&'a ContainerEntityBuffer<T>,
+		(&'a A, &'a B),
+		MatchingTupleQuery<'a, T, (A, B)>,
+	> for MatchingTuple<(A, B)>
 where
 	T: ContainerGiving<A> + ContainerGiving<B>,
 	A: 'a,
 	B: 'a,
 {
-	type Query = MatchingTupleQuery<'a, T, (A, B)>;
-
 	fn into_query(self, buffer: &'a ContainerEntityBuffer<T>) -> MatchingTupleQuery<'a, T, (A, B)> {
 		MatchingTupleQuery::new(buffer)
 	}
