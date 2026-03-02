@@ -15,6 +15,7 @@ use parabyzantine::agreement::{
 	Agreement, AgreementWorld, ParabyzantineAgreement, ParabyzantineAgreementData,
 	ParabyzantineAgreementDataBinding, ParabyzantineAgreementDataSpec,
 };
+use parabyzantine::{NoOp, NoOpData};
 pub use sampler::Sampler;
 pub use spec::ResampleAgreementSpec;
 pub use storage::ResampleAgreementStorage;
@@ -202,5 +203,40 @@ impl<Binding: ResampleAgreementBinding> ResampleAgreement<Binding> {
 		let mut agreement_world = agreement_data.parabyzantine_agreement_world();
 
 		self.update_parabyzantine_agreement(&mut agreement_world);
+	}
+}
+
+/// A [ResampleAgreementBinding] for the [NoOp] struct.
+impl ResampleAgreementBinding for NoOp {
+	type ParabyzantineAgreementDataBinding = NoOp;
+	type ResampleAgreementSpec = NoOp;
+	type ResampleAgreementData = NoOpData;
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use parabyzantine::{
+		agreement::Agreement, task::Task, AgreementAction, AgreementHandler, DataBinding,
+		Parabyzantine, Spec, TaskAction, TaskHandler,
+	};
+
+	#[test]
+	fn test_noop_resample_agreement_noops() {
+		let resample_agreement = ResampleAgreement::<NoOp>(NoOpData::new());
+		let mut parabyzantine: Parabyzantine<
+			Spec<(
+				DataBinding<NoOp>,
+				AgreementAction<Agreement>,
+				AgreementHandler<ResampleAgreement<NoOp>>,
+				TaskAction<Task>,
+				TaskHandler<NoOp>,
+			)>,
+		> = Parabyzantine {
+			data: NoOpData::new(),
+			agreement_handler: resample_agreement,
+			task_handler: NoOp,
+		};
+		parabyzantine.update_agreement(Agreement);
 	}
 }
