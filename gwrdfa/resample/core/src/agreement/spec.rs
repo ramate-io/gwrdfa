@@ -30,7 +30,7 @@ where
 	/// The query for the index subcommittee agreement.
 	type IndexSubcommitteeAgreementQuery<'a>: Querylike<
 		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
-		Item = (&'a Self::Index, &'a Self::Subcommittee),
+		(&'a Self::Index, &'a Self::Subcommittee),
 	>
 	where
 		Self::Index: 'a,
@@ -40,13 +40,14 @@ where
 	type IndexSubcommitteeAgreementQueryPlan: for<'a> QueryPlanlike<
 		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
 		&'a <Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer,
-		Query = Self::IndexSubcommitteeAgreementQuery<'a>,
+		(&'a Self::Index, &'a Self::Subcommittee),
+		Self::IndexSubcommitteeAgreementQuery<'a>,
 	>;
 
 	/// The query for the certificate.
 	type CertificateQuery<'a>: Querylike<
 		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
-		Item = (&'a Self::Index, &'a Self::Value, &'a Self::Subcommittee),
+		(&'a Self::Index, &'a Self::Value, &'a Self::Subcommittee),
 	>
 	where
 		Self::Index: 'a,
@@ -57,7 +58,8 @@ where
 	type CertificateQueryPlan: for<'a> QueryPlanlike<
 		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
 		&'a <Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateBuffer,
-		Query = Self::CertificateQuery<'a>,
+		(&'a Self::Index, &'a Self::Value, &'a Self::Subcommittee),
+		Self::CertificateQuery<'a>,
 	>;
 
 	/// The type of the certificate set.

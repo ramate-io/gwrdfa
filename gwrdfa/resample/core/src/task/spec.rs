@@ -25,14 +25,15 @@ pub trait ResampleTaskSpec<Binding: ParabyzantineTaskDataBinding>: Sized {
 	/// The query for the index subcommittee agreement.
 	type IndexTaskSubcommitteeAgreementQuery<'a>: Querylike<
 		<Binding::Spec as ParabyzantineTaskDataSpec>::AgreementEntity,
-		Item = Self::IndexTaskSubcommitteeAgreementQueryData<'a>,
+		Self::IndexTaskSubcommitteeAgreementQueryData<'a>,
 	>;
 
 	/// The query plan for the index subcommittee agreement.
 	type IndexTaskSubcommitteeAgreementQueryPlan: for<'a> QueryPlanlike<
 		<Binding::Spec as ParabyzantineTaskDataSpec>::AgreementEntity,
 		&'a <Binding::Spec as ParabyzantineTaskDataSpec>::AgreementBuffer,
-		Query = Self::IndexTaskSubcommitteeAgreementQuery<'a>,
+		Self::IndexTaskSubcommitteeAgreementQueryData<'a>,
+		Self::IndexTaskSubcommitteeAgreementQuery<'a>,
 	>;
 
 	/// The type of the index subcommittee agreement.
