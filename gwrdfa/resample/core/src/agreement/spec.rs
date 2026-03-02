@@ -1,7 +1,4 @@
-use super::{
-	Certificate, CertificateSet, IndexSubcommitteeAgreement, ResampleAgreementConsensusUpdate,
-	Sampler, Subcommittee,
-};
+use super::{Certificate, CertificateSet, Sampler, Subcommittee};
 use parabyzantine::NoOp;
 use parabyzantine::{
 	agreement::{ParabyzantineAgreementDataBinding, ParabyzantineAgreementDataSpec},
@@ -38,13 +35,6 @@ pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Siz
 		Query = Self::IndexSubcommitteeAgreementQuery<'a>,
 	>;
 
-	/// The type of the index subcommittee agreement.
-	type IndexSubcommitteeAgreement: IndexSubcommitteeAgreement<Self::Index, Self::Subcommittee, Self::Value>
-		+ for<'a> From<(
-			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
-			Self::IndexSubcommitteeAgreementQueryData<'a>,
-		)>;
-
 	/// The bundle of the certificate in the buffer.
 	type CertificateQueryData<'a>;
 
@@ -77,21 +67,7 @@ pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Siz
 	>;
 
 	/// The type of the sampler.
-	type Sampler: Sampler<
-		Self::Index,
-		Self::Value,
-		Self::Subcommittee,
-		Self::IndexSubcommitteeAgreement,
-		Binding,
-	>;
-
-	/// The type of the ResampleAgreement consensus update.
-	type ResampleAgreementConsensusUpdate: ResampleAgreementConsensusUpdate<
-		Self::Index,
-		Self::Value,
-		Self::Sender,
-		Binding,
-	>;
+	type Sampler: Sampler<Self::Index, Self::Value, Self::Subcommittee>;
 }
 
 impl ResampleAgreementSpec<NoOp> for NoOp {
@@ -102,12 +78,10 @@ impl ResampleAgreementSpec<NoOp> for NoOp {
 	type IndexSubcommitteeAgreementQueryData<'a> = NoOp;
 	type IndexSubcommitteeAgreementQuery<'a> = NoOp;
 	type IndexSubcommitteeAgreementQueryPlan = NoOp;
-	type IndexSubcommitteeAgreement = NoOp;
 	type CertificateQueryData<'a> = NoOp;
 	type CertificateQuery<'a> = NoOp;
 	type CertificateQueryPlan = NoOp;
 	type Certificate = NoOp;
 	type CertificateSet = NoOp;
 	type Sampler = NoOp;
-	type ResampleAgreementConsensusUpdate = NoOp;
 }

@@ -20,14 +20,6 @@ pub trait ResampleAgreementData<
 	/// ResampleAgreement data must be able to provide a mutable [Sampler]
 	fn sampler_mut(&mut self) -> &mut Spec::Sampler;
 
-	/// ResampleAgreement data must be able to produce a [Spec::ResampleAgreementConsensusUpdate]
-	fn resample_agreement_consensus_update(&self) -> &Spec::ResampleAgreementConsensusUpdate;
-
-	/// ResampleAgreement data must be able to produce a mutable [Spec::ResampleAgreementConsensusUpdate]
-	fn resample_agreement_consensus_update_mut(
-		&mut self,
-	) -> &mut Spec::ResampleAgreementConsensusUpdate;
-
 	/// ResampleAgreement data must be able to prduce a [Spec::IndexSubcommitteeAgreementQuery]
 	fn index_subcommittee_agreement_query_plan(
 		&mut self,
@@ -56,12 +48,7 @@ impl ResampleAgreementData<NoOp, NoOp> for NoOpData {
 	fn sampler_mut(&mut self) -> &mut NoOp {
 		&mut self.no_op
 	}
-	fn resample_agreement_consensus_update(&self) -> &NoOp {
-		&self.no_op
-	}
-	fn resample_agreement_consensus_update_mut(&mut self) -> &mut NoOp {
-		&mut self.no_op
-	}
+
 	fn index_subcommittee_agreement_query_plan(&mut self) -> NoOp {
 		NoOp
 	}
