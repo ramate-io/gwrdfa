@@ -1,58 +1,28 @@
 use crate::{NoOp, NoOpOn};
 
-pub trait Querylike<Entity> {
-	type Item;
-
-	fn next(&mut self) -> Option<(Entity, Self::Item)>;
-	fn get(&self, entity: Entity) -> Option<Self::Item>;
+pub trait Querylike<Entity, Item> {
+	fn next(&mut self) -> Option<(Entity, Item)>;
+	fn get(&self, entity: Entity) -> Option<Item>;
 }
 
-pub trait QueryPlanlike<Entity, C> {
-	type Query: Querylike<Entity>;
-
-	fn into_query(self, plan: C) -> Self::Query;
+pub trait QueryPlanlike<Entity, C, Item, Q: Querylike<Entity, Item>> {
+	fn into_query(self, plan: C) -> Q;
 }
 
-impl<Entity> Querylike<Entity> for NoOp {
-	type Item = NoOp;
-
-	fn next(&mut self) -> Option<(Entity, NoOp)> {
+impl<Entity, Item> Querylike<Entity, Item> for NoOp {
+	fn next(&mut self) -> Option<(Entity, Item)> {
 		None
 	}
 
-	fn get(&self, _entity: Entity) -> Option<NoOp> {
+	fn get(&self, _entity: Entity) -> Option<Item> {
 		None
 	}
 }
 
-impl<Entity, C> QueryPlanlike<Entity, C> for NoOp {
-	type Query = NoOp;
-
-	fn into_query(self, _plan: C) -> Self::Query {
-		NoOp
-	}
-}
-
-impl<Entity, T> Querylike<Entity> for NoOpOn<T> {
-	type Item = T;
-
-	fn next(&mut self) -> Option<(Entity, T)> {
-		None
-	}
-
-	fn get(&self, _entity: Entity) -> Option<T> {
-		None
-	}
-}
-
-impl<'a, Entity, T> Querylike<Entity> for &'a NoOpOn<T> {
-	type Item = T;
-
-	fn next(&mut self) -> Option<(Entity, T)> {
-		None
-	}
-
-	fn get(&self, _entity: Entity) -> Option<T> {
-		None
+impl<Entity, C, Item, Q: Querylike<Entity, Item> + Default> QueryPlanlike<Entity, C, Item, Q>
+	for NoOp
+{
+	fn into_query(self, _plan: C) -> Q {
+		Q::default()
 	}
 }
