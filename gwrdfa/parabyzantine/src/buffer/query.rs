@@ -25,7 +25,7 @@ impl<Entity> Querylike<Entity> for NoOp {
 	}
 }
 
-impl<'a, Entity, C> QueryPlanlike<Entity, C> for NoOp {
+impl<Entity, C> QueryPlanlike<Entity, C> for NoOp {
 	type Query = NoOp;
 
 	fn into_query(self, _plan: C) -> Self::Query {
@@ -34,6 +34,18 @@ impl<'a, Entity, C> QueryPlanlike<Entity, C> for NoOp {
 }
 
 impl<Entity, T> Querylike<Entity> for NoOpOn<T> {
+	type Item = T;
+
+	fn next(&mut self) -> Option<(Entity, T)> {
+		None
+	}
+
+	fn get(&self, _entity: Entity) -> Option<T> {
+		None
+	}
+}
+
+impl<'a, Entity, T> Querylike<Entity> for &'a NoOpOn<T> {
 	type Item = T;
 
 	fn next(&mut self) -> Option<(Entity, T)> {

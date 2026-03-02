@@ -7,14 +7,14 @@ pub mod spec;
 pub mod storage;
 pub mod subcommittee;
 
-pub use certificate::{Certificate, CertificateSet};
+use crate::Resample;
+pub use certificate::CertificateSet;
 pub use consensus::Condition;
 pub use data::ResampleAgreementData;
 use parabyzantine::agreement::{
-	AgreementWorld, ParabyzantineAgreement, ParabyzantineAgreementData,
+	Agreement, AgreementWorld, ParabyzantineAgreement, ParabyzantineAgreementData,
 	ParabyzantineAgreementDataBinding, ParabyzantineAgreementDataSpec,
 };
-use parabyzantine::{NoOp, NoOpData};
 pub use sampler::Sampler;
 pub use spec::ResampleAgreementSpec;
 pub use storage::ResampleAgreementStorage;
@@ -116,10 +116,9 @@ impl<Binding: ResampleAgreementBinding>
 	/// A [ResampleAgreement] data must be able to provide a [CertificateQuery]
 	fn certificate_query_plan(
 		&mut self,
-		index: &(
-			<<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
-			<Binding::ResampleAgreementSpec as ResampleAgreementSpec<Binding::ParabyzantineAgreementDataBinding>>::IndexSubcommitteeAgreementQueryData<'_>,
-		),
+		index: &<Binding::ResampleAgreementSpec as ResampleAgreementSpec<
+			Binding::ParabyzantineAgreementDataBinding,
+		>>::Index,
 	) -> <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
 		Binding::ParabyzantineAgreementDataBinding,
 	>>::CertificateQueryPlan {
@@ -138,56 +137,54 @@ impl<Binding: ResampleAgreementBinding> ParabyzantineAgreement for ResampleAgree
 	) {
 		// over all the index subcommittee agreements
 		let index_query = self.index_subcommittee_agreement_query_plan();
-		for index_data in agreement_world.agreement_facts.query(index_query) {
-			let certificate_query_plan = self.certificate_query_plan(&index_data);
-
-			let index: <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
-				Binding::ParabyzantineAgreementDataBinding,
-			>>::IndexSubcommitteeAgreement = (index_data).into();
-
+		for (_agreement_entity, (index, subcommittee)) in
+			agreement_world.agreement_facts.query(index_query)
+		{
+			// Insert all of the certificates for this index into the certificate set
+			let certificate_query_plan = self.certificate_query_plan(index);
 			// insert all of the certificates for this index into the certificate set
-			for certificate_data in agreement_world.certificate_facts.query(certificate_query_plan)
+			for (_certificate_entity, (index, value, subcommittee)) in
+				agreement_world.certificate_facts.query(certificate_query_plan)
 			{
-				let certificate: <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
-					Binding::ParabyzantineAgreementDataBinding,
-				>>::Certificate = (certificate_data).into();
-
 				// This is just for moving the certificate into the certificate set.
-				self.certificate_set_mut().insert(certificate);
+				self.certificate_set_mut().insert(
+					index.clone(),
+					value.clone(),
+					subcommittee.clone(),
+				);
 			}
 
 			// check the subcommittee condition
-			let subcommittee_condition = index
-				.subcommittee()
-				.condition(self.certificate_set().partial_subcommittees_for_index(&index.index()));
+			let subcommittee_condition = subcommittee
+				.condition(self.certificate_set().partial_subcommittees_for_index(index));
+
+			// elect the next subcommittee from the condition
+			let next_subcommittee = self.sampler_mut().elect_subcommittee_from_condition(
+				index,
+				subcommittee,
+				&subcommittee_condition,
+			);
+
+			if let Some((next_index, next_subcommittee)) = next_subcommittee {
+				// insert the next subcommittee into the agreement world
+				agreement_world.agreement_inferences.insert(
+					None,
+					(Agreement, Resample, next_index.clone(), next_subcommittee.clone()),
+				);
+			}
+
 			match subcommittee_condition {
 				Condition::Consensus(value) => {
-					// Elect the subcommittees from the consensus value
-					self.sampler_mut().elect_subcommittees_from_consensus_value(
-						&value,
-						&index,
-						&mut agreement_world.agreement_inferences,
-					);
-
-					// Insert the ResampleAgreement consensus agreement
-					self.resample_agreement_consensus_update_mut()
-						.insert_resample_agreement_consensus_agreement(
-							&index.index(),
-							&value,
-							&mut agreement_world.agreement_inferences,
-						);
+					// insert the value into the agreement world
+					agreement_world
+						.agreement_inferences
+						.insert(None, (Agreement, Resample, index.clone(), value));
 				}
 				Condition::Hung => {
-					// Elect the subcommittees from the hung value
-					self.sampler_mut().elect_subcommittees_from_hung_value(
-						&index,
-						&mut agreement_world.agreement_inferences,
-					);
+					// do nothing
 				}
 				Condition::InProgress => {
-					// In progress does not need to do anything
-					// In the future, we may want to add a hook for in progress.
-					// But for now, we keep the semantics stricter.
+					// do nothing
 				}
 			}
 		}
@@ -205,40 +202,5 @@ impl<Binding: ResampleAgreementBinding> ResampleAgreement<Binding> {
 		let mut agreement_world = agreement_data.parabyzantine_agreement_world();
 
 		self.update_parabyzantine_agreement(&mut agreement_world);
-	}
-}
-
-/// A [ResampleAgreementBinding] for the [NoOp] struct.
-impl ResampleAgreementBinding for NoOp {
-	type ParabyzantineAgreementDataBinding = NoOp;
-	type ResampleAgreementSpec = NoOp;
-	type ResampleAgreementData = NoOpData;
-}
-
-#[cfg(test)]
-mod tests {
-	use super::*;
-	use parabyzantine::{
-		agreement::Agreement, task::Task, AgreementAction, AgreementHandler, DataBinding,
-		Parabyzantine, Spec, TaskAction, TaskHandler,
-	};
-
-	#[test]
-	fn test_noop_resample_agreement_noops() {
-		let resample_agreement = ResampleAgreement::<NoOp>(NoOpData::new());
-		let mut parabyzantine: Parabyzantine<
-			Spec<(
-				DataBinding<NoOp>,
-				AgreementAction<Agreement>,
-				AgreementHandler<ResampleAgreement<NoOp>>,
-				TaskAction<Task>,
-				TaskHandler<NoOp>,
-			)>,
-		> = Parabyzantine {
-			data: NoOpData::new(),
-			agreement_handler: resample_agreement,
-			task_handler: NoOp,
-		};
-		parabyzantine.update_agreement(Agreement);
 	}
 }

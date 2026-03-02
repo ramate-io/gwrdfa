@@ -4,14 +4,14 @@ use parabyzantine::{agreement::Agreement, buffer::Stores};
 pub trait ResampleAgreementStorage<E, Index, Subcommittee, Value>: Sized
 where
 	// Self stores subcommittee agreements
-	Self: Stores<(Agreement, Index, Resample, Subcommittee), E>
+	Self: Stores<(Agreement, Resample, Index, Subcommittee), E>
 		// Self stores value agreements
-		+ Stores<(Agreement, Index, Resample, Value), E>,
+		+ Stores<(Agreement, Resample, Index, Value), E>,
 {
 }
 
 impl<T, E, Index, Subcommittee, Value> ResampleAgreementStorage<E, Index, Subcommittee, Value> for T where
-	T: Stores<(Agreement, Index, Resample, Subcommittee), E>
-		+ Stores<(Agreement, Index, Resample, Value), E>
+	T: Stores<(Agreement, Resample, Index, Subcommittee), E>
+		+ Stores<(Agreement, Resample, Index, Value), E>
 {
 }

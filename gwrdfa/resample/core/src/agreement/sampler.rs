@@ -11,21 +11,21 @@ pub trait Sampler<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>>: Siz
 	/// there are two major patterns:
 	/// 1. Write your [Sampler] so that values themselves can effectively update the sampler to reflect the new rule set.
 	/// 2. Write your [Sampler] so that it inserts agreements which defer the actual subcommittee election to a later stage, e.g., ParabyzantineTask.
-	fn elect_subcommittee_from_consensus_value(
+	fn elect_subcommittee_from_condition(
 		&mut self,
 		index: &Index,
 		subcommittee: &Sub,
 		value: &Condition<Value>,
-	) -> Option<Sub>;
+	) -> Option<(Index, Sub)>;
 }
 
 impl<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>> Sampler<Index, Value, Sub> for NoOp {
-	fn elect_subcommittee_from_consensus_value(
+	fn elect_subcommittee_from_condition(
 		&mut self,
 		_index: &Index,
 		_subcommittee: &Sub,
 		_value: &Condition<Value>,
-	) -> Option<Sub> {
+	) -> Option<(Index, Sub)> {
 		None
 	}
 }

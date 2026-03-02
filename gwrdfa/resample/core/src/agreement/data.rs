@@ -1,7 +1,5 @@
 use super::{ResampleAgreementSpec, ResampleAgreementStorage};
 use parabyzantine::agreement::{ParabyzantineAgreementDataBinding, ParabyzantineAgreementDataSpec};
-use parabyzantine::NoOp;
-use parabyzantine::NoOpData;
 
 pub trait ResampleAgreementData<
 	Binding: ParabyzantineAgreementDataBinding,
@@ -33,42 +31,7 @@ pub trait ResampleAgreementData<
 	) -> Spec::IndexSubcommitteeAgreementQueryPlan;
 
 	/// ResampleAgreement data must be able to produce a [Spec::CertificateQuery]
-	fn certificate_query_plan(
-		&mut self,
-		index: &(
-			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
-			Spec::IndexSubcommitteeAgreementQueryData<'_>,
-		),
-	) -> Spec::CertificateQueryPlan;
-}
-
-impl ResampleAgreementData<NoOp, NoOp> for NoOpData {
-	fn certificate_set(&self) -> &NoOp {
-		&self.no_op
-	}
-	fn certificate_set_mut(&mut self) -> &mut NoOp {
-		&mut self.no_op
-	}
-	fn sampler(&self) -> &NoOp {
-		&self.no_op
-	}
-	fn sampler_mut(&mut self) -> &mut NoOp {
-		&mut self.no_op
-	}
-
-	fn index_subcommittee_agreement_query_plan(&mut self) -> NoOp {
-		NoOp
-	}
-
-	fn certificate_query_plan(
-		&mut self,
-		_index: &(
-			<NoOp as ParabyzantineAgreementDataSpec>::AgreementEntity,
-			<NoOp as ResampleAgreementSpec<NoOp>>::IndexSubcommitteeAgreementQueryData<'_>,
-		),
-	) -> <NoOp as ResampleAgreementSpec<NoOp>>::CertificateQueryPlan {
-		NoOp
-	}
+	fn certificate_query_plan(&mut self, index: &Spec::Index) -> Spec::CertificateQueryPlan;
 }
 
 #[cfg(test)]

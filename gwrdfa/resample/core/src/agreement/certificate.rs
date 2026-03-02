@@ -1,27 +1,10 @@
 use super::Subcommittee;
-use parabyzantine::{NoOp, NO_OP};
+use parabyzantine::NoOp;
 
-pub trait Certificate<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>>: Eq {
-	/// The index of the message.
-	fn index(&self) -> Index;
+pub trait CertificateSet<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>> {
+	fn insert(&mut self, index: Index, value: Value, subcommittee: Sub);
 
-	/// The value of the message.
-	fn value(&self) -> Value;
-
-	/// The subcommittee of the message.
-	fn subcommittee(&self) -> &Sub;
-}
-
-pub trait CertificateSet<
-	Index: Eq,
-	Value: Eq + 'static,
-	Item: Certificate<Index, Value, Sub>,
-	Sub: Subcommittee<Value>,
->
-{
-	fn insert(&mut self, item: Item);
-
-	fn remove(&mut self, item: Item);
+	fn remove(&mut self, index: Index, value: Value, subcommittee: Sub);
 
 	/// Returns an iterator of tuples mapping subcommittees to values for a given index.
 	///
@@ -36,23 +19,10 @@ pub trait CertificateSet<
 		Value: 'a;
 }
 
-/// A [Certificate] for the [NoOp] struct.
-impl Certificate<NoOp, NoOp, NoOp> for NoOp {
-	fn index(&self) -> NoOp {
-		NoOp
-	}
-	fn value(&self) -> NoOp {
-		NoOp
-	}
-	fn subcommittee(&self) -> &NoOp {
-		&NO_OP
-	}
-}
-
 /// A [CertificateSet] for the [NoOp] struct.
-impl CertificateSet<NoOp, NoOp, NoOp, NoOp> for NoOp {
-	fn insert(&mut self, _item: NoOp) {}
-	fn remove(&mut self, _item: NoOp) {}
+impl CertificateSet<NoOp, NoOp, NoOp> for NoOp {
+	fn insert(&mut self, _index: NoOp, _value: NoOp, _subcommittee: NoOp) {}
+	fn remove(&mut self, _index: NoOp, _value: NoOp, _subcommittee: NoOp) {}
 	fn partial_subcommittees_for_index<'a>(
 		&'a self,
 		_index: &'a NoOp,
@@ -62,28 +32,6 @@ impl CertificateSet<NoOp, NoOp, NoOp, NoOp> for NoOp {
 		NoOp: 'a,
 	{
 		[].into_iter()
-	}
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Cert<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>> {
-	pub index: Index,
-	pub value: Value,
-	pub subcommittee: Sub,
-}
-
-impl<Index: Eq + Copy, Value: Eq + Copy, Sub: Subcommittee<Value>> Certificate<Index, Value, Sub>
-	for Cert<Index, Value, Sub>
-{
-	fn index(&self) -> Index {
-		self.index
-	}
-	fn value(&self) -> Value {
-		self.value
-	}
-
-	fn subcommittee(&self) -> &Sub {
-		&self.subcommittee
 	}
 }
 
@@ -120,20 +68,13 @@ mod test {
 			Index: Eq + Copy + Hash,
 			Value: Eq + Copy + 'static + Hash,
 			Sub: Subcommittee<Value> + Hash,
-		> CertificateSet<Index, Value, Cert<Index, Value, Sub>, Sub>
-		for TestCertificateSet<Index, Value, Sub>
+		> CertificateSet<Index, Value, Sub> for TestCertificateSet<Index, Value, Sub>
 	{
-		fn insert(&mut self, item: Cert<Index, Value, Sub>) {
-			self.certs
-				.entry(item.index)
-				.or_insert(HashSet::new())
-				.insert((item.subcommittee, item.value));
+		fn insert(&mut self, index: Index, value: Value, subcommittee: Sub) {
+			self.certs.entry(index).or_insert(HashSet::new()).insert((subcommittee, value));
 		}
-		fn remove(&mut self, item: Cert<Index, Value, Sub>) {
-			self.certs
-				.entry(item.index)
-				.or_insert(HashSet::new())
-				.remove(&(item.subcommittee, item.value));
+		fn remove(&mut self, index: Index, value: Value, subcommittee: Sub) {
+			self.certs.entry(index).or_insert(HashSet::new()).remove(&(subcommittee, value));
 		}
 
 		fn partial_subcommittees_for_index<'a>(
@@ -159,13 +100,6 @@ mod test {
 	}
 
 	#[test]
-	fn test_cert_index_and_value() {
-		let cert = Cert { index: 1, value: 2, subcommittee: NoOp };
-		assert_eq!(cert.index(), 1);
-		assert_eq!(cert.value(), 2);
-	}
-
-	#[test]
 	fn test_certificate_set() {
 		let mut cert_set = TestCertificateSet::new();
 
@@ -177,7 +111,7 @@ mod test {
 		subcommittee_1.add_member(5);
 		subcommittee_1.add_member(6);
 
-		cert_set.insert(Cert { index: 1, value: 2, subcommittee: subcommittee_1.clone() });
+		cert_set.insert(1, 2, subcommittee_1.clone());
 
 		let mut subcommittee_2 = TestSubcommittee::new();
 		subcommittee_2.add_member(7);
@@ -187,7 +121,7 @@ mod test {
 		subcommittee_2.add_member(11);
 		subcommittee_2.add_member(12);
 
-		cert_set.insert(Cert { index: 2, value: 3, subcommittee: subcommittee_2.clone() });
+		cert_set.insert(2, 3, subcommittee_2.clone());
 
 		let mut subcommittee_3 = TestSubcommittee::new();
 		subcommittee_3.add_member(13);
@@ -197,7 +131,7 @@ mod test {
 		subcommittee_3.add_member(17);
 		subcommittee_3.add_member(18);
 
-		cert_set.insert(Cert { index: 3, value: 4, subcommittee: subcommittee_3.clone() });
+		cert_set.insert(3, 4, subcommittee_3.clone());
 
 		// Check the first index
 		let partial_subcommittees =
