@@ -7,6 +7,9 @@ pub mod spec;
 pub mod storage;
 pub mod subcommittee;
 
+#[cfg(test)]
+pub mod test_util;
+
 use crate::Resample;
 pub use certificate::CertificateSet;
 pub use consensus::Condition;
