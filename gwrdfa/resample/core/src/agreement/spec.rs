@@ -115,7 +115,7 @@ pub mod test {
 			V: Eq + Clone + Hash + 'static,
 			S: Subcommittee<V> + Clone + Hash + 'static,
 		> ResampleAgreementSpec<TestResampleParabyzantineData<I, V, S>>
-		for TestResampleAgreementSpec<Index<I>, Value<V>, Sub<S>>
+		for TestResampleAgreementSpec<I, V, S>
 	{
 		type Index = Index<I>;
 		type Value = Value<V>;

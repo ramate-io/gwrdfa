@@ -71,37 +71,58 @@ pub mod test {
 	use super::*;
 	use crate::agreement::certificate::test::TestCertificateSet;
 	use crate::agreement::sampler::test::TestSampler;
+	use crate::agreement::spec::test::TestResampleAgreementSpec;
 	use crate::agreement::test_util::container::*;
+	use crate::agreement::test_util::{Index, Sub, TextIndexabled, Value};
 	use crate::agreement::Subcommittee;
 	use gwrdfa_container::query::matching_tuple::MatchingTuple;
 	use std::hash::Hash;
 
 	pub struct TestResampleAgreementData<
-		I: Eq + Hash,
-		V: Eq + 'static + Hash,
-		S: Subcommittee<V> + Hash,
+		I: Eq + Hash + Clone + TextIndexabled + 'static,
+		V: Eq + Hash + Clone + 'static,
+		S: Subcommittee<V> + Hash + Clone + 'static,
 	> {
-		pub certificate_set: TestCertificateSet<I, V, S>,
+		pub certificate_set: TestCertificateSet<Index<I>, Value<V>, Sub<S>>,
 		pub sampler: TestSampler,
 	}
 
-	impl<I: Eq + Hash, V: Eq + 'static + Hash, S: Subcommittee<V> + Hash>
+	impl<
+			I: Eq + Hash + Clone + TextIndexabled + 'static,
+			V: Eq + Hash + Clone + 'static,
+			S: Subcommittee<V> + Hash + Clone + 'static,
+		>
 		ResampleAgreementData<
 			TestResampleParabyzantineData<I, V, S>,
 			TestResampleAgreementSpec<I, V, S>,
 		> for TestResampleAgreementData<I, V, S>
 	{
-		fn certificate_set(&self) -> &TestCertificateSet<I, V, S> {
+		fn certificate_set(&self) -> &TestCertificateSet<Index<I>, Value<V>, Sub<S>> {
 			&self.certificate_set
 		}
-		fn certificate_set_mut(&mut self) -> &mut TestCertificateSet<I, V, S> {
+		fn certificate_set_mut(&mut self) -> &mut TestCertificateSet<Index<I>, Value<V>, Sub<S>> {
 			&mut self.certificate_set
 		}
 
 		fn certificate_query_plan(
 			&mut self,
-			index: &<TestResampleAgreementSpec<I, V, S> as ResampleAgreementSpec>::Index,
-		) -> <TestResampleAgreementSpec<I, V, S> as ResampleAgreementSpec>::CertificateQueryPlan {
+			_index: &<TestResampleAgreementSpec<I, V, S> as ResampleAgreementSpec<
+				TestResampleParabyzantineData<I, V, S>,
+			>>::Index,
+		) -> <TestResampleAgreementSpec<I, V, S> as ResampleAgreementSpec<
+			TestResampleParabyzantineData<I, V, S>,
+		>>::CertificateQueryPlan {
+			MatchingTuple::new()
+		}
+
+		fn sampler(&self) -> &TestSampler {
+			&self.sampler
+		}
+		fn sampler_mut(&mut self) -> &mut TestSampler {
+			&mut self.sampler
+		}
+		fn index_subcommittee_agreement_query_plan(&mut self) -> MatchingTuple<(Index<I>, Sub<S>)> {
+			MatchingTuple::new()
 		}
 	}
 }
