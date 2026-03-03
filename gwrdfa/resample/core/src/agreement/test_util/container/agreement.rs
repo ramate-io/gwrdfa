@@ -3,6 +3,7 @@ use crate::agreement::{Resample, Subcommittee};
 use gwrdfa_container::{Component, ContainerGiving, ContainerStores, Delta, DeltasContainer};
 use parabyzantine::agreement::Agreement;
 
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 /// A container for an agreement.
 pub struct TestResampleAgreementContainer<I: Eq, V: Eq + 'static, S: Subcommittee<V>> {
 	pub agreement: Component<Agreement>,
@@ -10,6 +11,24 @@ pub struct TestResampleAgreementContainer<I: Eq, V: Eq + 'static, S: Subcommitte
 	pub index: Component<Index<I>>,
 	pub value: Component<Value<V>>,
 	pub subcommittee: Component<Sub<S>>,
+}
+
+/// A [ContainerGiving] implementation for [Agreement].
+impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<Agreement>
+	for TestResampleAgreementContainer<I, V, S>
+{
+	fn as_component(&self) -> Component<&Agreement> {
+		self.agreement.as_ref()
+	}
+}
+
+/// A [ContainerGiving] implementation for [Resample].
+impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<Resample>
+	for TestResampleAgreementContainer<I, V, S>
+{
+	fn as_component(&self) -> Component<&Resample> {
+		self.resample.as_ref()
+	}
 }
 
 impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<Index<I>>

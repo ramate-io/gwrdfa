@@ -29,7 +29,7 @@ pub mod test {
 		vec::Vec,
 	};
 
-	#[derive(Debug, Eq, PartialEq, Clone, Hash)]
+	#[derive(Debug, Eq, PartialEq, Clone, Hash, Default)]
 	pub struct TestSubcommittee<Sender: PartialEq + Eq + PartialOrd + Ord + Hash + Clone> {
 		members: BTreeSet<Sender>,
 	}
@@ -41,6 +41,11 @@ pub mod test {
 
 		pub fn senders(&self) -> impl Iterator<Item = &Sender> {
 			self.members.iter()
+		}
+
+		pub fn with_members(mut self, members: impl Iterator<Item = Sender>) -> Self {
+			self.members.extend(members);
+			self
 		}
 
 		pub fn add_member(&mut self, member: Sender) {

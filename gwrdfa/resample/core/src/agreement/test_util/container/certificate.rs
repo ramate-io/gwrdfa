@@ -3,6 +3,7 @@ use crate::agreement::Subcommittee;
 use gwrdfa_container::{Component, ContainerGiving, Delta, DeltasContainer};
 
 /// A container for a certificate.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct TestResampleCertificateContainer<I: Eq, V: Eq + 'static, S: Subcommittee<V>> {
 	pub index: Component<Index<I>>,
 	pub value: Component<Value<V>>,

@@ -23,6 +23,14 @@ impl<T: Sized> Component<T> {
 			Self::Absent => Component::Absent,
 		}
 	}
+
+	pub fn is_present(&self) -> bool {
+		matches!(self, Self::Present(_))
+	}
+
+	pub fn is_absent(&self) -> bool {
+		matches!(self, Self::Absent)
+	}
 }
 
 /// A trait representing valid containers for bundles.

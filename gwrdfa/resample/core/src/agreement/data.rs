@@ -136,7 +136,7 @@ pub mod test {
 	}
 
 	#[test]
-	fn test_test_resample_agreement_data() {
+	fn test_esample_agreement_data() {
 		let mut data = TestResampleAgreementData::<u32, u32, TestSubcommittee<u32>>::new();
 		let index = Index::new(0);
 		let value = Value::new(0);

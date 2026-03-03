@@ -201,11 +201,13 @@ impl<Binding: ResampleAgreementBinding> ResampleAgreement<Binding> {
 	/// This is most useful for experimenting and testing.
 	pub fn resample_agreement(
 		&mut self,
-		agreement_data: &<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Data,
+		agreement_data: &mut <Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Data,
 	) {
 		let mut agreement_world = agreement_data.parabyzantine_agreement_world();
 
 		self.update_parabyzantine_agreement(&mut agreement_world);
+
+		agreement_data.commit_parabyzantine_agreement(agreement_world.into());
 	}
 }
 
@@ -219,10 +221,29 @@ impl ResampleAgreementBinding for NoOp {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use crate::agreement::data::test::TestResampleAgreementData;
+	use crate::agreement::spec::test::TestResampleAgreementSpec;
+	use crate::agreement::subcommittee::test::TestSubcommittee;
+	use crate::agreement::test_util::container::TestResampleAgreementContainer;
+	use crate::agreement::test_util::container::TestResampleCertificateContainer;
+	use crate::agreement::test_util::container::TestResampleParabyzantineData;
+	use crate::agreement::test_util::*;
+	use gwrdfa_container::query::matching_tuple::MatchingTuple;
+	use gwrdfa_container::{Component, ContainerEntity};
+	use parabyzantine::buffer::{Bufferlike, Stores};
 	use parabyzantine::{
 		agreement::Agreement, task::Task, AgreementAction, AgreementHandler, DataBinding,
 		Parabyzantine, Spec, TaskAction, TaskHandler,
 	};
+	use std::vec;
+	use std::vec::Vec;
+
+	impl ResampleAgreementBinding for TestResampleAgreementData<u32, u32, TestSubcommittee<u32>> {
+		type ParabyzantineAgreementDataBinding =
+			TestResampleParabyzantineData<u32, u32, TestSubcommittee<u32>>;
+		type ResampleAgreementSpec = TestResampleAgreementSpec<u32, u32, TestSubcommittee<u32>>;
+		type ResampleAgreementData = TestResampleAgreementData<u32, u32, TestSubcommittee<u32>>;
+	}
 
 	#[test]
 	fn test_noop_resample_agreement_noops() {
@@ -241,5 +262,53 @@ mod tests {
 			task_handler: NoOp,
 		};
 		parabyzantine.update_agreement(Agreement);
+	}
+
+	#[test]
+	fn test_resample_agreement_with_test_util() {
+		let mut resample_agreement = ResampleAgreement::<
+			TestResampleAgreementData<u32, u32, TestSubcommittee<u32>>,
+		>(TestResampleAgreementData::new());
+
+		// Insert genesis agreement
+		let genesis: Index<u32> = Index::new(0);
+		let genesis_subcommittee: Sub<TestSubcommittee<u32>> =
+			Sub::new(TestSubcommittee::new().with_members(vec![1, 2, 3, 4, 5, 6, 7].into_iter()));
+		let mut agreement_data =
+			TestResampleParabyzantineData::<u32, u32, TestSubcommittee<u32>>::new();
+
+		let genesis_agreement_container = TestResampleAgreementContainer {
+			agreement: Component::Present(Agreement),
+			index: Component::Present(genesis),
+			subcommittee: Component::Present(genesis_subcommittee.clone()),
+			..Default::default()
+		};
+		agreement_data
+			.parabyzantine_agreement_agreement_buffer_mut()
+			.insert_container(genesis_agreement_container.clone());
+
+		// Insert a certificate from the genesis subcommittee
+		agreement_data
+			.parabyzantine_agreement_certificate_buffer_mut()
+			.insert_container(TestResampleCertificateContainer {
+				index: Component::Present(Index::new(0)),
+				value: Component::Present(Value::new(1)),
+				subcommittee: Component::Present(genesis_subcommittee.clone()),
+				..Default::default()
+			});
+
+		// Run the resample agreement
+		resample_agreement.resample_agreement(&mut agreement_data);
+
+		// We should now be able to query for a new agreement on a value for that index
+		let agreement_containers = agreement_data
+			.parabyzantine_agreement_agreement_buffer()
+			.iter()
+			.map(|(_entity, container)| container.clone())
+			.collect::<Vec<_>>();
+		assert_eq!(agreement_containers.len(), 3);
+
+		// The 0th index should still be the genesis index agreement
+		assert_eq!(agreement_containers[0], genesis_agreement_container);
 	}
 }
