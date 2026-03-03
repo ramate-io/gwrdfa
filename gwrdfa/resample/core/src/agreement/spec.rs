@@ -104,15 +104,16 @@ pub mod test {
 	use crate::agreement::test_util::{Index, Sub, Value};
 	use core::marker::PhantomData;
 	use gwrdfa_container::query::matching_tuple::{MatchingTuple, MatchingTupleQuery};
+	use std::hash::Hash;
 
 	pub struct TestResampleAgreementSpec<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>> {
 		__marker: PhantomData<(Index, Value, Sub)>,
 	}
 
 	impl<
-			I: Eq + Clone + TextIndexabled + 'static,
-			V: Eq + 'static + Clone,
-			S: Subcommittee<V> + Clone + 'static,
+			I: Eq + Clone + Hash + TextIndexabled + 'static,
+			V: Eq + Clone + Hash + 'static,
+			S: Subcommittee<V> + Clone + Hash + 'static,
 		> ResampleAgreementSpec<TestResampleParabyzantineData<I, V, S>>
 		for TestResampleAgreementSpec<Index<I>, Value<V>, Sub<S>>
 	{
