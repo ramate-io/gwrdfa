@@ -77,21 +77,26 @@ pub mod test {
 	};
 	use parabyzantine::agreement::{Agreement, ParabyzantineAgreementDataSpec};
 
+	/// A wrapper for an index s.t. we guarantee disjoint types.
 	#[derive(Debug, Clone, Default, PartialEq, Eq)]
 	pub struct Index<T: Eq>(pub T);
 
+	/// A wrapper for a value s.t. we guarantee disjoint types.
 	#[derive(Debug, Clone, Default, PartialEq, Eq)]
 	pub struct Value<T: Eq + 'static>(pub T);
 
+	/// A wrapper for a subcommittee s.t. we guarantee disjoint types.
 	#[derive(Debug, Clone, Default, PartialEq, Eq)]
 	pub struct Sub<T: Eq>(pub T);
 
+	/// A container for a certificate.
 	pub struct TestResampleCertificateContainer<I: Eq, V: Eq + 'static, S: Subcommittee<V>> {
 		pub index: Component<Index<I>>,
 		pub value: Component<Value<V>>,
 		pub subcommittee: Component<Sub<S>>,
 	}
 
+	/// A [ContainerGiving] implementation for [Index<I>].
 	impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<Index<I>>
 		for TestResampleCertificateContainer<I, V, S>
 	{
@@ -100,6 +105,7 @@ pub mod test {
 		}
 	}
 
+	/// A [ContainerGiving] implementation for [Value<V>].
 	impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<Value<V>>
 		for TestResampleCertificateContainer<I, V, S>
 	{
@@ -108,6 +114,7 @@ pub mod test {
 		}
 	}
 
+	/// A [ContainerGiving] implementation for [Sub<S>].
 	impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<Sub<S>>
 		for TestResampleCertificateContainer<I, V, S>
 	{
@@ -116,12 +123,14 @@ pub mod test {
 		}
 	}
 
+	/// We want the delta buffer to be able to hold the deltas for the index, value, and subcommittee.
 	pub struct TestResampleCertificateDelta<I: Eq, V: Eq + 'static, S: Subcommittee<V>> {
 		pub index: Delta<Index<I>>,
 		pub value: Delta<Value<V>>,
 		pub subcommittee: Delta<Sub<S>>,
 	}
 
+	/// A [DeltasContainer] implementation for [TestResampleCertificateContainer<I, V, S>].
 	impl<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>>
 		DeltasContainer<TestResampleCertificateContainer<Index, Value, Sub>>
 		for TestResampleCertificateDelta<Index, Value, Sub>
@@ -141,6 +150,7 @@ pub mod test {
 		}
 	}
 
+	/// A container for an agreement.
 	pub struct TestResampleAgreementContainer<
 		Index: Eq,
 		Value: Eq + 'static,
@@ -153,6 +163,7 @@ pub mod test {
 		pub subcommittee: Component<Sub>,
 	}
 
+	/// A [DeltasContainer] implementation for [TestResampleAgreementContainer<I, V, S>].
 	pub struct TestResampleAgreementDelta<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>> {
 		pub agreement: Delta<Agreement>,
 		pub resample: Delta<Resample>,
@@ -161,6 +172,7 @@ pub mod test {
 		pub subcommittee: Delta<Sub>,
 	}
 
+	/// A [DeltasContainer] implementation for [TestResampleAgreementContainer<I, V, S>].
 	impl<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>>
 		DeltasContainer<TestResampleAgreementContainer<Index, Value, Sub>>
 		for TestResampleAgreementDelta<Index, Value, Sub>
@@ -195,9 +207,11 @@ pub mod test {
 	impl<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>> ParabyzantineAgreementDataSpec
 		for TestResampleParabyzantineSpec<Index, Value, Sub>
 	{
-		type CertificateEntity = NoOp;
-		type CertificateBuffer = NoOp;
-		type CertificateDraftBuffer = NoOp;
+		type CertificateEntity = ContainerEntity;
+		type CertificateBuffer =
+			ContainerEntityBuffer<TestResampleCertificateContainer<Index, Value, Sub>>;
+		type CertificateDraftBuffer =
+			ContainerEntityDraftBuffer<TestResampleCertificateDelta<Index, Value, Sub>>;
 		type AgreementEntity = ContainerEntity;
 		type AgreementBuffer =
 			ContainerEntityBuffer<TestResampleAgreementContainer<Index, Value, Sub>>;
