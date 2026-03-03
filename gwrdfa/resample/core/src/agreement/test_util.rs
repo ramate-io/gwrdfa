@@ -34,7 +34,7 @@ impl TextIndexabled for u32 {
 	}
 }
 
-impl<T: Eq + 'static> TextIndexabled for Index<T> {
+impl<T: Eq + 'static + TextIndexabled> TextIndexabled for Index<T> {
 	fn next(&self) -> Option<Self> {
 		self.0.next().map(|index| Index(index))
 	}
