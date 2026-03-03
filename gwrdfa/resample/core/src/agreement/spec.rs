@@ -120,8 +120,8 @@ pub mod test {
 		type Value = Value<V>;
 		type Subcommittee = Sub<S>;
 		type IndexSubcommitteeAgreementQuery<'a> =
-			MatchingTupleQuery<'a, TestResampleAgreementContainer<I, V, S>, (I, S)>;
-		type IndexSubcommitteeAgreementQueryPlan = MatchingTuple<(I, S)>;
+			MatchingTupleQuery<'a, TestResampleAgreementContainer<I, V, S>, (Index<I>, Sub<S>)>;
+		type IndexSubcommitteeAgreementQueryPlan = MatchingTuple<(Index<I>, Sub<S>)>;
 		type CertificateQuery<'a> =
 			MatchingTupleQuery<'a, TestResampleCertificateContainer<I, V, S>, (I, V, S)>;
 		type CertificateQueryPlan = MatchingTuple<(I, V, S)>;

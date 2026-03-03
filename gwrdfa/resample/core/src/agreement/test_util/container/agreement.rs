@@ -1,24 +1,47 @@
+use crate::agreement::test_util::{Index, Sub, Value};
 use crate::agreement::{Resample, Subcommittee};
-use gwrdfa_container::{Component, Delta, DeltasContainer};
+use gwrdfa_container::{Component, ContainerGiving, Delta, DeltasContainer};
 use parabyzantine::agreement::Agreement;
 
 /// A container for an agreement.
-pub struct TestResampleAgreementContainer<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>>
-{
+pub struct TestResampleAgreementContainer<I: Eq, V: Eq + 'static, S: Subcommittee<V>> {
 	pub agreement: Component<Agreement>,
 	pub resample: Component<Resample>,
-	pub index: Component<Index>,
-	pub value: Component<Value>,
-	pub subcommittee: Component<Sub>,
+	pub index: Component<Index<I>>,
+	pub value: Component<Value<V>>,
+	pub subcommittee: Component<Sub<S>>,
 }
 
+impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<Index<I>>
+	for TestResampleAgreementContainer<I, V, S>
+{
+	fn as_component(&self) -> Component<&Index<I>> {
+		self.index.as_ref()
+	}
+}
+
+impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<Value<V>>
+	for TestResampleAgreementContainer<I, V, S>
+{
+	fn as_component(&self) -> Component<&Value<V>> {
+		self.value.as_ref()
+	}
+}
+
+impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<Sub<S>>
+	for TestResampleAgreementContainer<I, V, S>
+{
+	fn as_component(&self) -> Component<&Sub<S>> {
+		self.subcommittee.as_ref()
+	}
+}
 /// A [DeltasContainer] implementation for [TestResampleAgreementContainer<I, V, S>].
-pub struct TestResampleAgreementDelta<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>> {
+pub struct TestResampleAgreementDelta<I: Eq, V: Eq + 'static, S: Subcommittee<V>> {
 	pub agreement: Delta<Agreement>,
 	pub resample: Delta<Resample>,
-	pub index: Delta<Index>,
-	pub value: Delta<Value>,
-	pub subcommittee: Delta<Sub>,
+	pub index: Delta<Index<I>>,
+	pub value: Delta<Value<V>>,
+	pub subcommittee: Delta<Sub<S>>,
 }
 
 /// A [DeltasContainer] implementation for [TestResampleAgreementContainer<I, V, S>].
