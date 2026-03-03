@@ -38,6 +38,86 @@ impl<'a, T: ContainerGiving<A> + ContainerGiving<B> + Sized, A: 'a, B: 'a>
 	}
 }
 
+impl<
+		'a,
+		T: ContainerGiving<A> + ContainerGiving<B> + ContainerGiving<C> + Sized,
+		A: 'a,
+		B: 'a,
+		C: 'a,
+	> Querylike<ContainerEntity, (&'a A, &'a B, &'a C)> for MatchingTupleQuery<'a, T, (A, B, C)>
+{
+	fn next(&mut self) -> Option<(ContainerEntity, (&'a A, &'a B, &'a C))> {
+		while let Some((entity, container)) = self.iter.next() {
+			if let (Component::Present(a), Component::Present(b), Component::Present(c)) =
+				(container.as_component(), container.as_component(), container.as_component())
+			{
+				return Some((*entity, (a, b, c)));
+			}
+		}
+		None
+	}
+
+	fn get(&self, entity: ContainerEntity) -> Option<(&'a A, &'a B, &'a C)> {
+		let a = self.buffer.get(entity).map(|container| container.as_component());
+		let b = self.buffer.get(entity).map(|container| container.as_component());
+		let c = self.buffer.get(entity).map(|container| container.as_component());
+		match (a, b, c) {
+			(
+				Some(Component::Present(a)),
+				Some(Component::Present(b)),
+				Some(Component::Present(c)),
+			) => Some((a, b, c)),
+			_ => None,
+		}
+	}
+}
+
+impl<
+		'a,
+		T: ContainerGiving<A> + ContainerGiving<B> + ContainerGiving<C> + ContainerGiving<D> + Sized,
+		A: 'a,
+		B: 'a,
+		C: 'a,
+		D: 'a,
+	> Querylike<ContainerEntity, (&'a A, &'a B, &'a C, &'a D)>
+	for MatchingTupleQuery<'a, T, (A, B, C, D)>
+{
+	fn next(&mut self) -> Option<(ContainerEntity, (&'a A, &'a B, &'a C, &'a D))> {
+		while let Some((entity, container)) = self.iter.next() {
+			if let (
+				Component::Present(a),
+				Component::Present(b),
+				Component::Present(c),
+				Component::Present(d),
+			) = (
+				container.as_component(),
+				container.as_component(),
+				container.as_component(),
+				container.as_component(),
+			) {
+				return Some((*entity, (a, b, c, d)));
+			}
+		}
+		None
+	}
+
+	fn get(&self, entity: ContainerEntity) -> Option<(&'a A, &'a B, &'a C, &'a D)> {
+		let a = self.buffer.get(entity).map(|container| container.as_component());
+		let b = self.buffer.get(entity).map(|container| container.as_component());
+		let c = self.buffer.get(entity).map(|container| container.as_component());
+		let d = self.buffer.get(entity).map(|container| container.as_component());
+		match (a, b, c, d) {
+			(
+				Some(Component::Present(a)),
+				Some(Component::Present(b)),
+				Some(Component::Present(c)),
+				Some(Component::Present(d)),
+			) => Some((a, b, c, d)),
+			_ => None,
+		}
+	}
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct MatchingTuple<T>(PhantomData<T>);
 
