@@ -34,16 +34,7 @@ impl<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>> Sampler<Index, Va
 pub mod test {
 	use super::*;
 	use crate::agreement::subcommittee::test::TestSubcommittee;
-
-	pub trait TextIndexabled: Sized {
-		fn next(&self) -> Option<Self>;
-	}
-
-	impl TextIndexabled for u32 {
-		fn next(&self) -> Option<Self> {
-			Some(self + 1)
-		}
-	}
+	use crate::agreement::test_util::TextIndexabled;
 
 	#[derive(Debug, Clone, Default)]
 	pub struct TestSampler;

@@ -23,3 +23,19 @@ impl<T: Eq + 'static + Subcommittee<V>, V: Eq + 'static> Subcommittee<Value<V>> 
 			.map(|value| Value(value))
 	}
 }
+
+pub trait TextIndexabled: Sized {
+	fn next(&self) -> Option<Self>;
+}
+
+impl TextIndexabled for u32 {
+	fn next(&self) -> Option<Self> {
+		Some(self + 1)
+	}
+}
+
+impl<T: Eq + 'static> TextIndexabled for Index<T> {
+	fn next(&self) -> Option<Self> {
+		self.0.next().map(|index| Index(index))
+	}
+}

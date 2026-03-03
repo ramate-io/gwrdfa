@@ -94,9 +94,13 @@ where
 #[cfg(test)]
 pub mod test {
 	use super::*;
+	use crate::agreement::certificate::test::TestCertificateSet;
+	use crate::agreement::sampler::test::TestSampler;
 	use crate::agreement::test_util::container::{
-		TestResampleAgreementContainer, TestResampleParabyzantineData,
+		TestResampleAgreementContainer, TestResampleCertificateContainer,
+		TestResampleParabyzantineData,
 	};
+	use crate::agreement::test_util::TextIndexabled;
 	use crate::agreement::test_util::{Index, Sub, Value};
 	use core::marker::PhantomData;
 	use gwrdfa_container::query::matching_tuple::{MatchingTuple, MatchingTupleQuery};
@@ -105,8 +109,11 @@ pub mod test {
 		__marker: PhantomData<(Index, Value, Sub)>,
 	}
 
-	impl<I: Eq + Clone, V: Eq + 'static + Clone, S: Subcommittee<V> + Clone>
-		ResampleAgreementSpec<TestResampleParabyzantineData<Index<I>, Value<V>, Sub<S>>>
+	impl<
+			I: Eq + Clone + TextIndexabled + 'static,
+			V: Eq + 'static + Clone,
+			S: Subcommittee<V> + Clone + 'static,
+		> ResampleAgreementSpec<TestResampleParabyzantineData<Index<I>, Value<V>, Sub<S>>>
 		for TestResampleAgreementSpec<Index<I>, Value<V>, Sub<S>>
 	{
 		type Index = Index<I>;
@@ -115,9 +122,10 @@ pub mod test {
 		type IndexSubcommitteeAgreementQuery<'a> =
 			MatchingTupleQuery<'a, TestResampleAgreementContainer<I, V, S>, (I, S)>;
 		type IndexSubcommitteeAgreementQueryPlan = MatchingTuple<(I, S)>;
-		type CertificateQuery<'a> = NoOp;
-		type CertificateQueryPlan = NoOp;
-		type CertificateSet = TestCertificateSet<Index, Value, Sub>;
+		type CertificateQuery<'a> =
+			MatchingTupleQuery<'a, TestResampleCertificateContainer<I, V, S>, (I, V, S)>;
+		type CertificateQueryPlan = MatchingTuple<(I, V, S)>;
+		type CertificateSet = TestCertificateSet<Index<I>, Value<V>, Sub<S>>;
 		type Sampler = TestSampler;
 	}
 }
