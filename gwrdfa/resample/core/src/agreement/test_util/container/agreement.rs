@@ -1,6 +1,6 @@
 use crate::agreement::test_util::{Index, Sub, Value};
 use crate::agreement::{Resample, Subcommittee};
-use gwrdfa_container::{Component, ContainerGiving, Delta, DeltasContainer};
+use gwrdfa_container::{Component, ContainerGiving, ContainerStores, Delta, DeltasContainer};
 use parabyzantine::agreement::Agreement;
 
 /// A container for an agreement.
@@ -42,6 +42,166 @@ pub struct TestResampleAgreementDelta<I: Eq, V: Eq + 'static, S: Subcommittee<V>
 	pub index: Delta<Index<I>>,
 	pub value: Delta<Value<V>>,
 	pub subcommittee: Delta<Sub<S>>,
+}
+
+impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Agreement>
+	for TestResampleAgreementDelta<I, V, S>
+{
+	fn from_data(data: Agreement) -> Self {
+		Self {
+			agreement: Delta::Modified(data),
+			resample: Delta::Unchanged,
+			index: Delta::Unchanged,
+			value: Delta::Unchanged,
+			subcommittee: Delta::Unchanged,
+		}
+	}
+
+	fn from_removed_data() -> Self {
+		Self {
+			agreement: Delta::Removed,
+			resample: Delta::Unchanged,
+			index: Delta::Unchanged,
+			value: Delta::Unchanged,
+			subcommittee: Delta::Unchanged,
+		}
+	}
+
+	fn update_with_data(&mut self, data: Agreement) {
+		self.agreement = Delta::Modified(data);
+	}
+
+	fn remove_from_container(&mut self) {
+		self.agreement = Delta::Removed;
+	}
+}
+
+impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Resample>
+	for TestResampleAgreementDelta<I, V, S>
+{
+	fn from_data(data: Resample) -> Self {
+		Self {
+			agreement: Delta::Unchanged,
+			resample: Delta::Modified(data),
+			index: Delta::Unchanged,
+			value: Delta::Unchanged,
+			subcommittee: Delta::Unchanged,
+		}
+	}
+
+	fn from_removed_data() -> Self {
+		Self {
+			agreement: Delta::Unchanged,
+			resample: Delta::Removed,
+			index: Delta::Unchanged,
+			value: Delta::Unchanged,
+			subcommittee: Delta::Unchanged,
+		}
+	}
+
+	fn update_with_data(&mut self, data: Resample) {
+		self.resample = Delta::Modified(data);
+	}
+
+	fn remove_from_container(&mut self) {
+		self.resample = Delta::Removed;
+	}
+}
+
+impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Index<I>>
+	for TestResampleAgreementDelta<I, V, S>
+{
+	fn from_data(data: Index<I>) -> Self {
+		Self {
+			agreement: Delta::Unchanged,
+			resample: Delta::Unchanged,
+			index: Delta::Modified(data),
+			value: Delta::Unchanged,
+			subcommittee: Delta::Unchanged,
+		}
+	}
+
+	fn from_removed_data() -> Self {
+		Self {
+			agreement: Delta::Unchanged,
+			resample: Delta::Unchanged,
+			index: Delta::Removed,
+			value: Delta::Unchanged,
+			subcommittee: Delta::Unchanged,
+		}
+	}
+
+	fn update_with_data(&mut self, data: Index<I>) {
+		self.index = Delta::Modified(data);
+	}
+
+	fn remove_from_container(&mut self) {
+		self.index = Delta::Removed;
+	}
+}
+
+impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Value<V>>
+	for TestResampleAgreementDelta<I, V, S>
+{
+	fn from_data(data: Value<V>) -> Self {
+		Self {
+			agreement: Delta::Unchanged,
+			resample: Delta::Unchanged,
+			index: Delta::Unchanged,
+			value: Delta::Modified(data),
+			subcommittee: Delta::Unchanged,
+		}
+	}
+
+	fn from_removed_data() -> Self {
+		Self {
+			agreement: Delta::Unchanged,
+			resample: Delta::Unchanged,
+			index: Delta::Unchanged,
+			value: Delta::Removed,
+			subcommittee: Delta::Unchanged,
+		}
+	}
+
+	fn update_with_data(&mut self, data: Value<V>) {
+		self.value = Delta::Modified(data);
+	}
+
+	fn remove_from_container(&mut self) {
+		self.value = Delta::Removed;
+	}
+}
+
+impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Sub<S>>
+	for TestResampleAgreementDelta<I, V, S>
+{
+	fn from_data(data: Sub<S>) -> Self {
+		Self {
+			agreement: Delta::Unchanged,
+			resample: Delta::Unchanged,
+			index: Delta::Unchanged,
+			value: Delta::Unchanged,
+			subcommittee: Delta::Modified(data),
+		}
+	}
+
+	fn from_removed_data() -> Self {
+		Self {
+			agreement: Delta::Unchanged,
+			resample: Delta::Unchanged,
+			index: Delta::Unchanged,
+			value: Delta::Unchanged,
+			subcommittee: Delta::Removed,
+		}
+	}
+
+	fn update_with_data(&mut self, data: Sub<S>) {
+		self.subcommittee = Delta::Modified(data);
+	}
+
+	fn remove_from_container(&mut self) {
+		self.subcommittee = Delta::Removed;
+	}
 }
 
 /// A [DeltasContainer] implementation for [TestResampleAgreementContainer<I, V, S>].
