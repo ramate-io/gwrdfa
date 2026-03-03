@@ -73,6 +73,7 @@ pub mod test {
 	use crate::agreement::sampler::test::TestSampler;
 	use crate::agreement::test_util::container::*;
 	use crate::agreement::Subcommittee;
+	use gwrdfa_container::query::matching_tuple::MatchingTuple;
 	use std::hash::Hash;
 
 	pub struct TestResampleAgreementData<
@@ -82,5 +83,25 @@ pub mod test {
 	> {
 		pub certificate_set: TestCertificateSet<I, V, S>,
 		pub sampler: TestSampler,
+	}
+
+	impl<I: Eq + Hash, V: Eq + 'static + Hash, S: Subcommittee<V> + Hash>
+		ResampleAgreementData<
+			TestResampleParabyzantineData<I, V, S>,
+			TestResampleAgreementSpec<I, V, S>,
+		> for TestResampleAgreementData<I, V, S>
+	{
+		fn certificate_set(&self) -> &TestCertificateSet<I, V, S> {
+			&self.certificate_set
+		}
+		fn certificate_set_mut(&mut self) -> &mut TestCertificateSet<I, V, S> {
+			&mut self.certificate_set
+		}
+
+		fn certificate_query_plan(
+			&mut self,
+			index: &<TestResampleAgreementSpec<I, V, S> as ResampleAgreementSpec>::Index,
+		) -> <TestResampleAgreementSpec<I, V, S> as ResampleAgreementSpec>::CertificateQueryPlan {
+		}
 	}
 }

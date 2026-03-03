@@ -5,7 +5,7 @@ use super::{
 };
 use crate::agreement::Subcommittee;
 use gwrdfa_container::{ContainerEntityBuffer, ContainerEntityDraftBuffer};
-use parabyzantine::agreement::ParabyzantineAgreementData;
+use parabyzantine::agreement::{ParabyzantineAgreementData, ParabyzantineAgreementDataBinding};
 
 pub struct TestResampleParabyzantineData<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>> {
 	pub certificate_buffer:
@@ -58,4 +58,11 @@ impl<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>>
 	) -> ContainerEntityDraftBuffer<TestResampleAgreementDelta<Index, Value, Sub>> {
 		ContainerEntityDraftBuffer::new()
 	}
+}
+
+impl<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>> ParabyzantineAgreementDataBinding
+	for TestResampleParabyzantineData<Index, Value, Sub>
+{
+	type Spec = TestResampleParabyzantineSpec<Index, Value, Sub>;
+	type Data = Self;
 }

@@ -90,3 +90,34 @@ where
 	type CertificateSet = NoOp;
 	type Sampler = NoOp;
 }
+
+#[cfg(test)]
+pub mod test {
+	use super::*;
+	use crate::agreement::test_util::container::{
+		TestResampleAgreementContainer, TestResampleParabyzantineData,
+	};
+	use crate::agreement::test_util::{Index, Sub, Value};
+	use core::marker::PhantomData;
+	use gwrdfa_container::query::matching_tuple::{MatchingTuple, MatchingTupleQuery};
+
+	pub struct TestResampleAgreementSpec<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>> {
+		__marker: PhantomData<(Index, Value, Sub)>,
+	}
+
+	impl<I: Eq + Clone, V: Eq + 'static + Clone, S: Subcommittee<V> + Clone>
+		ResampleAgreementSpec<TestResampleParabyzantineData<Index<I>, Value<V>, Sub<S>>>
+		for TestResampleAgreementSpec<Index<I>, Value<V>, Sub<S>>
+	{
+		type Index = Index<I>;
+		type Value = Value<V>;
+		type Subcommittee = Sub<S>;
+		type IndexSubcommitteeAgreementQuery<'a> =
+			MatchingTupleQuery<'a, TestResampleAgreementContainer<I, V, S>, (I, S)>;
+		type IndexSubcommitteeAgreementQueryPlan = MatchingTuple<(I, S)>;
+		type CertificateQuery<'a> = NoOp;
+		type CertificateQueryPlan = NoOp;
+		type CertificateSet = TestCertificateSet<Index, Value, Sub>;
+		type Sampler = TestSampler;
+	}
+}
