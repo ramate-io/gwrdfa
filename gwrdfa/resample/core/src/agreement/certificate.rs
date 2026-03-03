@@ -36,7 +36,7 @@ impl CertificateSet<NoOp, NoOp, NoOp> for NoOp {
 }
 
 #[cfg(test)]
-mod test {
+pub mod test {
 	use super::*;
 	use crate::agreement::subcommittee::test::TestSubcommittee;
 	use std::collections::{HashMap, HashSet};
@@ -46,29 +46,23 @@ mod test {
 
 	#[derive(Debug)]
 	pub struct TestCertificateSet<
-		Index: Eq + Copy + Hash,
-		Value: Eq + Copy + 'static + Hash,
+		Index: Eq + Hash,
+		Value: Eq + 'static + Hash,
 		Sub: Subcommittee<Value> + Hash,
 	> {
 		certs: HashMap<Index, HashSet<(Sub, Value)>>,
 	}
 
-	impl<
-			Index: Eq + Copy + Hash,
-			Value: Eq + Copy + 'static + Hash,
-			Sub: Subcommittee<Value> + Hash,
-		> TestCertificateSet<Index, Value, Sub>
+	impl<Index: Eq + Hash, Value: Eq + 'static + Hash, Sub: Subcommittee<Value> + Hash>
+		TestCertificateSet<Index, Value, Sub>
 	{
 		pub fn new() -> Self {
 			Self { certs: HashMap::new() }
 		}
 	}
 
-	impl<
-			Index: Eq + Copy + Hash,
-			Value: Eq + Copy + 'static + Hash,
-			Sub: Subcommittee<Value> + Hash,
-		> CertificateSet<Index, Value, Sub> for TestCertificateSet<Index, Value, Sub>
+	impl<Index: Eq + Hash, Value: Eq + 'static + Hash, Sub: Subcommittee<Value> + Hash>
+		CertificateSet<Index, Value, Sub> for TestCertificateSet<Index, Value, Sub>
 	{
 		fn insert(&mut self, index: Index, value: Value, subcommittee: Sub) {
 			self.certs.entry(index).or_insert(HashSet::new()).insert((subcommittee, value));

@@ -7,5 +7,5 @@ pub use certificate::*;
 pub mod spec;
 pub use spec::*;
 
-pub mod data;
-pub use data::*;
+pub mod parabyzantine_data;
+pub use parabyzantine_data::*;

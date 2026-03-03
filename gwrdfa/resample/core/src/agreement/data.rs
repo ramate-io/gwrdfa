@@ -69,13 +69,18 @@ where
 #[cfg(test)]
 pub mod test {
 	use super::*;
-	use crate::{agreement::Subcommittee, Resample};
-	use core::marker::PhantomData;
-	use gwrdfa_container::{
-		Component, ContainerEntity, ContainerEntityBuffer, ContainerEntityDraftBuffer,
-		ContainerGiving, Delta, DeltasContainer,
-	};
-	use parabyzantine::agreement::{
-		Agreement, ParabyzantineAgreementData, ParabyzantineAgreementDataSpec,
-	};
+	use crate::agreement::certificate::test::TestCertificateSet;
+	use crate::agreement::sampler::test::TestSampler;
+	use crate::agreement::test_util::container::*;
+	use crate::agreement::Subcommittee;
+	use std::hash::Hash;
+
+	pub struct TestResampleAgreementData<
+		I: Eq + Hash,
+		V: Eq + 'static + Hash,
+		S: Subcommittee<V> + Hash,
+	> {
+		pub certificate_set: TestCertificateSet<I, V, S>,
+		pub sampler: TestSampler,
+	}
 }
