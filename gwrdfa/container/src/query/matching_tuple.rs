@@ -144,6 +144,49 @@ where
 	}
 }
 
+impl<'a, T, A, B, C>
+	QueryPlanlike<
+		ContainerEntity,
+		&'a ContainerEntityBuffer<T>,
+		(&'a A, &'a B, &'a C),
+		MatchingTupleQuery<'a, T, (A, B, C)>,
+	> for MatchingTuple<(A, B, C)>
+where
+	T: ContainerGiving<A> + ContainerGiving<B> + ContainerGiving<C>,
+	A: 'a,
+	B: 'a,
+	C: 'a,
+{
+	fn into_query(
+		self,
+		buffer: &'a ContainerEntityBuffer<T>,
+	) -> MatchingTupleQuery<'a, T, (A, B, C)> {
+		MatchingTupleQuery::new(buffer)
+	}
+}
+
+impl<'a, T, A, B, C, D>
+	QueryPlanlike<
+		ContainerEntity,
+		&'a ContainerEntityBuffer<T>,
+		(&'a A, &'a B, &'a C, &'a D),
+		MatchingTupleQuery<'a, T, (A, B, C, D)>,
+	> for MatchingTuple<(A, B, C, D)>
+where
+	T: ContainerGiving<A> + ContainerGiving<B> + ContainerGiving<C> + ContainerGiving<D>,
+	A: 'a,
+	B: 'a,
+	C: 'a,
+	D: 'a,
+{
+	fn into_query(
+		self,
+		buffer: &'a ContainerEntityBuffer<T>,
+	) -> MatchingTupleQuery<'a, T, (A, B, C, D)> {
+		MatchingTupleQuery::new(buffer)
+	}
+}
+
 #[cfg(test)]
 mod test {
 	use super::*;
