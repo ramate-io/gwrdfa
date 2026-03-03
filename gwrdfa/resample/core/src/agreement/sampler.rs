@@ -39,6 +39,12 @@ pub mod test {
 	#[derive(Debug, Clone, Default)]
 	pub struct TestSampler;
 
+	impl TestSampler {
+		pub fn new() -> Self {
+			Self
+		}
+	}
+
 	impl<Index: Eq + TextIndexabled, Value: Eq + 'static, Sub: Subcommittee<Value> + Clone>
 		Sampler<Index, Value, Sub> for TestSampler
 	{

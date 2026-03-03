@@ -5,13 +5,31 @@ use crate::agreement::{Condition, Subcommittee};
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Index<T: Eq>(pub T);
 
+impl<T: Eq> Index<T> {
+	pub fn new(value: T) -> Self {
+		Self(value)
+	}
+}
+
 /// A wrapper for a value s.t. we guarantee disjoint types.
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Value<T: Eq + 'static>(pub T);
 
+impl<T: Eq + 'static> Value<T> {
+	pub fn new(value: T) -> Self {
+		Self(value)
+	}
+}
+
 /// A wrapper for a subcommittee s.t. we guarantee disjoint types.
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Sub<T: Eq>(pub T);
+
+impl<T: Eq> Sub<T> {
+	pub fn new(value: T) -> Self {
+		Self(value)
+	}
+}
 
 impl<T: Eq + 'static + Subcommittee<V>, V: Eq + 'static> Subcommittee<Value<V>> for Sub<T> {
 	fn condition<'a>(
