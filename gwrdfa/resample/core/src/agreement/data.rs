@@ -106,12 +106,8 @@ pub mod test {
 
 		fn certificate_query_plan(
 			&mut self,
-			_index: &<TestResampleAgreementSpec<I, V, S> as ResampleAgreementSpec<
-				TestResampleParabyzantineData<I, V, S>,
-			>>::Index,
-		) -> <TestResampleAgreementSpec<I, V, S> as ResampleAgreementSpec<
-			TestResampleParabyzantineData<I, V, S>,
-		>>::CertificateQueryPlan {
+			_index: &Index<I>,
+		) -> MatchingTuple<(Index<I>, Value<V>, Sub<S>)> {
 			MatchingTuple::new()
 		}
 
