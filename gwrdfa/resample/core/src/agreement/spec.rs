@@ -113,7 +113,7 @@ pub mod test {
 			I: Eq + Clone + TextIndexabled + 'static,
 			V: Eq + 'static + Clone,
 			S: Subcommittee<V> + Clone + 'static,
-		> ResampleAgreementSpec<TestResampleParabyzantineData<Index<I>, Value<V>, Sub<S>>>
+		> ResampleAgreementSpec<TestResampleParabyzantineData<I, V, S>>
 		for TestResampleAgreementSpec<Index<I>, Value<V>, Sub<S>>
 	{
 		type Index = Index<I>;
