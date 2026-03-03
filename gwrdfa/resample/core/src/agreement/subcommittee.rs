@@ -29,7 +29,7 @@ pub mod test {
 		vec::Vec,
 	};
 
-	#[derive(Debug, Eq, PartialEq, Clone, Hash, Default)]
+	#[derive(Debug, Eq, PartialEq, Clone, Hash, PartialOrd, Ord, Default)]
 	pub struct TestSubcommittee<Sender: PartialEq + Eq + PartialOrd + Ord + Hash + Clone> {
 		members: BTreeSet<Sender>,
 	}

@@ -1,6 +1,6 @@
 pub mod tuple;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Component<T: Sized> {
 	Present(T),
 	Absent,

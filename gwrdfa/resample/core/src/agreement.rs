@@ -235,6 +235,7 @@ mod tests {
 		agreement::Agreement, task::Task, AgreementAction, AgreementHandler, DataBinding,
 		Parabyzantine, Spec, TaskAction, TaskHandler,
 	};
+	use std::collections::BTreeSet;
 	use std::vec;
 	use std::vec::Vec;
 
@@ -305,10 +306,31 @@ mod tests {
 			.parabyzantine_agreement_agreement_buffer()
 			.iter()
 			.map(|(_entity, container)| container.clone())
-			.collect::<Vec<_>>();
+			.collect::<BTreeSet<_>>();
 		assert_eq!(agreement_containers.len(), 3);
 
-		// The 0th index should still be the genesis index agreement
-		assert_eq!(agreement_containers[0], genesis_agreement_container);
+		let reference_agreement_containers = vec![
+			genesis_agreement_container.clone(),
+			// Next subcommittee agreement
+			TestResampleAgreementContainer {
+				agreement: Component::Present(Agreement),
+				resample: Component::Present(Resample),
+				// Next index
+				index: Component::Present(Index::new(1)),
+				// still the same committee by the rule of the [TestSampler]
+				subcommittee: Component::Present(genesis_subcommittee.clone()),
+				..Default::default()
+			},
+			TestResampleAgreementContainer {
+				agreement: Component::Present(Agreement),
+				resample: Component::Present(Resample),
+				index: Component::Present(Index::new(0)),
+				value: Component::Present(Value::new(1)),
+				..Default::default()
+			},
+		]
+		.into_iter()
+		.collect::<BTreeSet<_>>();
+		assert_eq!(agreement_containers, reference_agreement_containers);
 	}
 }
