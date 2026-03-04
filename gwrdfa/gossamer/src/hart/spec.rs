@@ -4,33 +4,30 @@ use crate::{
 	GossamerMessage,
 };
 use parabyzantine::buffer::query::{QueryPlanlike, Querylike};
-use parabyzantine::hart::{ParabyzantineDataBinding, ParabyzantineDataSpec};
+use parabyzantine::hart::ParabyzantineData;
 
-pub trait GossamerSpec<Binding: ParabyzantineDataBinding>
+pub trait GossamerSpec<Data: ParabyzantineData>
 where
-	<Binding::Spec as ParabyzantineDataSpec>::MessageDraftBuffer: GossamerMessageStorage<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		Self::Message,
-	>,
+	Data::MessageDraftBuffer: GossamerMessageStorage<Data::MessageEntity, Self::Message>,
 {
 	type Message: GossamerMessage;
 
 	type OutQuery<'a>: Querylike<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
+		Data::MessageEntity,
 		(&'a Out, &'a Self::Message),
 	>
 	where
 		Self::Message: 'a;
 
 	type OutQueryPlan: for<'a> QueryPlanlike<
-		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		&'a <Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
+		Data::MessageEntity,
+		&'a Data::MessageBuffer,
 		(&'a Out, &'a Self::Message),
 		Self::OutQuery<'a>,
 	>;
 
 	type Messages: GossamerMessages<
-		Binding,
+		Data,
 		Message = Self::Message,
 		OutQueryPlan = Self::OutQueryPlan,
 	>;
