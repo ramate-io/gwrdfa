@@ -97,21 +97,49 @@ mod tests {
 		// Keep sending messages from the sender gossamer instance.
 		let mut sender = gossamers.pop().ok_or(anyhow::anyhow!("No sender found"))?;
 
-		// Try to send the message a few times.
-		// We often have to wait for the peers to come online.
+		// Try to send the message a few times while peers converge.
+		// Confirmation here only means publish accepted by local task.
+		let mut peer0_received = false;
+		let mut peer1_received = false;
+		let mut last_error = None;
 		for i in 0..32 {
-			if let Err(_e) = sender.0.send_and_confirm(i, &message).await {
-				tokio::time::sleep(Duration::from_secs(1)).await;
+			if let Err(e) = sender.0.send_and_confirm_with_timeout(i, &message, Duration::from_secs(2)).await
+			{
+				last_error = Some(e);
 			} else {
+				if !peer0_received {
+					let maybe_message = gossamers[0]
+						.0
+						.recv_message_with_timeout::<TestMessage>(Duration::from_millis(500))
+						.await;
+					if let Ok(Some(received_message)) = maybe_message {
+						assert_eq!(received_message, message);
+						peer0_received = true;
+					}
+				}
+				if !peer1_received {
+					let maybe_message = gossamers[1]
+						.0
+						.recv_message_with_timeout::<TestMessage>(Duration::from_millis(500))
+						.await;
+					if let Ok(Some(received_message)) = maybe_message {
+						assert_eq!(received_message, message);
+						peer1_received = true;
+					}
+				}
+			}
+
+			if peer0_received && peer1_received {
 				break;
 			}
+			tokio::time::sleep(Duration::from_millis(250)).await;
 		}
-
-		// Check both the peers
-		let received_message = gossamers[0].0.recv_message::<TestMessage>().await?;
-		assert_eq!(received_message, Some(message));
-		let received_message = gossamers[1].0.recv_message::<TestMessage>().await?;
-		assert_eq!(received_message, Some(message));
+		if !(peer0_received && peer1_received) {
+			return Err(anyhow::anyhow!(
+				"failed to deliver test message to all peers after retries; last publish error: {:?}",
+				last_error
+			));
+		}
 		Ok(())
 	}
 }

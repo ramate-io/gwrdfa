@@ -3,6 +3,7 @@ use crate::GossamerTaskError;
 use libp2p::Multiaddr;
 use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
+use tokio::time::{timeout, Duration};
 
 #[derive(Debug)]
 pub struct Gossamer<Entity: Send + Sync> {
@@ -24,6 +25,8 @@ pub enum GossamerMessageError {
 	ReceiveFromSwarmError(#[from] tokio::sync::mpsc::error::TryRecvError),
 	#[error("Internal Gossamer error: {0}")]
 	InternalError(String),
+	#[error("Timed out waiting for {operation} after {duration:?}")]
+	Timeout { operation: &'static str, duration: Duration },
 }
 
 pub trait GossamerMessage: Sized {
@@ -145,6 +148,32 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 		}
 	}
 
+	/// Waits for a confirmation up to a timeout.
+	pub async fn wait_for_confirmation_with_timeout(
+		&mut self,
+		duration: Duration,
+	) -> Result<Option<Entity>, GossamerMessageError> {
+		timeout(duration, self.wait_for_confirmation())
+			.await
+			.map_err(|_| GossamerMessageError::Timeout {
+				operation: "broadcast confirmation",
+				duration,
+			})?
+	}
+
+	/// Receives a message from the Gossamer swarm up to a timeout.
+	pub async fn recv_message_with_timeout<M: GossamerMessage>(
+		&mut self,
+		duration: Duration,
+	) -> Result<Option<M>, GossamerMessageError> {
+		timeout(duration, self.recv_message::<M>())
+			.await
+			.map_err(|_| GossamerMessageError::Timeout {
+				operation: "inbound swarm message",
+				duration,
+			})?
+	}
+
 	/// Sends a message and waits for a confirmation.
 	pub async fn send_and_confirm<M: GossamerMessage>(
 		&mut self,
@@ -153,6 +182,18 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 	) -> Result<(), GossamerMessageError> {
 		self.send_message(entity, message)?;
 		self.wait_for_confirmation().await?;
+		Ok(())
+	}
+
+	/// Sends a message and waits for a confirmation up to a timeout.
+	pub async fn send_and_confirm_with_timeout<M: GossamerMessage>(
+		&mut self,
+		entity: Entity,
+		message: &M,
+		duration: Duration,
+	) -> Result<(), GossamerMessageError> {
+		self.send_message(entity, message)?;
+		self.wait_for_confirmation_with_timeout(duration).await?;
 		Ok(())
 	}
 }

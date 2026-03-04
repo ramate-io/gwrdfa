@@ -28,6 +28,8 @@ pub enum GossamerTaskError {
 	RelayToGossamerError(#[from] tokio::sync::mpsc::error::SendError<Vec<u8>>),
 	#[error("Error broadcasting message: {0}")]
 	BroadcastError(String),
+	#[error("Error relaying broadcast result to gossamer API: {0}")]
+	BroadcastResultRelayError(String),
 	#[error("The broadcast receiver is disconnected")]
 	BroadcastReceiverDisconnected,
 	#[error("The swarm stream is disconnected")]
@@ -53,12 +55,15 @@ impl<Entity: Send + Sync + 'static> Future for GossamerTask<Entity> {
 				Poll::Ready(Some((entity, msg))) => {
 					let res = match self.swarm.behaviour_mut().gossipsub.publish(topic_hash, msg) {
 						Ok(_) => Ok(entity),
-						Err(e) => Err((entity, GossamerTaskError::BroadcastError(e.to_string()))),
+						Err(e) => {
+							eprintln!("gossamer: publish failed for entity due to: {e}");
+							Err((entity, GossamerTaskError::BroadcastError(e.to_string())))
+						}
 					};
 
 					self.entity_into_gossamer_sender
 						.send(res)
-						.map_err(|e| GossamerTaskError::BroadcastError(e.to_string()))?;
+						.map_err(|e| GossamerTaskError::BroadcastResultRelayError(e.to_string()))?;
 					progressed = true;
 				}
 				Poll::Ready(None) => {

@@ -70,12 +70,12 @@ impl GossamerConfig {
 			MessageAuthenticity::Signed(self.identity.clone()),
 			gossipsub_config,
 		)
-		.map_err(|e| GossamerConfigError::BuildError(e.to_string()))?;
+		.map_err(|e| GossamerConfigError::BuildError(format!("create gossipsub behaviour: {e:?}")))?;
 
 		let topic = IdentTopic::new(self.topic);
-		gossipsub
-			.subscribe(&topic)
-			.map_err(|e| GossamerConfigError::BuildError(e.to_string()))?;
+		gossipsub.subscribe(&topic).map_err(|e| {
+			GossamerConfigError::BuildError(format!("subscribe to topic before swarm build: {e:?}"))
+		})?;
 
 		// ---- KADEMLIA ----
 		let store = MemoryStore::new(peer_id);
@@ -88,37 +88,30 @@ impl GossamerConfig {
 		let mut swarm = libp2p::SwarmBuilder::with_existing_identity(self.identity)
 			.with_async_std()
 			.with_tcp(tcp::Config::default(), noise::Config::new, yamux::Config::default)
-			.map_err(|e| GossamerConfigError::BuildError(e.to_string()))?
+			.map_err(|e| GossamerConfigError::BuildError(format!("configure tcp/noise/yamux: {e:?}")))?
 			.with_dns()
 			.await
-			.map_err(|e| GossamerConfigError::BuildError(e.to_string()))?
+			.map_err(|e| GossamerConfigError::BuildError(format!("enable DNS transport: {e:?}")))?
 			.with_behaviour(|_| behaviour)
-			.map_err(|e| GossamerConfigError::BuildError(e.to_string()))?
+			.map_err(|e| GossamerConfigError::BuildError(format!("attach network behaviour: {e:?}")))?
 			.build();
 
 		// Listen on local port
 		swarm
 			.listen_on(self.listen_on)
-			.map_err(|e| GossamerConfigError::BuildError(e.to_string()))?;
+			.map_err(|e| GossamerConfigError::BuildError(format!("listen on configured address: {e:?}")))?;
 
 		// Bootstrap with the provided peers
 		for peer in self.bootstrap_peers {
 			swarm
 				.dial(peer.clone())
-				.map_err(|e| GossamerConfigError::BuildError(e.to_string()))?;
+				.map_err(|e| GossamerConfigError::BuildError(format!("dial bootstrap peer {peer}: {e:?}")))?;
 
 			// Extract peer id from multiaddr
 			if let Some(Protocol::P2p(peer_id)) = peer.iter().last() {
 				swarm.behaviour_mut().kad.add_address(&peer_id, peer);
 			}
 		}
-
-		// Subscribe to the topic
-		swarm
-			.behaviour_mut()
-			.gossipsub
-			.subscribe(&topic)
-			.map_err(|e| GossamerConfigError::BuildError(e.to_string()))?;
 
 		// Allocate the channels
 		let (message_into_gossamer_sender, message_into_gossamer_receiver) = unbounded_channel();
