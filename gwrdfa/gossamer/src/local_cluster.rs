@@ -64,6 +64,7 @@ impl LocalClusterConfig {
 mod tests {
 	use super::*;
 	use crate::{GossamerMessage, GossamerMessageError};
+	use std::env;
 	use tokio::time::Duration;
 
 	#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -90,6 +91,10 @@ mod tests {
 	#[tokio::test]
 	#[ignore = "This acquires empheral ports. Run with --ignored if you want to opt in."]
 	async fn test_local_cluster_sends_and_receives_message() -> Result<(), anyhow::Error> {
+		run_local_cluster_send_and_receive_once().await
+	}
+
+	async fn run_local_cluster_send_and_receive_once() -> Result<(), anyhow::Error> {
 		let config = LocalClusterConfig::default();
 		let mut gossamers = config.build::<u32>().await?;
 		let message = TestMessage(1);
@@ -140,6 +145,26 @@ mod tests {
 				last_error
 			));
 		}
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[ignore = "Stress test for https://github.com/ramate-io/gwrdfa/issues/18; run manually with --ignored."]
+	async fn test_local_cluster_sends_and_receives_message_stress_issue_18(
+	) -> Result<(), anyhow::Error> {
+		let iterations = env::var("GOSSAMER_STRESS_ITERS")
+			.ok()
+			.and_then(|s| s.parse::<usize>().ok())
+			.unwrap_or(128);
+
+		for i in 0..iterations {
+			run_local_cluster_send_and_receive_once().await.map_err(|e| {
+				anyhow::anyhow!(
+					"stress iteration {i}/{iterations} failed for https://github.com/ramate-io/gwrdfa/issues/18: {e}"
+				)
+			})?;
+		}
+
 		Ok(())
 	}
 }

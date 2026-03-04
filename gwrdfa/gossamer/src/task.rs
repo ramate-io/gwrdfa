@@ -12,6 +12,18 @@ use std::pin::Pin;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::sync::oneshot::Sender;
 
+#[cfg(feature = "gossamer-logging")]
+macro_rules! gossamer_log {
+	($($arg:tt)*) => {
+		eprintln!($($arg)*)
+	};
+}
+
+#[cfg(not(feature = "gossamer-logging"))]
+macro_rules! gossamer_log {
+	($($arg:tt)*) => {};
+}
+
 pub struct GossamerTask<Entity: Send + Sync + 'static> {
 	pub(crate) message_into_gossamer_sender: UnboundedSender<Vec<u8>>,
 	pub(crate) entity_message_from_gossamer_receiver: UnboundedReceiver<(Entity, Vec<u8>)>,
@@ -56,7 +68,7 @@ impl<Entity: Send + Sync + 'static> Future for GossamerTask<Entity> {
 					let res = match self.swarm.behaviour_mut().gossipsub.publish(topic_hash, msg) {
 						Ok(_) => Ok(entity),
 						Err(e) => {
-							eprintln!("gossamer: publish failed for entity due to: {e}");
+							gossamer_log!("gossamer: publish failed for entity due to: {e}");
 							Err((entity, GossamerTaskError::BroadcastError(e.to_string())))
 						}
 					};
