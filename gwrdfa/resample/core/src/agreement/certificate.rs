@@ -93,11 +93,11 @@ pub mod test {
 
 	#[test]
 	fn test_certificate_set() {
-		use crate::agreement::subcommittee::test::Committee;
+		use crate::agreement::std::VoterSet;
 
 		let mut cert_set = MemoryCertificateSet::new();
 
-		let mut subcommittee_1 = Committee::new();
+		let mut subcommittee_1 = VoterSet::new();
 		subcommittee_1.add_member(1);
 		subcommittee_1.add_member(2);
 		subcommittee_1.add_member(3);
@@ -107,7 +107,7 @@ pub mod test {
 
 		cert_set.insert(1, 2, subcommittee_1.clone());
 
-		let mut subcommittee_2 = Committee::new();
+		let mut subcommittee_2 = VoterSet::new();
 		subcommittee_2.add_member(7);
 		subcommittee_2.add_member(8);
 		subcommittee_2.add_member(9);
@@ -117,7 +117,7 @@ pub mod test {
 
 		cert_set.insert(2, 3, subcommittee_2.clone());
 
-		let mut subcommittee_3 = Committee::new();
+		let mut subcommittee_3 = VoterSet::new();
 		subcommittee_3.add_member(13);
 		subcommittee_3.add_member(14);
 		subcommittee_3.add_member(15);

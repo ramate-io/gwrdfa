@@ -1,4 +1,7 @@
 pub mod container;
+pub mod agreement_data;
+pub mod constant_committee;
+pub mod voter_set;
 
 use crate::agreement::{Condition, Subcommittee};
 
@@ -56,9 +59,9 @@ impl<T: Eq + 'static + NextRound> NextRound for Index<T> {
 	}
 }
 
-pub use super::data::test::AgreementData;
-pub use super::sampler::test::ConstantCommittee;
-pub use super::subcommittee::test::Committee;
+pub use agreement_data::AgreementData;
+pub use constant_committee::ConstantCommittee;
+pub use voter_set::VoterSet;
 pub use container::{
 	AgreementContainer, AgreementDelta, AgreementParabyzantineData, CertificateContainer,
 	CertificateDelta,

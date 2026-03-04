@@ -161,7 +161,7 @@ mod tests {
 	use super::*;
 	use crate::agreement::std::{
 		AgreementContainer, AgreementData, AgreementParabyzantineData, CertificateContainer,
-		Committee, Index, Subcom, Value,
+		Index, Subcom, Value, VoterSet,
 	};
 	use crate::task::ResampleTask;
 	use ::std::collections::BTreeSet;
@@ -183,15 +183,15 @@ mod tests {
 	#[test]
 	fn test_resample_agreement_with_std_support() {
 		let mut resample_agreement = ResampleAgreement::<
-			AgreementParabyzantineData<u32, u32, Committee<u32>>,
-			AgreementData<u32, u32, Committee<u32>>,
+			AgreementParabyzantineData<u32, u32, VoterSet<u32>>,
+			AgreementData<u32, u32, VoterSet<u32>>,
 		>::new(AgreementData::new());
 
 		// Insert genesis agreement
 		let genesis: Index<u32> = Index::new(0);
-		let genesis_subcommittee: Subcom<Committee<u32>> =
-			Subcom::new(Committee::new().with_members(vec![1, 2, 3, 4, 5, 6, 7].into_iter()));
-		let mut agreement_data = AgreementParabyzantineData::<u32, u32, Committee<u32>>::new();
+		let genesis_subcommittee: Subcom<VoterSet<u32>> =
+			Subcom::new(VoterSet::new().with_members(vec![1, 2, 3, 4, 5, 6, 7].into_iter()));
+		let mut agreement_data = AgreementParabyzantineData::<u32, u32, VoterSet<u32>>::new();
 
 		let genesis_agreement_container = AgreementContainer {
 			agreement: Component::Present(Agreement),
