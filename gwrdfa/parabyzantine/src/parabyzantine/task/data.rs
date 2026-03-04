@@ -1,15 +1,10 @@
 use crate::act::Act;
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
-use crate::NoOp;
-use crate::NoOpData;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Task;
 
-/// Specifies the entities and buffers for a parabyzantine task Data.
-///
-/// A Parabyzantine task Data is concerned with deriving tasks from agreements and transactions.
-pub trait ParabyzantineTaskDataSpec: Sized {
+pub trait ParabyzantineTaskData: Sized {
 	/// The entity type for the agreement.
 	type AgreementEntity: Sized;
 	/// The buffer type for the agreement.
@@ -30,37 +25,35 @@ pub trait ParabyzantineTaskDataSpec: Sized {
 	type TaskBuffer: Bufferlike<Self::TaskEntity>;
 	/// The draft buffer type for the task.
 	type TaskDraftBuffer: DraftBufferlike<Self::TaskEntity, Self::TaskBuffer>;
-}
 
-pub trait ParabyzantineTaskData<Spec: ParabyzantineTaskDataSpec>: Sized {
 	/// The buffer for the agreement.
-	fn parabyzantine_task_agreement_buffer(&self) -> &Spec::AgreementBuffer;
+	fn parabyzantine_task_agreement_buffer(&self) -> &Self::AgreementBuffer;
 
 	/// The draft buffer for the agreement.
-	fn parabyzantine_task_agreement_buffer_mut(&mut self) -> &mut Spec::AgreementBuffer;
+	fn parabyzantine_task_agreement_buffer_mut(&mut self) -> &mut Self::AgreementBuffer;
 
 	/// The draft buffer for the agreement.
-	fn parabyzantine_task_agreement_draft_buffer(&self) -> Spec::AgreementDraftBuffer;
+	fn parabyzantine_task_agreement_draft_buffer(&self) -> Self::AgreementDraftBuffer;
 	/// The buffer for the transaction.
-	fn parabyzantine_task_transaction_buffer(&self) -> &Spec::TransactionBuffer;
+	fn parabyzantine_task_transaction_buffer(&self) -> &Self::TransactionBuffer;
 
 	/// The draft buffer for the transaction.
-	fn parabyzantine_task_transaction_buffer_mut(&mut self) -> &mut Spec::TransactionBuffer;
+	fn parabyzantine_task_transaction_buffer_mut(&mut self) -> &mut Self::TransactionBuffer;
 
 	/// The draft buffer for the transaction.
-	fn parabyzantine_task_transaction_draft_buffer(&self) -> Spec::TransactionDraftBuffer;
+	fn parabyzantine_task_transaction_draft_buffer(&self) -> Self::TransactionDraftBuffer;
 
 	/// The buffer for the task.
-	fn parabyzantine_task_task_buffer(&self) -> &Spec::TaskBuffer;
+	fn parabyzantine_task_task_buffer(&self) -> &Self::TaskBuffer;
 
 	/// The draft buffer for the task.
-	fn parabyzantine_task_task_buffer_mut(&mut self) -> &mut Spec::TaskBuffer;
+	fn parabyzantine_task_task_buffer_mut(&mut self) -> &mut Self::TaskBuffer;
 
 	/// The draft buffer for the task.
-	fn parabyzantine_task_task_draft_buffer(&self) -> Spec::TaskDraftBuffer;
+	fn parabyzantine_task_task_draft_buffer(&self) -> Self::TaskDraftBuffer;
 
 	/// The world of the task.
-	fn parabyzantine_task_world<'a>(&'a self) -> TaskWorld<'a, Spec> {
+	fn parabyzantine_task_world<'a>(&'a self) -> TaskWorld<'a, Self> {
 		TaskWorld {
 			agreement_facts: self.parabyzantine_task_agreement_buffer().into(),
 			agreement_inferences: self.parabyzantine_task_agreement_draft_buffer().into(),
@@ -71,7 +64,7 @@ pub trait ParabyzantineTaskData<Spec: ParabyzantineTaskDataSpec>: Sized {
 		}
 	}
 
-	fn commit_parabyzantine_task(&mut self, task_inferences: TaskInferences<Spec>) {
+	fn commit_parabyzantine_task(&mut self, task_inferences: TaskInferences<Self>) {
 		self.parabyzantine_task_agreement_buffer_mut()
 			.commit_inferences(task_inferences.agreement_inferences);
 		self.parabyzantine_task_transaction_buffer_mut()
@@ -82,28 +75,28 @@ pub trait ParabyzantineTaskData<Spec: ParabyzantineTaskDataSpec>: Sized {
 }
 
 /// The world of the task step of a parabyzantine task Data.
-pub struct TaskWorld<'a, Spec: ParabyzantineTaskDataSpec> {
-	pub agreement_facts: Facts<'a, Spec::AgreementEntity, Spec::AgreementBuffer>,
+pub struct TaskWorld<'a, Data: ParabyzantineTaskData> {
+	pub agreement_facts: Facts<'a, Data::AgreementEntity, Data::AgreementBuffer>,
 	pub agreement_inferences:
-		Inferences<Spec::AgreementEntity, Spec::AgreementBuffer, Spec::AgreementDraftBuffer>,
-	pub transaction_facts: Facts<'a, Spec::TransactionEntity, Spec::TransactionBuffer>,
+		Inferences<Data::AgreementEntity, Data::AgreementBuffer, Data::AgreementDraftBuffer>,
+	pub transaction_facts: Facts<'a, Data::TransactionEntity, Data::TransactionBuffer>,
 	pub transaction_inferences:
-		Inferences<Spec::TransactionEntity, Spec::TransactionBuffer, Spec::TransactionDraftBuffer>,
-	pub task_facts: Facts<'a, Spec::TaskEntity, Spec::TaskBuffer>,
-	pub task_inferences: Inferences<Spec::TaskEntity, Spec::TaskBuffer, Spec::TaskDraftBuffer>,
+		Inferences<Data::TransactionEntity, Data::TransactionBuffer, Data::TransactionDraftBuffer>,
+	pub task_facts: Facts<'a, Data::TaskEntity, Data::TaskBuffer>,
+	pub task_inferences: Inferences<Data::TaskEntity, Data::TaskBuffer, Data::TaskDraftBuffer>,
 }
 
 /// The inferences for the task step of a parabyzantine task Data.
-pub struct TaskInferences<Spec: ParabyzantineTaskDataSpec> {
+pub struct TaskInferences<Data: ParabyzantineTaskData> {
 	pub agreement_inferences:
-		Inferences<Spec::AgreementEntity, Spec::AgreementBuffer, Spec::AgreementDraftBuffer>,
+		Inferences<Data::AgreementEntity, Data::AgreementBuffer, Data::AgreementDraftBuffer>,
 	pub transaction_inferences:
-		Inferences<Spec::TransactionEntity, Spec::TransactionBuffer, Spec::TransactionDraftBuffer>,
-	pub task_inferences: Inferences<Spec::TaskEntity, Spec::TaskBuffer, Spec::TaskDraftBuffer>,
+		Inferences<Data::TransactionEntity, Data::TransactionBuffer, Data::TransactionDraftBuffer>,
+	pub task_inferences: Inferences<Data::TaskEntity, Data::TaskBuffer, Data::TaskDraftBuffer>,
 }
 
-impl<'a, Spec: ParabyzantineTaskDataSpec> From<TaskWorld<'a, Spec>> for TaskInferences<Spec> {
-	fn from(world: TaskWorld<'a, Spec>) -> Self {
+impl<'a, Data: ParabyzantineTaskData> From<TaskWorld<'a, Data>> for TaskInferences<Data> {
+	fn from(world: TaskWorld<'a, Data>) -> Self {
 		TaskInferences {
 			agreement_inferences: world.agreement_inferences,
 			transaction_inferences: world.transaction_inferences,
@@ -112,52 +105,34 @@ impl<'a, Spec: ParabyzantineTaskDataSpec> From<TaskWorld<'a, Spec>> for TaskInfe
 	}
 }
 
-pub trait ParabyzantineTask: Sized {
-	type Binding: ParabyzantineTaskDataBinding;
-
+pub trait ParabyzantineTask<Data: ParabyzantineTaskData>: Sized {
 	/// Gets the [TaskWorld] for the parabyzantine task.
 	fn parabyzantine_task_world<'a>(
 		&mut self,
-		data: &'a mut <Self::Binding as ParabyzantineTaskDataBinding>::Data,
-	) -> TaskWorld<'a, <Self::Binding as ParabyzantineTaskDataBinding>::Spec> {
+		data: &'a mut Data,
+	) -> TaskWorld<'a, Data> {
 		data.parabyzantine_task_world()
 	}
 
 	/// Compute the parabyzantine task.
-	fn update_parabyzantine_task(
-		&mut self,
-		data: &mut TaskWorld<<Self::Binding as ParabyzantineTaskDataBinding>::Spec>,
-	);
+	fn update_parabyzantine_task(&mut self, data: &mut TaskWorld<Data>);
 
 	/// Commits the inferences for the parabyzantine task.
 	fn commit_parabyzantine_task(
 		&mut self,
-		task_inferences: TaskInferences<<Self::Binding as ParabyzantineTaskDataBinding>::Spec>,
-		data: &mut <Self::Binding as ParabyzantineTaskDataBinding>::Data,
+		task_inferences: TaskInferences<Data>,
+		data: &mut Data,
 	) {
 		data.commit_parabyzantine_task(task_inferences);
 	}
 }
 
-impl<Binding: ParabyzantineTaskDataBinding, TaskHandler: ParabyzantineTask<Binding = Binding>>
-	Act<Task, Binding::Data> for TaskHandler
+impl<Data: ParabyzantineTaskData, TaskHandler: ParabyzantineTask<Data>> Act<Task, Data>
+	for TaskHandler
 {
-	fn act(&mut self, _action: Task, data: &mut Binding::Data) {
+	fn act(&mut self, _action: Task, data: &mut Data) {
 		let mut world = self.parabyzantine_task_world(data);
 		self.update_parabyzantine_task(&mut world);
 		self.commit_parabyzantine_task(world.into(), data);
 	}
-}
-
-/// A [ParabyzantineTaskDataBinding] is a binding for the [ParabyzantineTask] protocol.
-///
-/// It binds between the [ParabyzantineTaskDataSpec] and the [ParabyzantineTaskData].
-pub trait ParabyzantineTaskDataBinding {
-	type Spec: ParabyzantineTaskDataSpec;
-	type Data: ParabyzantineTaskData<Self::Spec>;
-}
-
-impl ParabyzantineTaskDataBinding for NoOp {
-	type Spec = NoOp;
-	type Data = NoOpData;
 }

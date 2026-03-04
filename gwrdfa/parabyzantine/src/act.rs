@@ -1,5 +1,3 @@
-use crate::NoOp;
-
 /// A [Act] trait is a trait that acts on a value.
 pub trait Act<A, D: Sized> {
 	fn act(&mut self, action: A, data: &mut D);
@@ -30,6 +28,3 @@ where
 	}
 }
 
-impl<A, D: Sized> Act<A, D> for NoOp {
-	fn act(&mut self, _action: A, _data: &mut D) {}
-}

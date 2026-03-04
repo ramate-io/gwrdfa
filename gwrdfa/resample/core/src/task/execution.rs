@@ -1,7 +1,7 @@
 use super::{IndexTaskSubcommitteeAgreement, TaskSubcommittee};
 use parabyzantine::{
 	buffer::{Facts, Inferences},
-	task::{ParabyzantineTaskDataBinding, ParabyzantineTaskDataSpec},
+	task::ParabyzantineTaskData,
 	NoOp,
 };
 
@@ -18,33 +18,33 @@ pub trait ResampleTasker<
 	Value: Eq + 'static,
 	Sub: TaskSubcommittee<Value, Sender>,
 	SubAg: IndexTaskSubcommitteeAgreement<Index, Value, Sender, Sub>,
-	Binding: ParabyzantineTaskDataBinding,
+	Data: ParabyzantineTaskData,
 >: Sized
 {
 	fn compute_resample_task(
 		&mut self,
 		index: &SubAg,
 		agreement_facts: &Facts<
-			<Binding::Spec as ParabyzantineTaskDataSpec>::AgreementEntity,
-			<Binding::Spec as ParabyzantineTaskDataSpec>::AgreementBuffer,
+			Data::AgreementEntity,
+			Data::AgreementBuffer,
 		>,
 		transaction_facts: &Facts<
-			<Binding::Spec as ParabyzantineTaskDataSpec>::TransactionEntity,
-			<Binding::Spec as ParabyzantineTaskDataSpec>::TransactionBuffer,
+			Data::TransactionEntity,
+			Data::TransactionBuffer,
 		>,
 		transaction_inferences: &mut Inferences<
-			<Binding::Spec as ParabyzantineTaskDataSpec>::TransactionEntity,
-			<Binding::Spec as ParabyzantineTaskDataSpec>::TransactionBuffer,
-			<Binding::Spec as ParabyzantineTaskDataSpec>::TransactionDraftBuffer,
+			Data::TransactionEntity,
+			Data::TransactionBuffer,
+			Data::TransactionDraftBuffer,
 		>,
 		task_facts: &Facts<
-			<Binding::Spec as ParabyzantineTaskDataSpec>::TaskEntity,
-			<Binding::Spec as ParabyzantineTaskDataSpec>::TaskBuffer,
+			Data::TaskEntity,
+			Data::TaskBuffer,
 		>,
 		task_inferences: &mut Inferences<
-			<Binding::Spec as ParabyzantineTaskDataSpec>::TaskEntity,
-			<Binding::Spec as ParabyzantineTaskDataSpec>::TaskBuffer,
-			<Binding::Spec as ParabyzantineTaskDataSpec>::TaskDraftBuffer,
+			Data::TaskEntity,
+			Data::TaskBuffer,
+			Data::TaskDraftBuffer,
 		>,
 	);
 }
@@ -55,33 +55,33 @@ impl<
 		Value: Eq + 'static,
 		Sub: TaskSubcommittee<Value, Sender>,
 		SubAg: IndexTaskSubcommitteeAgreement<Index, Value, Sender, Sub>,
-		Binding: ParabyzantineTaskDataBinding,
-	> ResampleTasker<Index, Sender, Value, Sub, SubAg, Binding> for NoOp
+		Data: ParabyzantineTaskData,
+	> ResampleTasker<Index, Sender, Value, Sub, SubAg, Data> for NoOp
 {
 	fn compute_resample_task(
 		&mut self,
 		_index: &SubAg,
 		_agreement_facts: &Facts<
-			<Binding::Spec as ParabyzantineTaskDataSpec>::AgreementEntity,
-			<Binding::Spec as ParabyzantineTaskDataSpec>::AgreementBuffer,
+			Data::AgreementEntity,
+			Data::AgreementBuffer,
 		>,
 		_transaction_facts: &Facts<
-			<Binding::Spec as ParabyzantineTaskDataSpec>::TransactionEntity,
-			<Binding::Spec as ParabyzantineTaskDataSpec>::TransactionBuffer,
+			Data::TransactionEntity,
+			Data::TransactionBuffer,
 		>,
 		_transaction_inferences: &mut Inferences<
-			<Binding::Spec as ParabyzantineTaskDataSpec>::TransactionEntity,
-			<Binding::Spec as ParabyzantineTaskDataSpec>::TransactionBuffer,
-			<Binding::Spec as ParabyzantineTaskDataSpec>::TransactionDraftBuffer,
+			Data::TransactionEntity,
+			Data::TransactionBuffer,
+			Data::TransactionDraftBuffer,
 		>,
 		_task_facts: &Facts<
-			<Binding::Spec as ParabyzantineTaskDataSpec>::TaskEntity,
-			<Binding::Spec as ParabyzantineTaskDataSpec>::TaskBuffer,
+			Data::TaskEntity,
+			Data::TaskBuffer,
 		>,
 		_task_inferences: &mut Inferences<
-			<Binding::Spec as ParabyzantineTaskDataSpec>::TaskEntity,
-			<Binding::Spec as ParabyzantineTaskDataSpec>::TaskBuffer,
-			<Binding::Spec as ParabyzantineTaskDataSpec>::TaskDraftBuffer,
+			Data::TaskEntity,
+			Data::TaskBuffer,
+			Data::TaskDraftBuffer,
 		>,
 	) {
 	}

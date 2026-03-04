@@ -1,11 +1,11 @@
-use super::TestResampleParabyzantineSpec;
 use super::{
 	TestResampleAgreementContainer, TestResampleAgreementDelta, TestResampleCertificateContainer,
 	TestResampleCertificateDelta,
 };
 use crate::agreement::Subcommittee;
 use gwrdfa_container::{ContainerEntityBuffer, ContainerEntityDraftBuffer};
-use parabyzantine::agreement::{ParabyzantineAgreementData, ParabyzantineAgreementDataBinding};
+use parabyzantine::agreement::ParabyzantineAgreementData;
+use gwrdfa_container::ContainerEntity;
 
 pub struct TestResampleParabyzantineData<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>> {
 	pub certificate_buffer:
@@ -25,9 +25,18 @@ impl<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>>
 }
 
 impl<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>>
-	ParabyzantineAgreementData<TestResampleParabyzantineSpec<Index, Value, Sub>>
-	for TestResampleParabyzantineData<Index, Value, Sub>
+	ParabyzantineAgreementData for TestResampleParabyzantineData<Index, Value, Sub>
 {
+	type CertificateEntity = ContainerEntity;
+	type CertificateBuffer =
+		ContainerEntityBuffer<TestResampleCertificateContainer<Index, Value, Sub>>;
+	type CertificateDraftBuffer =
+		ContainerEntityDraftBuffer<TestResampleCertificateDelta<Index, Value, Sub>>;
+	type AgreementEntity = ContainerEntity;
+	type AgreementBuffer = ContainerEntityBuffer<TestResampleAgreementContainer<Index, Value, Sub>>;
+	type AgreementDraftBuffer =
+		ContainerEntityDraftBuffer<TestResampleAgreementDelta<Index, Value, Sub>>;
+
 	fn parabyzantine_agreement_certificate_buffer(
 		&self,
 	) -> &ContainerEntityBuffer<TestResampleCertificateContainer<Index, Value, Sub>> {
@@ -58,11 +67,4 @@ impl<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>>
 	) -> ContainerEntityDraftBuffer<TestResampleAgreementDelta<Index, Value, Sub>> {
 		ContainerEntityDraftBuffer::new()
 	}
-}
-
-impl<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>> ParabyzantineAgreementDataBinding
-	for TestResampleParabyzantineData<Index, Value, Sub>
-{
-	type Spec = TestResampleParabyzantineSpec<Index, Value, Sub>;
-	type Data = Self;
 }

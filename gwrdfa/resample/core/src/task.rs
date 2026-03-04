@@ -1,80 +1,47 @@
 pub mod data;
 pub mod execution;
-pub mod spec;
 pub mod task_subcommittee;
 
 pub use data::ResampleTaskData;
 use execution::ResampleTasker;
-use parabyzantine::task::{
-	ParabyzantineTask, ParabyzantineTaskData, ParabyzantineTaskDataBinding, TaskWorld,
-};
-use parabyzantine::NoOp;
-use parabyzantine::NoOpData;
-pub use spec::ResampleTaskSpec;
+use core::marker::PhantomData;
+use parabyzantine::task::{ParabyzantineTask, ParabyzantineTaskData, TaskWorld};
 pub use task_subcommittee::{IndexTaskSubcommitteeAgreement, TaskSubcommittee};
 
-pub trait ResampleTaskBinding: Sized {
-	type ParabyzantineTaskDataBinding: ParabyzantineTaskDataBinding;
-	type ResampleTaskSpec: ResampleTaskSpec<Self::ParabyzantineTaskDataBinding>;
-	type ResampleTaskData: ResampleTaskData<
-		Self::ParabyzantineTaskDataBinding,
-		Self::ResampleTaskSpec,
-	>;
-}
+/// [ResampleTask] wraps around resample task data for a given parabyzantine task data type.
+pub struct ResampleTask<Data: ParabyzantineTaskData, ResampleData: ResampleTaskData<Data>>(
+	pub ResampleData,
+	PhantomData<Data>,
+);
 
-/// [ResampleTask] wraps around the ResampleTask data indicated by the binding.
-pub struct ResampleTask<Binding: ResampleTaskBinding>(pub Binding::ResampleTaskData);
+impl<Data: ParabyzantineTaskData, ResampleData: ResampleTaskData<Data>>
+	ResampleTask<Data, ResampleData>
+{
+	pub fn new(data: ResampleData) -> Self {
+		Self(data, PhantomData)
+	}
 
-impl<Binding: ResampleTaskBinding> ResampleTask<Binding> {
-	pub fn data(&self) -> &Binding::ResampleTaskData {
+	pub fn data(&self) -> &ResampleData {
 		&self.0
 	}
 
-	pub fn data_mut(&mut self) -> &mut Binding::ResampleTaskData {
+	pub fn data_mut(&mut self) -> &mut ResampleData {
 		&mut self.0
 	}
 }
 
-impl<Binding: ResampleTaskBinding>
-	ResampleTaskData<Binding::ParabyzantineTaskDataBinding, Binding::ResampleTaskSpec>
-	for ResampleTask<Binding>
+impl<Data: ParabyzantineTaskData, ResampleData: ResampleTaskData<Data>> ParabyzantineTask<Data>
+	for ResampleTask<Data, ResampleData>
 {
-	fn me(
-		&self,
-	) -> &<Binding::ResampleTaskSpec as ResampleTaskSpec<Binding::ParabyzantineTaskDataBinding>>::Sender{
-		self.data().me()
-	}
-
-	fn index_task_subcommittee_agreement_query_plan(
-		&self,
-	) -> <Binding::ResampleTaskSpec as ResampleTaskSpec<Binding::ParabyzantineTaskDataBinding>>::IndexTaskSubcommitteeAgreementQueryPlan{
-		self.data().index_task_subcommittee_agreement_query_plan()
-	}
-
-	fn resample_tasker_mut(&mut self) -> &mut <Binding::ResampleTaskSpec as ResampleTaskSpec<Binding::ParabyzantineTaskDataBinding>>::ResampleTasker{
-		self.data_mut().resample_tasker_mut()
-	}
-}
-
-impl<Binding: ResampleTaskBinding> ParabyzantineTask for ResampleTask<Binding> {
-	type Binding = Binding::ParabyzantineTaskDataBinding;
-
-	fn update_parabyzantine_task(
-		&mut self,
-		data: &mut TaskWorld<
-			<Binding::ParabyzantineTaskDataBinding as ParabyzantineTaskDataBinding>::Spec,
-		>,
-	) {
+	fn update_parabyzantine_task(&mut self, data: &mut TaskWorld<Data>) {
 		let index_task_subcommittee_agreement_query_plan =
-			self.index_task_subcommittee_agreement_query_plan();
+			self.data().index_task_subcommittee_agreement_query_plan();
 		for index_data in data.agreement_facts.query(index_task_subcommittee_agreement_query_plan) {
-			let index: <Binding::ResampleTaskSpec as ResampleTaskSpec<
-				Binding::ParabyzantineTaskDataBinding,
-			>>::IndexTaskSubcommitteeAgreement = (index_data).into();
+			let index: ResampleData::IndexTaskSubcommitteeAgreement = (index_data).into();
 
 			// If the task is assigned to this replica, compute the resample task.
-			if self.is_task_assigned_to_me(&index.subcommittee()) {
-				let resample_tasker = self.resample_tasker_mut();
+			if self.data().is_task_assigned_to_me(&index.subcommittee()) {
+				let resample_tasker = self.data_mut().resample_tasker_mut();
 				resample_tasker.compute_resample_task(
 					&index,
 					&data.agreement_facts,
@@ -88,46 +55,27 @@ impl<Binding: ResampleTaskBinding> ParabyzantineTask for ResampleTask<Binding> {
 	}
 }
 
-impl<Binding: ResampleTaskBinding> ResampleTask<Binding> {
-	pub fn resample_task(
-		&mut self,
-		task_data: &<Binding::ParabyzantineTaskDataBinding as ParabyzantineTaskDataBinding>::Data,
-	) {
+impl<Data: ParabyzantineTaskData, ResampleData: ResampleTaskData<Data>> ResampleTask<Data, ResampleData> {
+	pub fn resample_task(&mut self, task_data: &Data) {
 		let mut task_world = task_data.parabyzantine_task_world();
 		self.update_parabyzantine_task(&mut task_world);
 	}
 }
 
-impl ResampleTaskBinding for NoOp {
-	type ParabyzantineTaskDataBinding = NoOp;
-	type ResampleTaskSpec = NoOp;
-	type ResampleTaskData = NoOpData;
-}
-
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use parabyzantine::{
-		agreement::Agreement, task::Task, AgreementAction, AgreementHandler, DataBinding, NoOp,
-		NoOpData, Parabyzantine, Spec, TaskAction, TaskHandler,
-	};
+	use crate::agreement::ResampleAgreement;
+	use parabyzantine::{task::Task, NoOpData, Parabyzantine};
 
 	#[test]
 	fn test_noop_resample_task_noops() {
-		let resample_task = ResampleTask::<NoOp>(NoOpData::new());
-		let mut parabyzantine: Parabyzantine<
-			Spec<(
-				DataBinding<NoOp>,
-				AgreementAction<Agreement>,
-				AgreementHandler<NoOp>,
-				TaskAction<Task>,
-				TaskHandler<ResampleTask<NoOp>>,
-			)>,
-		> = Parabyzantine {
-			data: NoOpData::new(),
-			agreement_handler: NoOp,
-			task_handler: resample_task,
-		};
+		let resample_task = ResampleTask::new(NoOpData::new());
+		let mut parabyzantine = Parabyzantine::new(
+			NoOpData::new(),
+			ResampleAgreement::new(NoOpData::new()),
+			resample_task,
+		);
 		parabyzantine.update_task(Task);
 	}
 }

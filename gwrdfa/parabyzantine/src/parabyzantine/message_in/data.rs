@@ -11,7 +11,7 @@ pub struct MessageIn;
 /// look at all the messages and determine which ones come from...
 /// 1. Outside the system, in which case they are transactions, or
 /// 2. Inside the system, in which case they are certificates
-pub trait ParabyzantineMessageInDataSpec: Sized {
+pub trait ParabyzantineMessageInData: Sized {
 	/// The entity type for the message.
 	type MessageEntity: Sized;
 	/// The buffer type for the message.
@@ -32,23 +32,20 @@ pub trait ParabyzantineMessageInDataSpec: Sized {
 	type CertificateBuffer: Bufferlike<Self::CertificateEntity>;
 	/// The draft buffer type for the certificate.
 	type CertificateDraftBuffer: DraftBufferlike<Self::CertificateEntity, Self::CertificateBuffer>;
-}
-
-pub trait ParabyzantineMessageInData<Spec: ParabyzantineMessageInDataSpec>: Sized {
 	/// The buffer for the message.
-	fn parabyzantine_message_in_message_buffer(&self) -> &Spec::MessageBuffer;
+	fn parabyzantine_message_in_message_buffer(&self) -> &Self::MessageBuffer;
 	/// The draft buffer for the message.
-	fn parabyzantine_message_in_message_draft_buffer(&self) -> Spec::MessageDraftBuffer;
+	fn parabyzantine_message_in_message_draft_buffer(&self) -> Self::MessageDraftBuffer;
 	/// The buffer for the transaction.
-	fn parabyzantine_message_in_transaction_buffer(&self) -> &Spec::TransactionBuffer;
+	fn parabyzantine_message_in_transaction_buffer(&self) -> &Self::TransactionBuffer;
 	/// The draft buffer for the transaction.
-	fn parabyzantine_message_in_transaction_draft_buffer(&self) -> Spec::TransactionDraftBuffer;
+	fn parabyzantine_message_in_transaction_draft_buffer(&self) -> Self::TransactionDraftBuffer;
 	/// The buffer for the certificate.
-	fn parabyzantine_message_in_certificate_buffer(&self) -> &Spec::CertificateBuffer;
+	fn parabyzantine_message_in_certificate_buffer(&self) -> &Self::CertificateBuffer;
 	/// The draft buffer for the certificate.
-	fn parabyzantine_message_in_certificate_draft_buffer(&self) -> Spec::CertificateDraftBuffer;
+	fn parabyzantine_message_in_certificate_draft_buffer(&self) -> Self::CertificateDraftBuffer;
 
-	fn parabyzantine_message_in_world<'a>(&'a self) -> MessageInWorld<'a, Spec> {
+	fn parabyzantine_message_in_world<'a>(&'a self) -> MessageInWorld<'a, Self> {
 		MessageInWorld {
 			message_facts: self.parabyzantine_message_in_message_buffer().into(),
 			message_inferences: self.parabyzantine_message_in_message_draft_buffer().into(),
@@ -61,29 +58,19 @@ pub trait ParabyzantineMessageInData<Spec: ParabyzantineMessageInDataSpec>: Size
 }
 
 /// The world of the message in step of a parabyzantine message in Data.
-pub struct MessageInWorld<'a, Spec: ParabyzantineMessageInDataSpec> {
-	pub message_facts: Facts<'a, Spec::MessageEntity, Spec::MessageBuffer>,
+pub struct MessageInWorld<'a, Data: ParabyzantineMessageInData> {
+	pub message_facts: Facts<'a, Data::MessageEntity, Data::MessageBuffer>,
 	pub message_inferences:
-		Inferences<Spec::MessageEntity, Spec::MessageBuffer, Spec::MessageDraftBuffer>,
-	pub transaction_facts: Facts<'a, Spec::TransactionEntity, Spec::TransactionBuffer>,
+		Inferences<Data::MessageEntity, Data::MessageBuffer, Data::MessageDraftBuffer>,
+	pub transaction_facts: Facts<'a, Data::TransactionEntity, Data::TransactionBuffer>,
 	pub transaction_inferences:
-		Inferences<Spec::TransactionEntity, Spec::TransactionBuffer, Spec::TransactionDraftBuffer>,
-	pub certificate_facts: Facts<'a, Spec::CertificateEntity, Spec::CertificateBuffer>,
+		Inferences<Data::TransactionEntity, Data::TransactionBuffer, Data::TransactionDraftBuffer>,
+	pub certificate_facts: Facts<'a, Data::CertificateEntity, Data::CertificateBuffer>,
 	pub certificate_inferences:
-		Inferences<Spec::CertificateEntity, Spec::CertificateBuffer, Spec::CertificateDraftBuffer>,
+		Inferences<Data::CertificateEntity, Data::CertificateBuffer, Data::CertificateDraftBuffer>,
 }
 
-pub trait ParabyzantineMessageIn: Sized {
-	type Spec: ParabyzantineMessageInDataSpec;
-
+pub trait ParabyzantineMessageIn<Data: ParabyzantineMessageInData>: Sized {
 	/// Compute the parabyzantine message in.
-	fn compute_parabyzantine_message_in(&mut self, data: &mut MessageInWorld<Self::Spec>);
-}
-
-/// A [ParabyzantineMessageInDataBinding] is a binding for the [ParabyzantineMessageIn] protocol.
-///
-/// It binds between the [ParabyzantineMessageInDataSpec] and the [ParabyzantineMessageInData].
-pub trait ParabyzantineMessageInDataBinding {
-	type Spec: ParabyzantineMessageInDataSpec;
-	type Data: ParabyzantineMessageInData<Self::Spec>;
+	fn compute_parabyzantine_message_in(&mut self, data: &mut MessageInWorld<Data>);
 }

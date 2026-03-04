@@ -14,8 +14,8 @@ use crate::{NoOp, NoOpData};
 #[derive(Debug, Clone, Copy)]
 pub struct Hart;
 
-/// A [ParabyzantineDataSpec] is a specification for the parabyzantine protocol.
-pub trait ParabyzantineDataSpec: Sized {
+/// A [ParabyzantineData] describes the entities and buffers used by the parabyzantine protocol.
+pub trait ParabyzantineData: Sized {
 	/// The entity type for the certificate.
 	type CertificateEntity: Sized;
 	/// The buffer type for the certificate.
@@ -50,56 +50,53 @@ pub trait ParabyzantineDataSpec: Sized {
 	type MessageBuffer: Bufferlike<Self::MessageEntity>;
 	/// The draft buffer type for the message.
 	type MessageDraftBuffer: DraftBufferlike<Self::MessageEntity, Self::MessageBuffer>;
-}
-
-pub trait ParabyzantineData<Spec: ParabyzantineDataSpec>: Sized {
 	/// The buffer for the certificate.
-	fn parabyzantine_certificate_buffer(&self) -> &Spec::CertificateBuffer;
+	fn parabyzantine_certificate_buffer(&self) -> &Self::CertificateBuffer;
 
 	/// The draft buffer for the certificate.
-	fn parabyzantine_certificate_buffer_mut(&mut self) -> &mut Spec::CertificateBuffer;
+	fn parabyzantine_certificate_buffer_mut(&mut self) -> &mut Self::CertificateBuffer;
 
 	/// The draft buffer for the certificate.
-	fn parabyzantine_certificate_draft_buffer(&self) -> Spec::CertificateDraftBuffer;
+	fn parabyzantine_certificate_draft_buffer(&self) -> Self::CertificateDraftBuffer;
 
 	/// The buffer for the agreement.
-	fn parabyzantine_agreement_buffer(&self) -> &Spec::AgreementBuffer;
+	fn parabyzantine_agreement_buffer(&self) -> &Self::AgreementBuffer;
 
 	/// The draft buffer for the agreement.
-	fn parabyzantine_agreement_buffer_mut(&mut self) -> &mut Spec::AgreementBuffer;
+	fn parabyzantine_agreement_buffer_mut(&mut self) -> &mut Self::AgreementBuffer;
 
 	/// The draft buffer for the agreement.
-	fn parabyzantine_agreement_draft_buffer(&self) -> Spec::AgreementDraftBuffer;
+	fn parabyzantine_agreement_draft_buffer(&self) -> Self::AgreementDraftBuffer;
 
 	/// The buffer for the transaction.
-	fn parabyzantine_transaction_buffer(&self) -> &Spec::TransactionBuffer;
+	fn parabyzantine_transaction_buffer(&self) -> &Self::TransactionBuffer;
 
 	/// The draft buffer for the transaction.
-	fn parabyzantine_transaction_buffer_mut(&mut self) -> &mut Spec::TransactionBuffer;
+	fn parabyzantine_transaction_buffer_mut(&mut self) -> &mut Self::TransactionBuffer;
 
 	/// The draft buffer for the transaction.
-	fn parabyzantine_transaction_draft_buffer(&self) -> Spec::TransactionDraftBuffer;
+	fn parabyzantine_transaction_draft_buffer(&self) -> Self::TransactionDraftBuffer;
 
 	/// The buffer for the task.
-	fn parabyzantine_task_buffer(&self) -> &Spec::TaskBuffer;
+	fn parabyzantine_task_buffer(&self) -> &Self::TaskBuffer;
 
 	/// The draft buffer for the task.
-	fn parabyzantine_task_buffer_mut(&mut self) -> &mut Spec::TaskBuffer;
+	fn parabyzantine_task_buffer_mut(&mut self) -> &mut Self::TaskBuffer;
 
 	/// The draft buffer for the task.
-	fn parabyzantine_task_draft_buffer(&self) -> Spec::TaskDraftBuffer;
+	fn parabyzantine_task_draft_buffer(&self) -> Self::TaskDraftBuffer;
 
 	/// The buffer for the message.
-	fn parabyzantine_message_buffer(&self) -> &Spec::MessageBuffer;
+	fn parabyzantine_message_buffer(&self) -> &Self::MessageBuffer;
 
 	/// The draft buffer for the message.
-	fn parabyzantine_message_buffer_mut(&mut self) -> &mut Spec::MessageBuffer;
+	fn parabyzantine_message_buffer_mut(&mut self) -> &mut Self::MessageBuffer;
 
 	/// The draft buffer for the message.
-	fn parabyzantine_message_draft_buffer(&self) -> Spec::MessageDraftBuffer;
+	fn parabyzantine_message_draft_buffer(&self) -> Self::MessageDraftBuffer;
 
 	/// The world of the parabyzantine.
-	fn parabyzantine_world<'a>(&'a self) -> ParabyzantineWorld<'a, Spec> {
+	fn parabyzantine_world<'a>(&'a self) -> ParabyzantineWorld<'a, Self> {
 		ParabyzantineWorld {
 			certificate_facts: self.parabyzantine_certificate_buffer().into(),
 			certificate_inferences: self.parabyzantine_certificate_draft_buffer().into(),
@@ -115,7 +112,7 @@ pub trait ParabyzantineData<Spec: ParabyzantineDataSpec>: Sized {
 	}
 
 	/// Commits the inferences for the parabyzantine world.
-	fn commit_parabyzantine_hart(&mut self, inferences: ParabyzantineHartInferences<Spec>) {
+	fn commit_parabyzantine_hart(&mut self, inferences: ParabyzantineHartInferences<Self>) {
 		self.parabyzantine_certificate_buffer_mut()
 			.commit_inferences(inferences.certificate_inferences);
 		self.parabyzantine_agreement_buffer_mut()
@@ -129,53 +126,53 @@ pub trait ParabyzantineData<Spec: ParabyzantineDataSpec>: Sized {
 	}
 }
 
-pub struct ParabyzantineWorld<'a, Spec: ParabyzantineDataSpec> {
+pub struct ParabyzantineWorld<'a, Data: ParabyzantineData> {
 	/// The facts for the certificate.
-	pub certificate_facts: Facts<'a, Spec::CertificateEntity, Spec::CertificateBuffer>,
+	pub certificate_facts: Facts<'a, Data::CertificateEntity, Data::CertificateBuffer>,
 	/// The inferences for the certificate.
 	pub certificate_inferences:
-		Inferences<Spec::CertificateEntity, Spec::CertificateBuffer, Spec::CertificateDraftBuffer>,
+		Inferences<Data::CertificateEntity, Data::CertificateBuffer, Data::CertificateDraftBuffer>,
 
 	/// The facts for the agreement.
-	pub agreement_facts: Facts<'a, Spec::AgreementEntity, Spec::AgreementBuffer>,
+	pub agreement_facts: Facts<'a, Data::AgreementEntity, Data::AgreementBuffer>,
 	/// The inferences for the agreement.
 	pub agreement_inferences:
-		Inferences<Spec::AgreementEntity, Spec::AgreementBuffer, Spec::AgreementDraftBuffer>,
+		Inferences<Data::AgreementEntity, Data::AgreementBuffer, Data::AgreementDraftBuffer>,
 
 	/// The facts for the transaction.
-	pub transaction_facts: Facts<'a, Spec::TransactionEntity, Spec::TransactionBuffer>,
+	pub transaction_facts: Facts<'a, Data::TransactionEntity, Data::TransactionBuffer>,
 	/// The inferences for the transaction.
 	pub transaction_inferences:
-		Inferences<Spec::TransactionEntity, Spec::TransactionBuffer, Spec::TransactionDraftBuffer>,
+		Inferences<Data::TransactionEntity, Data::TransactionBuffer, Data::TransactionDraftBuffer>,
 
 	/// The facts for the task.
-	pub task_facts: Facts<'a, Spec::TaskEntity, Spec::TaskBuffer>,
+	pub task_facts: Facts<'a, Data::TaskEntity, Data::TaskBuffer>,
 	/// The inferences for the task.
-	pub task_inferences: Inferences<Spec::TaskEntity, Spec::TaskBuffer, Spec::TaskDraftBuffer>,
+	pub task_inferences: Inferences<Data::TaskEntity, Data::TaskBuffer, Data::TaskDraftBuffer>,
 
 	/// The facts for the message.
-	pub message_facts: Facts<'a, Spec::MessageEntity, Spec::MessageBuffer>,
+	pub message_facts: Facts<'a, Data::MessageEntity, Data::MessageBuffer>,
 	/// The inferences for the message.
 	pub message_inferences:
-		Inferences<Spec::MessageEntity, Spec::MessageBuffer, Spec::MessageDraftBuffer>,
+		Inferences<Data::MessageEntity, Data::MessageBuffer, Data::MessageDraftBuffer>,
 }
 
-pub struct ParabyzantineHartInferences<Spec: ParabyzantineDataSpec> {
+pub struct ParabyzantineHartInferences<Data: ParabyzantineData> {
 	pub certificate_inferences:
-		Inferences<Spec::CertificateEntity, Spec::CertificateBuffer, Spec::CertificateDraftBuffer>,
+		Inferences<Data::CertificateEntity, Data::CertificateBuffer, Data::CertificateDraftBuffer>,
 	pub agreement_inferences:
-		Inferences<Spec::AgreementEntity, Spec::AgreementBuffer, Spec::AgreementDraftBuffer>,
+		Inferences<Data::AgreementEntity, Data::AgreementBuffer, Data::AgreementDraftBuffer>,
 	pub transaction_inferences:
-		Inferences<Spec::TransactionEntity, Spec::TransactionBuffer, Spec::TransactionDraftBuffer>,
-	pub task_inferences: Inferences<Spec::TaskEntity, Spec::TaskBuffer, Spec::TaskDraftBuffer>,
+		Inferences<Data::TransactionEntity, Data::TransactionBuffer, Data::TransactionDraftBuffer>,
+	pub task_inferences: Inferences<Data::TaskEntity, Data::TaskBuffer, Data::TaskDraftBuffer>,
 	pub message_inferences:
-		Inferences<Spec::MessageEntity, Spec::MessageBuffer, Spec::MessageDraftBuffer>,
+		Inferences<Data::MessageEntity, Data::MessageBuffer, Data::MessageDraftBuffer>,
 }
 
-impl<'a, Spec: ParabyzantineDataSpec> From<ParabyzantineWorld<'a, Spec>>
-	for ParabyzantineHartInferences<Spec>
+impl<'a, Data: ParabyzantineData> From<ParabyzantineWorld<'a, Data>>
+	for ParabyzantineHartInferences<Data>
 {
-	fn from(world: ParabyzantineWorld<'a, Spec>) -> Self {
+	fn from(world: ParabyzantineWorld<'a, Data>) -> Self {
 		ParabyzantineHartInferences {
 			certificate_inferences: world.certificate_inferences,
 			agreement_inferences: world.agreement_inferences,
@@ -187,37 +184,33 @@ impl<'a, Spec: ParabyzantineDataSpec> From<ParabyzantineWorld<'a, Spec>>
 }
 
 /// A [ParabyzantineHart] trait describes operations on the parabyzantine hart.
-pub trait ParabyzantineHart: Sized {
-	type Binding: ParabyzantineDataBinding;
-
+pub trait ParabyzantineHart<Data: ParabyzantineData>: Sized {
 	/// Borrows the [ParabyzantineWorld] for the parabyzantine hart.
 	fn parabyzantine_hart_world<'a>(
 		&mut self,
-		data: &'a mut <Self::Binding as ParabyzantineDataBinding>::Data,
-	) -> ParabyzantineWorld<'a, <Self::Binding as ParabyzantineDataBinding>::Spec> {
+		data: &'a mut Data,
+	) -> ParabyzantineWorld<'a, Data> {
 		data.parabyzantine_world()
 	}
 
 	/// Compute the parabyzantine hart.
 	fn update_parabyzantine_hart(
 		&mut self,
-		data: &mut ParabyzantineWorld<<Self::Binding as ParabyzantineDataBinding>::Spec>,
+		data: &mut ParabyzantineWorld<Data>,
 	);
 
 	/// Commits the inferences for the parabyzantine hart.
 	fn commit_parabyzantine_hart(
 		&mut self,
-		hart_inferences: ParabyzantineHartInferences<
-			<Self::Binding as ParabyzantineDataBinding>::Spec,
-		>,
-		data: &mut <Self::Binding as ParabyzantineDataBinding>::Data,
+		hart_inferences: ParabyzantineHartInferences<Data>,
+		data: &mut Data,
 	) {
 		data.commit_parabyzantine_hart(hart_inferences);
 	}
 
 	fn act_on_parabyzantine_hart(
 		&mut self,
-		data: &mut <Self::Binding as ParabyzantineDataBinding>::Data,
+		data: &mut Data,
 	) {
 		let mut world = self.parabyzantine_hart_world(data);
 		self.update_parabyzantine_hart(&mut world);
@@ -225,24 +218,16 @@ pub trait ParabyzantineHart: Sized {
 	}
 }
 
-impl<Binding: ParabyzantineDataBinding, HartHandler: ParabyzantineHart<Binding = Binding>>
-	Act<Hart, Binding::Data> for HartHandler
+impl<Data: ParabyzantineData, HartHandler: ParabyzantineHart<Data>> Act<Hart, Data>
+	for HartHandler
 {
-	fn act(&mut self, _action: Hart, data: &mut Binding::Data) {
+	fn act(&mut self, _action: Hart, data: &mut Data) {
 		self.act_on_parabyzantine_hart(data);
 	}
 }
 
-/// A [ParabyzantineDataBinding] is a binding for the [Parabyzantine] protocol.
-///
-/// It binds between the [ParabyzantineDataSpec] and the [ParabyzantineData].
-pub trait ParabyzantineDataBinding {
-	type Spec: ParabyzantineDataSpec;
-	type Data: ParabyzantineData<Self::Spec>;
-}
-
-/// A [ParabyzantineDataSpec] for the [NoOp] struct.
-impl ParabyzantineDataSpec for NoOp {
+/// A [ParabyzantineData] for the [NoOpData] struct.
+impl ParabyzantineData for NoOpData {
 	type CertificateEntity = NoOp;
 	type CertificateBuffer = NoOp;
 	type CertificateDraftBuffer = NoOp;
@@ -258,10 +243,7 @@ impl ParabyzantineDataSpec for NoOp {
 	type MessageEntity = NoOp;
 	type MessageBuffer = NoOp;
 	type MessageDraftBuffer = NoOp;
-}
 
-/// A [ParabyzantineData] for the [NoOpData] struct.
-impl ParabyzantineData<NoOp> for NoOpData {
 	fn parabyzantine_certificate_buffer(&self) -> &NoOp {
 		&self.no_op
 	}
@@ -316,7 +298,3 @@ impl ParabyzantineData<NoOp> for NoOpData {
 	}
 }
 
-impl ParabyzantineDataBinding for NoOp {
-	type Spec = NoOp;
-	type Data = NoOpData;
-}
