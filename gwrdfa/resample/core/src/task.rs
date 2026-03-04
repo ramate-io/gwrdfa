@@ -71,26 +71,23 @@ mod tests {
 	use super::*;
 	use crate::agreement::ResampleAgreement;
 	use parabyzantine::{
-		agreement::Agreement, task::Task, AgreementAction, AgreementHandler, Data, NoOp, NoOpData,
-		Parabyzantine, Spec, TaskAction, TaskHandler,
+		agreement::Agreement, task::Task, NoOp, NoOpData, Parabyzantine,
 	};
 
 	#[test]
 	fn test_noop_resample_task_noops() {
 		let resample_task = ResampleTask::<NoOp>(NoOpData::new());
 		let mut parabyzantine: Parabyzantine<
-			Spec<(
-				Data<NoOpData>,
-				AgreementAction<Agreement>,
-				AgreementHandler<ResampleAgreement<NoOp>>,
-				TaskAction<Task>,
-				TaskHandler<ResampleTask<NoOp>>,
-			)>,
-		> = Parabyzantine {
-			data: NoOpData::new(),
-			agreement_handler: ResampleAgreement::<NoOp>(NoOpData::new()),
-			task_handler: resample_task,
-		};
+			NoOpData,
+			Agreement,
+			ResampleAgreement<NoOp>,
+			Task,
+			ResampleTask<NoOp>,
+		> = Parabyzantine::new(
+			NoOpData::new(),
+			ResampleAgreement::<NoOp>(NoOpData::new()),
+			resample_task,
+		);
 		parabyzantine.update_task(Task);
 	}
 }

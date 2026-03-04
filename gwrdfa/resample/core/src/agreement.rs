@@ -163,8 +163,7 @@ mod tests {
 	use crate::task::ResampleTask;
 	use gwrdfa_container::Component;
 	use parabyzantine::{
-		agreement::Agreement, task::Task, AgreementAction, AgreementHandler, Data, Parabyzantine,
-		Spec, TaskAction, TaskHandler,
+		agreement::Agreement, task::Task, Parabyzantine,
 	};
 	use std::collections::BTreeSet;
 	use std::vec;
@@ -179,18 +178,16 @@ mod tests {
 	fn test_noop_resample_agreement_noops() {
 		let resample_agreement = ResampleAgreement::<NoOp>(NoOpData::new());
 		let mut parabyzantine: Parabyzantine<
-			Spec<(
-				Data<NoOpData>,
-				AgreementAction<Agreement>,
-				AgreementHandler<ResampleAgreement<NoOp>>,
-				TaskAction<Task>,
-				TaskHandler<ResampleTask<NoOp>>,
-			)>,
-		> = Parabyzantine {
-			data: NoOpData::new(),
-			agreement_handler: resample_agreement,
-			task_handler: ResampleTask::<NoOp>(NoOpData::new()),
-		};
+			NoOpData,
+			Agreement,
+			ResampleAgreement<NoOp>,
+			Task,
+			ResampleTask<NoOp>,
+		> = Parabyzantine::new(
+			NoOpData::new(),
+			resample_agreement,
+			ResampleTask::<NoOp>(NoOpData::new()),
+		);
 		parabyzantine.update_agreement(Agreement);
 	}
 
