@@ -1,6 +1,7 @@
 use super::{AgreementContainer, AgreementDelta, CertificateContainer, CertificateDelta};
 use crate::agreement::std::{Index, Subcom, Value};
 use crate::agreement::{ResampleAgreementStorage, Subcommittee};
+use crate::ForResample;
 use core::marker::PhantomData;
 use gwrdfa_container::{
 	ContainerEntity, ContainerEntityBuffer, ContainerEntityDraftBuffer, ContainerGiving,
@@ -54,7 +55,8 @@ impl<
 	> ParabyzantineAgreementData
 	for AgreementParabyzantineData<I, V, S, CertContainer, CertDelta, AgreementContainerT, AgreementDeltaT>
 where
-	CertContainer: ContainerGiving<Index<I>>
+	CertContainer: ContainerGiving<ForResample>
+		+ ContainerGiving<Index<I>>
 		+ ContainerGiving<Value<V>>
 		+ ContainerGiving<Subcom<S>>,
 	AgreementContainerT: ContainerGiving<Agreement>

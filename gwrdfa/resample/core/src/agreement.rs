@@ -85,7 +85,7 @@ where
 			// Insert all of the certificates for this index into the certificate set
 			let certificate_query_plan = self.data_mut().certificate_query_plan(index);
 			// insert all of the certificates for this index into the certificate set
-			for (_certificate_entity, (index, value, subcommittee)) in
+			for (_certificate_entity, (_for_resample, index, value, subcommittee)) in
 				agreement_world.certificate_facts.query(certificate_query_plan)
 			{
 				// This is just for moving the certificate into the certificate set.
@@ -207,6 +207,7 @@ mod tests {
 		agreement_data
 			.parabyzantine_agreement_certificate_buffer_mut()
 			.insert_container(CertificateContainer {
+				for_resample: Component::Present(crate::ForResample),
 				index: Component::Present(Index::new(0)),
 				value: Component::Present(Value::new(1)),
 				subcommittee: Component::Present(genesis_subcommittee.clone()),

@@ -1,4 +1,5 @@
 use super::{CertificateSet, ResampleAgreementStorage, Sampler, Subcommittee};
+use crate::ForResample;
 use parabyzantine::agreement::ParabyzantineAgreementData;
 use parabyzantine::buffer::query::{QueryPlanlike, Querylike};
 use parabyzantine::{NoOp, NoOpData};
@@ -31,7 +32,7 @@ where
 	>;
 	type CertificateQuery<'a>: Querylike<
 		Data::CertificateEntity,
-		(&'a Self::Index, &'a Self::Value, &'a Self::Subcommittee),
+		(&'a ForResample, &'a Self::Index, &'a Self::Value, &'a Self::Subcommittee),
 	>
 	where
 		Self::Index: 'a,
@@ -40,7 +41,7 @@ where
 	type CertificateQueryPlan: for<'a> QueryPlanlike<
 		Data::CertificateEntity,
 		&'a Data::CertificateBuffer,
-		(&'a Self::Index, &'a Self::Value, &'a Self::Subcommittee),
+		(&'a ForResample, &'a Self::Index, &'a Self::Value, &'a Self::Subcommittee),
 		Self::CertificateQuery<'a>,
 	>;
 	type CertificateSet: CertificateSet<Self::Index, Self::Value, Self::Subcommittee>;

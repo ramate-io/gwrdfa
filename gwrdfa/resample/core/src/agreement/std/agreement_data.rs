@@ -4,6 +4,7 @@ use crate::agreement::std::{
 	NextRound, Subcom, Value,
 };
 use crate::agreement::{ResampleAgreementData, Sampler, Subcommittee};
+use crate::ForResample;
 use gwrdfa_container::query::matching_tuple::{MatchingTuple, MatchingTupleQuery};
 use std::hash::Hash;
 
@@ -54,9 +55,12 @@ impl<
 	type IndexSubcommitteeAgreementQuery<'a> =
 		MatchingTupleQuery<'a, AgreementContainer<I, V, S>, (Index<I>, Subcom<S>)>;
 	type IndexSubcommitteeAgreementQueryPlan = MatchingTuple<(Index<I>, Subcom<S>)>;
-	type CertificateQuery<'a> =
-		MatchingTupleQuery<'a, CertificateContainer<I, V, S>, (Index<I>, Value<V>, Subcom<S>)>;
-	type CertificateQueryPlan = MatchingTuple<(Index<I>, Value<V>, Subcom<S>)>;
+	type CertificateQuery<'a> = MatchingTupleQuery<
+		'a,
+		CertificateContainer<I, V, S>,
+		(ForResample, Index<I>, Value<V>, Subcom<S>),
+	>;
+	type CertificateQueryPlan = MatchingTuple<(ForResample, Index<I>, Value<V>, Subcom<S>)>;
 	type CertificateSet = MemoryCertificateSet<Index<I>, Value<V>, Subcom<S>>;
 	type Sampler = Sm;
 
@@ -71,7 +75,7 @@ impl<
 	fn certificate_query_plan(
 		&mut self,
 		_index: &Index<I>,
-	) -> MatchingTuple<(Index<I>, Value<V>, Subcom<S>)> {
+	) -> MatchingTuple<(ForResample, Index<I>, Value<V>, Subcom<S>)> {
 		MatchingTuple::new()
 	}
 
