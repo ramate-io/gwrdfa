@@ -108,7 +108,10 @@ mod tests {
 		let mut peer1_received = false;
 		let mut last_error = None;
 		for i in 0..32 {
-			if let Err(e) = sender.0.send_and_confirm_with_timeout(i, &message, Duration::from_secs(2)).await
+			if let Err(e) = sender
+				.0
+				.send_and_confirm_with_timeout(i, &message, Duration::from_secs(2))
+				.await
 			{
 				last_error = Some(e);
 			} else {
