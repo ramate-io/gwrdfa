@@ -3,40 +3,40 @@ pub mod container;
 use crate::agreement::{Condition, Subcommittee};
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Round<T: Eq>(pub T);
+pub struct Index<T: Eq>(pub T);
 
-impl<T: Eq> Round<T> {
+impl<T: Eq> Index<T> {
 	pub fn new(value: T) -> Self {
 		Self(value)
 	}
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Vote<T: Eq + 'static>(pub T);
+pub struct Value<T: Eq + 'static>(pub T);
 
-impl<T: Eq + 'static> Vote<T> {
+impl<T: Eq + 'static> Value<T> {
 	pub fn new(value: T) -> Self {
 		Self(value)
 	}
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct CommitteeRef<T: Eq>(pub T);
+pub struct Subcom<T: Eq>(pub T);
 
-impl<T: Eq> CommitteeRef<T> {
+impl<T: Eq> Subcom<T> {
 	pub fn new(value: T) -> Self {
 		Self(value)
 	}
 }
 
-impl<T: Eq + 'static + Subcommittee<V>, V: Eq + 'static> Subcommittee<Vote<V>> for CommitteeRef<T> {
+impl<T: Eq + 'static + Subcommittee<V>, V: Eq + 'static> Subcommittee<Value<V>> for Subcom<T> {
 	fn condition<'a>(
 		&'a self,
-		partials: impl Iterator<Item = (&'a Self, &'a Vote<V>)> + 'a,
-	) -> Condition<Vote<V>> {
+		partials: impl Iterator<Item = (&'a Self, &'a Value<V>)> + 'a,
+	) -> Condition<Value<V>> {
 		self.0
 			.condition(partials.map(|(committee, vote)| (&committee.0, &vote.0)))
-			.map(Vote)
+			.map(Value)
 	}
 }
 
@@ -50,9 +50,9 @@ impl NextRound for u32 {
 	}
 }
 
-impl<T: Eq + 'static + NextRound> NextRound for Round<T> {
+impl<T: Eq + 'static + NextRound> NextRound for Index<T> {
 	fn next(&self) -> Option<Self> {
-		self.0.next().map(Round)
+		self.0.next().map(Index)
 	}
 }
 

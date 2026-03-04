@@ -1,4 +1,4 @@
-use crate::agreement::std::{CommitteeRef, Round, Vote};
+use crate::agreement::std::{Index, Subcom, Value};
 use crate::agreement::{Resample, Subcommittee};
 use gwrdfa_container::{Component, ContainerGiving, ContainerStores, Delta, DeltasContainer};
 use parabyzantine::agreement::Agreement;
@@ -7,9 +7,9 @@ use parabyzantine::agreement::Agreement;
 pub struct AgreementContainer<I: Eq, V: Eq + 'static, S: Subcommittee<V>> {
 	pub agreement: Component<Agreement>,
 	pub resample: Component<Resample>,
-	pub index: Component<Round<I>>,
-	pub value: Component<Vote<V>>,
-	pub subcommittee: Component<CommitteeRef<S>>,
+	pub index: Component<Index<I>>,
+	pub value: Component<Value<V>>,
+	pub subcommittee: Component<Subcom<S>>,
 }
 
 impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<Agreement>
@@ -28,26 +28,26 @@ impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<Resample>
 	}
 }
 
-impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<Round<I>>
+impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<Index<I>>
 	for AgreementContainer<I, V, S>
 {
-	fn as_component(&self) -> Component<&Round<I>> {
+	fn as_component(&self) -> Component<&Index<I>> {
 		self.index.as_ref()
 	}
 }
 
-impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<Vote<V>>
+impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<Value<V>>
 	for AgreementContainer<I, V, S>
 {
-	fn as_component(&self) -> Component<&Vote<V>> {
+	fn as_component(&self) -> Component<&Value<V>> {
 		self.value.as_ref()
 	}
 }
 
-impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<CommitteeRef<S>>
+impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<Subcom<S>>
 	for AgreementContainer<I, V, S>
 {
-	fn as_component(&self) -> Component<&CommitteeRef<S>> {
+	fn as_component(&self) -> Component<&Subcom<S>> {
 		self.subcommittee.as_ref()
 	}
 }
@@ -55,9 +55,9 @@ impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<CommitteeRef<S>
 pub struct AgreementDelta<I: Eq, V: Eq + 'static, S: Subcommittee<V>> {
 	pub agreement: Delta<Agreement>,
 	pub resample: Delta<Resample>,
-	pub index: Delta<Round<I>>,
-	pub value: Delta<Vote<V>>,
-	pub subcommittee: Delta<CommitteeRef<S>>,
+	pub index: Delta<Index<I>>,
+	pub value: Delta<Value<V>>,
+	pub subcommittee: Delta<Subcom<S>>,
 }
 
 impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Agreement> for AgreementDelta<I, V, S> {
@@ -120,8 +120,8 @@ impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Resample> for A
 	}
 }
 
-impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Round<I>> for AgreementDelta<I, V, S> {
-	fn from_data(data: Round<I>) -> Self {
+impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Index<I>> for AgreementDelta<I, V, S> {
+	fn from_data(data: Index<I>) -> Self {
 		Self {
 			agreement: Delta::Unchanged,
 			resample: Delta::Unchanged,
@@ -141,7 +141,7 @@ impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Round<I>> for A
 		}
 	}
 
-	fn update_with_data(&mut self, data: Round<I>) {
+	fn update_with_data(&mut self, data: Index<I>) {
 		self.index = Delta::Modified(data);
 	}
 
@@ -150,8 +150,8 @@ impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Round<I>> for A
 	}
 }
 
-impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Vote<V>> for AgreementDelta<I, V, S> {
-	fn from_data(data: Vote<V>) -> Self {
+impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Value<V>> for AgreementDelta<I, V, S> {
+	fn from_data(data: Value<V>) -> Self {
 		Self {
 			agreement: Delta::Unchanged,
 			resample: Delta::Unchanged,
@@ -171,7 +171,7 @@ impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Vote<V>> for Ag
 		}
 	}
 
-	fn update_with_data(&mut self, data: Vote<V>) {
+	fn update_with_data(&mut self, data: Value<V>) {
 		self.value = Delta::Modified(data);
 	}
 
@@ -180,10 +180,10 @@ impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Vote<V>> for Ag
 	}
 }
 
-impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<CommitteeRef<S>>
+impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Subcom<S>>
 	for AgreementDelta<I, V, S>
 {
-	fn from_data(data: CommitteeRef<S>) -> Self {
+	fn from_data(data: Subcom<S>) -> Self {
 		Self {
 			agreement: Delta::Unchanged,
 			resample: Delta::Unchanged,
@@ -203,7 +203,7 @@ impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<CommitteeRef<S>
 		}
 	}
 
-	fn update_with_data(&mut self, data: CommitteeRef<S>) {
+	fn update_with_data(&mut self, data: Subcom<S>) {
 		self.subcommittee = Delta::Modified(data);
 	}
 

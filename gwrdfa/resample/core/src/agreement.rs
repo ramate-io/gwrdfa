@@ -1,6 +1,5 @@
 pub mod certificate;
 pub mod consensus;
-pub mod countable;
 pub mod data;
 pub mod sampler;
 pub mod storage;
@@ -10,9 +9,9 @@ pub mod subcommittee;
 pub mod std;
 
 use crate::Resample;
-use core::marker::PhantomData;
 pub use certificate::CertificateSet;
 pub use consensus::Condition;
+use core::marker::PhantomData;
 pub use data::ResampleAgreementData;
 use parabyzantine::agreement::{
 	Agreement, AgreementWorld, ParabyzantineAgreement, ParabyzantineAgreementData,
@@ -31,10 +30,7 @@ pub use subcommittee::Subcommittee;
 pub struct ResampleAgreement<
 	Data: ParabyzantineAgreementData,
 	ResampleData: ResampleAgreementData<Data>,
->(
-	pub ResampleData,
-	PhantomData<Data>,
-)
+>(pub ResampleData, PhantomData<Data>)
 where
 	Data::AgreementDraftBuffer: ResampleAgreementStorage<
 		Data::AgreementEntity,
@@ -54,8 +50,8 @@ where
 		ResampleData::Subcommittee,
 		ResampleData::Value,
 	>,
-// Because where bounds are not inferred on traits we need to manually specify them,
-// this is incredibly ugly and we should find a way to improve this.
+	// Because where bounds are not inferred on traits we need to manually specify them,
+	// this is incredibly ugly and we should find a way to improve this.
 {
 	pub fn new(data: ResampleData) -> Self {
 		Self(data, PhantomData)
@@ -80,10 +76,7 @@ where
 		ResampleData::Value,
 	>,
 {
-	fn update_parabyzantine_agreement(
-		&mut self,
-		agreement_world: &mut AgreementWorld<Data>,
-	) {
+	fn update_parabyzantine_agreement(&mut self, agreement_world: &mut AgreementWorld<Data>) {
 		// over all the index subcommittee agreements
 		let index_query = self.data_mut().index_subcommittee_agreement_query_plan();
 		for (_agreement_entity, (index, subcommittee)) in
@@ -167,14 +160,14 @@ where
 mod tests {
 	use super::*;
 	use crate::agreement::std::{
-		AgreementContainer, AgreementData, AgreementParabyzantineData, Committee, CommitteeRef,
-		CertificateContainer, Round, Vote,
+		AgreementContainer, AgreementData, AgreementParabyzantineData, CertificateContainer,
+		Committee, Index, Subcom, Value,
 	};
 	use crate::task::ResampleTask;
-	use gwrdfa_container::Component;
-	use parabyzantine::{agreement::Agreement, NoOpData, Parabyzantine};
 	use ::std::collections::BTreeSet;
 	use ::std::vec;
+	use gwrdfa_container::Component;
+	use parabyzantine::{agreement::Agreement, NoOpData, Parabyzantine};
 
 	#[test]
 	fn test_noop_resample_agreement_noops() {
@@ -195,11 +188,10 @@ mod tests {
 		>::new(AgreementData::new());
 
 		// Insert genesis agreement
-		let genesis: Round<u32> = Round::new(0);
-		let genesis_subcommittee: CommitteeRef<Committee<u32>> =
-			CommitteeRef::new(Committee::new().with_members(vec![1, 2, 3, 4, 5, 6, 7].into_iter()));
-		let mut agreement_data =
-			AgreementParabyzantineData::<u32, u32, Committee<u32>>::new();
+		let genesis: Index<u32> = Index::new(0);
+		let genesis_subcommittee: Subcom<Committee<u32>> =
+			Subcom::new(Committee::new().with_members(vec![1, 2, 3, 4, 5, 6, 7].into_iter()));
+		let mut agreement_data = AgreementParabyzantineData::<u32, u32, Committee<u32>>::new();
 
 		let genesis_agreement_container = AgreementContainer {
 			agreement: Component::Present(Agreement),
@@ -215,8 +207,8 @@ mod tests {
 		agreement_data
 			.parabyzantine_agreement_certificate_buffer_mut()
 			.insert_container(CertificateContainer {
-				index: Component::Present(Round::new(0)),
-				value: Component::Present(Vote::new(1)),
+				index: Component::Present(Index::new(0)),
+				value: Component::Present(Value::new(1)),
 				subcommittee: Component::Present(genesis_subcommittee.clone()),
 				..Default::default()
 			});
@@ -239,7 +231,7 @@ mod tests {
 				agreement: Component::Present(Agreement),
 				resample: Component::Present(Resample),
 				// Next index
-				index: Component::Present(Round::new(1)),
+				index: Component::Present(Index::new(1)),
 				// still the same committee by the rule of the [ConstantCommittee]
 				subcommittee: Component::Present(genesis_subcommittee.clone()),
 				..Default::default()
@@ -247,8 +239,8 @@ mod tests {
 			AgreementContainer {
 				agreement: Component::Present(Agreement),
 				resample: Component::Present(Resample),
-				index: Component::Present(Round::new(0)),
-				value: Component::Present(Vote::new(1)),
+				index: Component::Present(Index::new(0)),
+				value: Component::Present(Value::new(1)),
 				..Default::default()
 			},
 		]
