@@ -1,10 +1,8 @@
 pub mod gossamer_messages;
 pub mod gossamer_storage;
-pub mod spec;
 
 use gossamer_messages::GossamerMessages;
 use gossamer_storage::GossamerMessageStorage;
-pub use spec::GossamerSpec;
 
 use crate::Gossamer;
 use crate::{Broadcast, In, InFlight, Out};
@@ -12,22 +10,22 @@ use parabyzantine::hart::{ParabyzantineData, ParabyzantineHart, ParabyzantineWor
 
 /// A [GossamerHart] refers to  a [Hart] system that is responsible for sending and receiving messages
 /// via Gossamer.
-pub struct GossamerHart<Data: ParabyzantineData, Spec: GossamerSpec<Data>>
+pub struct GossamerHart<Data: ParabyzantineData, Messages: GossamerMessages<Data>>
 where
-	Data::MessageDraftBuffer: GossamerMessageStorage<Data::MessageEntity, Spec::Message>,
+	Data::MessageDraftBuffer: GossamerMessageStorage<Data::MessageEntity, Messages::Message>,
 	Data::MessageEntity: Send + Sync,
 {
-	messages: Spec::Messages,
+	messages: Messages,
 	gossamer: Gossamer<Data::MessageEntity>,
 	max_batch_size: usize,
 }
 
-impl<Data: ParabyzantineData, Spec: GossamerSpec<Data>> GossamerHart<Data, Spec>
+impl<Data: ParabyzantineData, Messages: GossamerMessages<Data>> GossamerHart<Data, Messages>
 where
-	Data::MessageDraftBuffer: GossamerMessageStorage<Data::MessageEntity, Spec::Message>,
+	Data::MessageDraftBuffer: GossamerMessageStorage<Data::MessageEntity, Messages::Message>,
 	Data::MessageEntity: Send + Sync,
 {
-	pub fn new(gossamer: Gossamer<Data::MessageEntity>, messages: Spec::Messages) -> Self {
+	pub fn new(gossamer: Gossamer<Data::MessageEntity>, messages: Messages) -> Self {
 		Self { messages, gossamer, max_batch_size: 256 }
 	}
 
@@ -38,10 +36,10 @@ where
 }
 
 /// A [GossamerHart] implements the [ParabyzantineHart] trait.
-impl<Data: ParabyzantineData, Spec: GossamerSpec<Data>> ParabyzantineHart<Data>
-	for GossamerHart<Data, Spec>
+impl<Data: ParabyzantineData, Messages: GossamerMessages<Data>> ParabyzantineHart<Data>
+	for GossamerHart<Data, Messages>
 where
-	Data::MessageDraftBuffer: GossamerMessageStorage<Data::MessageEntity, Spec::Message>,
+	Data::MessageDraftBuffer: GossamerMessageStorage<Data::MessageEntity, Messages::Message>,
 	Data::MessageEntity: Copy + Send + Sync + 'static,
 {
 	fn update_parabyzantine_hart(&mut self, data: &mut ParabyzantineWorld<Data>) {
@@ -83,7 +81,7 @@ where
 
 		// Try to receive up to max_batch_size messages
 		for _ in 0..self.max_batch_size {
-			match self.gossamer.try_recv_message::<Spec::Message>() {
+			match self.gossamer.try_recv_message::<Messages::Message>() {
 				Ok(Some(message)) => {
 					// Insert the message into the inferences
 					data.message_inferences.insert(None, (In, message))
@@ -233,18 +231,8 @@ pub mod tests {
 		}
 	}
 
-	pub struct TestGossamerSpec;
-
-	impl GossamerSpec<TestParabyzantineData> for TestGossamerSpec {
-		type Message = TestMessage;
-		type OutQuery<'a> =
-			MatchingTupleQuery<'a, GossamerContainer<TestMessage>, (Out, TestMessage)>;
-		type OutQueryPlan = MatchingTuple<(Out, TestMessage)>;
-		type Messages = TestGossamerMessages;
-	}
-
 	fn hart_in(
-		hart: &mut GossamerHart<TestParabyzantineData, TestGossamerSpec>,
+		hart: &mut GossamerHart<TestParabyzantineData, TestGossamerMessages>,
 		data: &mut TestParabyzantineData,
 		message_into_gossamer_sender: UnboundedSender<Vec<u8>>,
 		mut messages: Vec<TestMessage>,
@@ -279,7 +267,7 @@ pub mod tests {
 	}
 
 	fn hart_out(
-		hart: &mut GossamerHart<TestParabyzantineData, TestGossamerSpec>,
+		hart: &mut GossamerHart<TestParabyzantineData, TestGossamerMessages>,
 		data: &mut TestParabyzantineData,
 		entity_message_from_gossamer_receiver: &mut UnboundedReceiver<(ContainerEntity, Vec<u8>)>,
 		mut messages: Vec<TestMessage>,
@@ -315,7 +303,7 @@ pub mod tests {
 	}
 
 	fn hart_confirm(
-		hart: &mut GossamerHart<TestParabyzantineData, TestGossamerSpec>,
+		hart: &mut GossamerHart<TestParabyzantineData, TestGossamerMessages>,
 		data: &mut TestParabyzantineData,
 		entity_into_gossamer_sender: UnboundedSender<
 			Result<ContainerEntity, (ContainerEntity, GossamerTaskError)>,
@@ -348,7 +336,7 @@ pub mod tests {
 	}
 
 	fn hart_out_and_confirm(
-		hart: &mut GossamerHart<TestParabyzantineData, TestGossamerSpec>,
+		hart: &mut GossamerHart<TestParabyzantineData, TestGossamerMessages>,
 		data: &mut TestParabyzantineData,
 		entity_message_from_gossamer_receiver: &mut UnboundedReceiver<(ContainerEntity, Vec<u8>)>,
 		entity_into_gossamer_sender: UnboundedSender<
@@ -372,7 +360,7 @@ pub mod tests {
 
 		let messages = TestGossamerMessages;
 		let mut hart =
-			GossamerHart::<TestParabyzantineData, TestGossamerSpec>::new(gossamer, messages);
+			GossamerHart::<TestParabyzantineData, TestGossamerMessages>::new(gossamer, messages);
 
 		let mut data = TestParabyzantineData::default();
 
@@ -398,7 +386,7 @@ pub mod tests {
 
 		let messages = TestGossamerMessages;
 		let mut hart =
-			GossamerHart::<TestParabyzantineData, TestGossamerSpec>::new(gossamer, messages);
+			GossamerHart::<TestParabyzantineData, TestGossamerMessages>::new(gossamer, messages);
 
 		let mut data = TestParabyzantineData::default();
 
@@ -424,7 +412,7 @@ pub mod tests {
 
 		let messages = TestGossamerMessages;
 		let mut hart =
-			GossamerHart::<TestParabyzantineData, TestGossamerSpec>::new(gossamer, messages);
+			GossamerHart::<TestParabyzantineData, TestGossamerMessages>::new(gossamer, messages);
 
 		let mut data = TestParabyzantineData::default();
 
@@ -450,7 +438,7 @@ pub mod tests {
 		) = Gossamer::<ContainerEntity>::mock();
 		let messages = TestGossamerMessages;
 		let mut hart =
-			GossamerHart::<TestParabyzantineData, TestGossamerSpec>::new(gossamer, messages);
+			GossamerHart::<TestParabyzantineData, TestGossamerMessages>::new(gossamer, messages);
 
 		let mut data = TestParabyzantineData::default();
 
@@ -483,7 +471,7 @@ pub mod tests {
 
 		let messages = TestGossamerMessages;
 		let mut hart =
-			GossamerHart::<TestParabyzantineData, TestGossamerSpec>::new(gossamer, messages);
+			GossamerHart::<TestParabyzantineData, TestGossamerMessages>::new(gossamer, messages);
 
 		let mut data = TestParabyzantineData::default();
 
