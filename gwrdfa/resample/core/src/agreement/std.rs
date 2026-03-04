@@ -56,10 +56,10 @@ impl<T: Eq + 'static + NextRound> NextRound for Round<T> {
 	}
 }
 
+pub use super::data::test::AgreementData;
+pub use super::sampler::test::ConstantCommittee;
+pub use super::subcommittee::test::Committee;
 pub use container::{
 	AgreementContainer, AgreementDelta, AgreementParabyzantineData, CertificateContainer,
 	CertificateDelta,
 };
-pub use super::data::test::AgreementData;
-pub use super::sampler::test::ConstantCommittee;
-pub use super::subcommittee::test::Committee;
