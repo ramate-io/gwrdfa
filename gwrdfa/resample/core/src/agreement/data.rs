@@ -88,94 +88,100 @@ where
 	}
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "std"))]
 pub mod test {
 	use super::*;
-	use crate::agreement::certificate::test::TestCertificateSet;
-	use crate::agreement::sampler::test::TestSampler;
-	use crate::agreement::subcommittee::test::TestSubcommittee;
-	use crate::agreement::test_util::container::*;
-	use crate::agreement::test_util::{Index, Sub, TextIndexabled, Value};
-	use crate::agreement::{CertificateSet, Subcommittee};
+	use crate::agreement::certificate::test::MemoryCertificateSet;
+	use crate::agreement::sampler::test::ConstantCommittee;
+	use crate::agreement::std::{
+		AgreementContainer, AgreementParabyzantineData, CertificateContainer, CommitteeRef,
+		NextRound, Round, Vote,
+	};
+	use crate::agreement::Subcommittee;
 	use gwrdfa_container::query::matching_tuple::{MatchingTuple, MatchingTupleQuery};
 	use std::hash::Hash;
 
-	pub struct TestResampleAgreementData<
-		I: Eq + Hash + Clone + TextIndexabled + 'static,
+	pub struct AgreementData<
+		I: Eq + Hash + Clone + NextRound + 'static,
 		V: Eq + Hash + Clone + 'static,
 		S: Subcommittee<V> + Hash + Clone + 'static,
 	> {
-		pub certificate_set: TestCertificateSet<Index<I>, Value<V>, Sub<S>>,
-		pub sampler: TestSampler,
+		pub certificate_set: MemoryCertificateSet<Round<I>, Vote<V>, CommitteeRef<S>>,
+		pub sampler: ConstantCommittee,
 	}
 
 	impl<
-			I: Eq + Hash + Clone + TextIndexabled + 'static,
+			I: Eq + Hash + Clone + NextRound + 'static,
 			V: Eq + Hash + Clone + 'static,
 			S: Subcommittee<V> + Hash + Clone + 'static,
-		> TestResampleAgreementData<I, V, S>
+		> AgreementData<I, V, S>
 	{
 		pub fn new() -> Self {
-			Self { certificate_set: TestCertificateSet::new(), sampler: TestSampler::new() }
+			Self { certificate_set: MemoryCertificateSet::new(), sampler: ConstantCommittee::new() }
 		}
 	}
 
 	impl<
-			I: Eq + Hash + Clone + TextIndexabled + 'static,
+			I: Eq + Hash + Clone + NextRound + 'static,
 			V: Eq + Hash + Clone + 'static,
 			S: Subcommittee<V> + Hash + Clone + 'static,
 		>
-		ResampleAgreementData<TestResampleParabyzantineData<I, V, S>>
-		for TestResampleAgreementData<I, V, S>
+		ResampleAgreementData<AgreementParabyzantineData<I, V, S>>
+		for AgreementData<I, V, S>
 	{
-		type Index = Index<I>;
-		type Value = Value<V>;
-		type Subcommittee = Sub<S>;
+		type Index = Round<I>;
+		type Value = Vote<V>;
+		type Subcommittee = CommitteeRef<S>;
 		type IndexSubcommitteeAgreementQuery<'a> =
-			MatchingTupleQuery<'a, TestResampleAgreementContainer<I, V, S>, (Index<I>, Sub<S>)>;
-		type IndexSubcommitteeAgreementQueryPlan = MatchingTuple<(Index<I>, Sub<S>)>;
+			MatchingTupleQuery<'a, AgreementContainer<I, V, S>, (Round<I>, CommitteeRef<S>)>;
+		type IndexSubcommitteeAgreementQueryPlan = MatchingTuple<(Round<I>, CommitteeRef<S>)>;
 		type CertificateQuery<'a> = MatchingTupleQuery<
 			'a,
-			TestResampleCertificateContainer<I, V, S>,
-			(Index<I>, Value<V>, Sub<S>),
+			CertificateContainer<I, V, S>,
+			(Round<I>, Vote<V>, CommitteeRef<S>),
 		>;
-		type CertificateQueryPlan = MatchingTuple<(Index<I>, Value<V>, Sub<S>)>;
-		type CertificateSet = TestCertificateSet<Index<I>, Value<V>, Sub<S>>;
-		type Sampler = TestSampler;
+		type CertificateQueryPlan = MatchingTuple<(Round<I>, Vote<V>, CommitteeRef<S>)>;
+		type CertificateSet = MemoryCertificateSet<Round<I>, Vote<V>, CommitteeRef<S>>;
+		type Sampler = ConstantCommittee;
 
-		fn certificate_set(&self) -> &TestCertificateSet<Index<I>, Value<V>, Sub<S>> {
+		fn certificate_set(&self) -> &MemoryCertificateSet<Round<I>, Vote<V>, CommitteeRef<S>> {
 			&self.certificate_set
 		}
-		fn certificate_set_mut(&mut self) -> &mut TestCertificateSet<Index<I>, Value<V>, Sub<S>> {
+		fn certificate_set_mut(
+			&mut self,
+		) -> &mut MemoryCertificateSet<Round<I>, Vote<V>, CommitteeRef<S>> {
 			&mut self.certificate_set
 		}
 
-		fn certificate_query_plan(
-			&mut self,
-			_index: &Index<I>,
-		) -> MatchingTuple<(Index<I>, Value<V>, Sub<S>)> {
+		fn certificate_query_plan(&mut self, _index: &Round<I>) -> MatchingTuple<(Round<I>, Vote<V>, CommitteeRef<S>)> {
 			MatchingTuple::new()
 		}
 
-		fn sampler(&self) -> &TestSampler {
+		fn sampler(&self) -> &ConstantCommittee {
 			&self.sampler
 		}
-		fn sampler_mut(&mut self) -> &mut TestSampler {
+		fn sampler_mut(&mut self) -> &mut ConstantCommittee {
 			&mut self.sampler
 		}
-		fn index_subcommittee_agreement_query_plan(&mut self) -> MatchingTuple<(Index<I>, Sub<S>)> {
+		fn index_subcommittee_agreement_query_plan(
+			&mut self,
+		) -> MatchingTuple<(Round<I>, CommitteeRef<S>)> {
 			MatchingTuple::new()
 		}
 	}
 
 	#[test]
 	fn test_esample_agreement_data() {
-		let mut data = TestResampleAgreementData::<u32, u32, TestSubcommittee<u32>>::new();
-		let index = Index::new(0);
-		let value = Value::new(0);
-		let subcommittee = Sub::new(TestSubcommittee::new());
+		use crate::agreement::subcommittee::test::Committee;
+
+		let mut data = AgreementData::<u32, u32, Committee<u32>>::new();
+		let index = Round::new(0);
+		let value = Vote::new(0);
+		let subcommittee = CommitteeRef::new(Committee::new());
 
 		data.certificate_set_mut().insert(index.clone(), value, subcommittee);
 		assert_eq!(data.certificate_set().partial_subcommittees_for_index(&index).count(), 1);
 	}
+
+	pub type TestResampleAgreementData<I, V, S> = AgreementData<I, V, S>;
 }

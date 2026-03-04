@@ -6,8 +6,8 @@ pub mod sampler;
 pub mod storage;
 pub mod subcommittee;
 
-#[cfg(test)]
-pub mod test_util;
+#[cfg(any(test, feature = "std"))]
+pub mod std;
 
 use crate::Resample;
 use core::marker::PhantomData;
@@ -166,17 +166,15 @@ where
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::agreement::data::test::TestResampleAgreementData;
-	use crate::agreement::subcommittee::test::TestSubcommittee;
-	use crate::agreement::test_util::container::TestResampleAgreementContainer;
-	use crate::agreement::test_util::container::TestResampleCertificateContainer;
-	use crate::agreement::test_util::container::TestResampleParabyzantineData;
-	use crate::agreement::test_util::*;
+	use crate::agreement::std::{
+		AgreementContainer, AgreementData, AgreementParabyzantineData, Committee, CommitteeRef,
+		CertificateContainer, Round, Vote,
+	};
 	use crate::task::ResampleTask;
 	use gwrdfa_container::Component;
 	use parabyzantine::{agreement::Agreement, NoOpData, Parabyzantine};
-	use std::collections::BTreeSet;
-	use std::vec;
+	use ::std::collections::BTreeSet;
+	use ::std::vec;
 
 	#[test]
 	fn test_noop_resample_agreement_noops() {
@@ -190,20 +188,20 @@ mod tests {
 	}
 
 	#[test]
-	fn test_resample_agreement_with_test_util() {
+	fn test_resample_agreement_with_std_support() {
 		let mut resample_agreement = ResampleAgreement::<
-			TestResampleParabyzantineData<u32, u32, TestSubcommittee<u32>>,
-			TestResampleAgreementData<u32, u32, TestSubcommittee<u32>>,
-		>::new(TestResampleAgreementData::new());
+			AgreementParabyzantineData<u32, u32, Committee<u32>>,
+			AgreementData<u32, u32, Committee<u32>>,
+		>::new(AgreementData::new());
 
 		// Insert genesis agreement
-		let genesis: Index<u32> = Index::new(0);
-		let genesis_subcommittee: Sub<TestSubcommittee<u32>> =
-			Sub::new(TestSubcommittee::new().with_members(vec![1, 2, 3, 4, 5, 6, 7].into_iter()));
+		let genesis: Round<u32> = Round::new(0);
+		let genesis_subcommittee: CommitteeRef<Committee<u32>> =
+			CommitteeRef::new(Committee::new().with_members(vec![1, 2, 3, 4, 5, 6, 7].into_iter()));
 		let mut agreement_data =
-			TestResampleParabyzantineData::<u32, u32, TestSubcommittee<u32>>::new();
+			AgreementParabyzantineData::<u32, u32, Committee<u32>>::new();
 
-		let genesis_agreement_container = TestResampleAgreementContainer {
+		let genesis_agreement_container = AgreementContainer {
 			agreement: Component::Present(Agreement),
 			index: Component::Present(genesis),
 			subcommittee: Component::Present(genesis_subcommittee.clone()),
@@ -216,9 +214,9 @@ mod tests {
 		// Insert a certificate from the genesis subcommittee
 		agreement_data
 			.parabyzantine_agreement_certificate_buffer_mut()
-			.insert_container(TestResampleCertificateContainer {
-				index: Component::Present(Index::new(0)),
-				value: Component::Present(Value::new(1)),
+			.insert_container(CertificateContainer {
+				index: Component::Present(Round::new(0)),
+				value: Component::Present(Vote::new(1)),
 				subcommittee: Component::Present(genesis_subcommittee.clone()),
 				..Default::default()
 			});
@@ -237,20 +235,20 @@ mod tests {
 		let reference_agreement_containers = vec![
 			genesis_agreement_container.clone(),
 			// Next subcommittee agreement
-			TestResampleAgreementContainer {
+			AgreementContainer {
 				agreement: Component::Present(Agreement),
 				resample: Component::Present(Resample),
 				// Next index
-				index: Component::Present(Index::new(1)),
-				// still the same committee by the rule of the [TestSampler]
+				index: Component::Present(Round::new(1)),
+				// still the same committee by the rule of the [ConstantCommittee]
 				subcommittee: Component::Present(genesis_subcommittee.clone()),
 				..Default::default()
 			},
-			TestResampleAgreementContainer {
+			AgreementContainer {
 				agreement: Component::Present(Agreement),
 				resample: Component::Present(Resample),
-				index: Component::Present(Index::new(0)),
-				value: Component::Present(Value::new(1)),
+				index: Component::Present(Round::new(0)),
+				value: Component::Present(Vote::new(1)),
 				..Default::default()
 			},
 		]

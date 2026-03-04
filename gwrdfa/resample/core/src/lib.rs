@@ -1,7 +1,4 @@
-#![no_std]
-
-#[cfg(test)]
-extern crate std;
+#![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod agreement;
 pub mod task;

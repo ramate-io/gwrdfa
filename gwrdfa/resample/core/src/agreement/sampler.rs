@@ -30,23 +30,22 @@ impl<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>> Sampler<Index, Va
 	}
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "std"))]
 pub mod test {
 	use super::*;
-	use crate::agreement::subcommittee::test::TestSubcommittee;
-	use crate::agreement::test_util::TextIndexabled;
+	use crate::agreement::std::NextRound;
 
 	#[derive(Debug, Clone, Default)]
-	pub struct TestSampler;
+	pub struct ConstantCommittee;
 
-	impl TestSampler {
+	impl ConstantCommittee {
 		pub fn new() -> Self {
 			Self
 		}
 	}
 
-	impl<Index: Eq + TextIndexabled, Value: Eq + 'static, Sub: Subcommittee<Value> + Clone>
-		Sampler<Index, Value, Sub> for TestSampler
+	impl<Index: Eq + NextRound, Value: Eq + 'static, Sub: Subcommittee<Value> + Clone>
+		Sampler<Index, Value, Sub> for ConstantCommittee
 	{
 		fn elect_subcommittee_from_condition(
 			&mut self,
@@ -66,9 +65,11 @@ pub mod test {
 
 	#[test]
 	fn test_test_sampler() {
-		let mut sampler = TestSampler;
+		use crate::agreement::subcommittee::test::Committee;
+
+		let mut sampler = ConstantCommittee;
 		let index = 0;
-		let mut subcommittee = TestSubcommittee::new();
+		let mut subcommittee = Committee::new();
 		subcommittee.add_member(1);
 		subcommittee.add_member(2);
 		subcommittee.add_member(3);
@@ -88,4 +89,6 @@ pub mod test {
 			sampler.elect_subcommittee_from_condition(&index, &subcommittee, &value);
 		assert_eq!(next_subcommittee, None);
 	}
+
+	pub type TestSampler = ConstantCommittee;
 }

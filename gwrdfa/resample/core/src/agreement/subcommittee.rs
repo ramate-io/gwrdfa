@@ -18,23 +18,22 @@ impl<T: Eq + 'static> Subcommittee<T> for NoOp {
 	}
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "std"))]
 pub mod test {
 
 	use super::*;
 	use std::{
 		collections::{BTreeSet, HashMap},
 		hash::Hash,
-		vec,
 		vec::Vec,
 	};
 
 	#[derive(Debug, Eq, PartialEq, Clone, Hash, PartialOrd, Ord, Default)]
-	pub struct TestSubcommittee<Sender: PartialEq + Eq + PartialOrd + Ord + Hash + Clone> {
+	pub struct Committee<Sender: PartialEq + Eq + PartialOrd + Ord + Hash + Clone> {
 		members: BTreeSet<Sender>,
 	}
 
-	impl<Sender: PartialEq + Eq + PartialOrd + Ord + Hash + Clone> TestSubcommittee<Sender> {
+	impl<Sender: PartialEq + Eq + PartialOrd + Ord + Hash + Clone> Committee<Sender> {
 		pub fn new() -> Self {
 			Self { members: BTreeSet::new() }
 		}
@@ -82,7 +81,7 @@ pub mod test {
 	impl<
 			Sender: PartialEq + Eq + PartialOrd + Ord + Hash + Clone,
 			Value: PartialEq + Eq + Hash + Clone + 'static,
-		> Subcommittee<Value> for TestSubcommittee<Sender>
+		> Subcommittee<Value> for Committee<Sender>
 	{
 		fn condition<'a>(
 			&'a self,
@@ -135,7 +134,7 @@ pub mod test {
 
 	#[test]
 	fn test_subcommittee_consensus_condition() {
-		let mut subcommittee = TestSubcommittee::<u32>::new();
+		let mut subcommittee = Committee::<u32>::new();
 		subcommittee.add_member(1);
 		subcommittee.add_member(2);
 		subcommittee.add_member(3);
@@ -150,7 +149,7 @@ pub mod test {
 
 	#[test]
 	fn test_subcommittee_hung_condition() {
-		let mut subcommittee = TestSubcommittee::<u32>::new();
+		let mut subcommittee = Committee::<u32>::new();
 		subcommittee.add_member(1);
 		subcommittee.add_member(2);
 		subcommittee.add_member(3);
@@ -158,12 +157,12 @@ pub mod test {
 		subcommittee.add_member(5);
 		subcommittee.add_member(6);
 
-		let mut subcommittee_on_1 = TestSubcommittee::<u32>::new();
+		let mut subcommittee_on_1 = Committee::<u32>::new();
 		subcommittee_on_1.add_member(1);
 		subcommittee_on_1.add_member(2);
 		subcommittee_on_1.add_member(3);
 
-		let mut subcommittee_on_2 = TestSubcommittee::<u32>::new();
+		let mut subcommittee_on_2 = Committee::<u32>::new();
 		subcommittee_on_2.add_member(4);
 		subcommittee_on_2.add_member(5);
 		subcommittee_on_2.add_member(6);
@@ -175,7 +174,7 @@ pub mod test {
 
 	#[test]
 	fn test_subcommittee_in_progress_condition() {
-		let mut subcommittee = TestSubcommittee::<u32>::new();
+		let mut subcommittee = Committee::<u32>::new();
 		subcommittee.add_member(1);
 		subcommittee.add_member(2);
 		subcommittee.add_member(3);
@@ -183,16 +182,18 @@ pub mod test {
 		subcommittee.add_member(5);
 		subcommittee.add_member(6);
 
-		let mut subcommittee_on_1 = TestSubcommittee::<u32>::new();
+		let mut subcommittee_on_1 = Committee::<u32>::new();
 		subcommittee_on_1.add_member(1);
 		subcommittee_on_1.add_member(2);
 		subcommittee_on_1.add_member(3);
 
-		let mut subcommittee_on_2 = TestSubcommittee::<u32>::new();
+		let mut subcommittee_on_2 = Committee::<u32>::new();
 		subcommittee_on_2.add_member(4);
 
 		let condition = subcommittee
 			.condition(vec![(&subcommittee_on_1, &1), (&subcommittee_on_2, &2)].into_iter());
 		assert_eq!(condition, Condition::InProgress);
 	}
+
+	pub type TestSubcommittee<Sender> = Committee<Sender>;
 }

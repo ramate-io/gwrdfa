@@ -35,17 +35,15 @@ impl CertificateSet<NoOp, NoOp, NoOp> for NoOp {
 	}
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "std"))]
 pub mod test {
 	use super::*;
-	use crate::agreement::subcommittee::test::TestSubcommittee;
 	use std::collections::{HashMap, HashSet};
 	use std::hash::Hash;
-	use std::vec;
 	use std::vec::Vec;
 
 	#[derive(Debug)]
-	pub struct TestCertificateSet<
+	pub struct MemoryCertificateSet<
 		Index: Eq + Hash,
 		Value: Eq + 'static + Hash,
 		Sub: Subcommittee<Value> + Hash,
@@ -54,7 +52,7 @@ pub mod test {
 	}
 
 	impl<Index: Eq + Hash, Value: Eq + 'static + Hash, Sub: Subcommittee<Value> + Hash>
-		TestCertificateSet<Index, Value, Sub>
+		MemoryCertificateSet<Index, Value, Sub>
 	{
 		pub fn new() -> Self {
 			Self { certs: HashMap::new() }
@@ -62,7 +60,7 @@ pub mod test {
 	}
 
 	impl<Index: Eq + Hash, Value: Eq + 'static + Hash, Sub: Subcommittee<Value> + Hash>
-		CertificateSet<Index, Value, Sub> for TestCertificateSet<Index, Value, Sub>
+		CertificateSet<Index, Value, Sub> for MemoryCertificateSet<Index, Value, Sub>
 	{
 		fn insert(&mut self, index: Index, value: Value, subcommittee: Sub) {
 			self.certs.entry(index).or_insert(HashSet::new()).insert((subcommittee, value));
@@ -95,9 +93,11 @@ pub mod test {
 
 	#[test]
 	fn test_certificate_set() {
-		let mut cert_set = TestCertificateSet::new();
+		use crate::agreement::subcommittee::test::Committee;
 
-		let mut subcommittee_1 = TestSubcommittee::new();
+		let mut cert_set = MemoryCertificateSet::new();
+
+		let mut subcommittee_1 = Committee::new();
 		subcommittee_1.add_member(1);
 		subcommittee_1.add_member(2);
 		subcommittee_1.add_member(3);
@@ -107,7 +107,7 @@ pub mod test {
 
 		cert_set.insert(1, 2, subcommittee_1.clone());
 
-		let mut subcommittee_2 = TestSubcommittee::new();
+		let mut subcommittee_2 = Committee::new();
 		subcommittee_2.add_member(7);
 		subcommittee_2.add_member(8);
 		subcommittee_2.add_member(9);
@@ -117,7 +117,7 @@ pub mod test {
 
 		cert_set.insert(2, 3, subcommittee_2.clone());
 
-		let mut subcommittee_3 = TestSubcommittee::new();
+		let mut subcommittee_3 = Committee::new();
 		subcommittee_3.add_member(13);
 		subcommittee_3.add_member(14);
 		subcommittee_3.add_member(15);
@@ -142,4 +142,6 @@ pub mod test {
 			cert_set.partial_subcommittees_for_index(&3).collect::<Vec<_>>();
 		assert_eq!(partial_subcommittees, vec![(&subcommittee_3, &4)]);
 	}
+
+	pub type TestCertificateSet<Index, Value, Sub> = MemoryCertificateSet<Index, Value, Sub>;
 }
