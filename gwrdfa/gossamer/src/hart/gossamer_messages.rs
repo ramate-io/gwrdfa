@@ -1,7 +1,7 @@
 use crate::{GossamerMessage, Out};
 use parabyzantine::{
 	buffer::query::{QueryPlanlike, Querylike},
-	hart::{ParabyzantineDataBinding, ParabyzantineDataSpec},
+	hart::ParabyzantineDataBinding,
 };
 
 /// A [GossamerMessages] trait is used to build queries over the Gossamer messages.

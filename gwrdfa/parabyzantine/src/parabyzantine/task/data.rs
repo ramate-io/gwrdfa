@@ -1,6 +1,5 @@
 use crate::act::Act;
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
-use crate::{NoOp, NoOpData};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Task;
@@ -106,48 +105,34 @@ impl<'a, Data: ParabyzantineTaskData> From<TaskWorld<'a, Data>> for TaskInferenc
 	}
 }
 
-/// A [ParabyzantineTaskDataBinding] binds to [ParabyzantineTaskData].
-pub trait ParabyzantineTaskDataBinding {
-	type Data: ParabyzantineTaskData;
-}
-
-pub trait ParabyzantineTask: Sized {
-	type Binding: ParabyzantineTaskDataBinding;
-
+pub trait ParabyzantineTask<Data: ParabyzantineTaskData>: Sized {
 	/// Gets the [TaskWorld] for the parabyzantine task.
 	fn parabyzantine_task_world<'a>(
 		&mut self,
-		data: &'a mut <Self::Binding as ParabyzantineTaskDataBinding>::Data,
-	) -> TaskWorld<'a, <Self::Binding as ParabyzantineTaskDataBinding>::Data> {
+		data: &'a mut Data,
+	) -> TaskWorld<'a, Data> {
 		data.parabyzantine_task_world()
 	}
 
 	/// Compute the parabyzantine task.
-	fn update_parabyzantine_task(
-		&mut self,
-		data: &mut TaskWorld<<Self::Binding as ParabyzantineTaskDataBinding>::Data>,
-	);
+	fn update_parabyzantine_task(&mut self, data: &mut TaskWorld<Data>);
 
 	/// Commits the inferences for the parabyzantine task.
 	fn commit_parabyzantine_task(
 		&mut self,
-		task_inferences: TaskInferences<<Self::Binding as ParabyzantineTaskDataBinding>::Data>,
-		data: &mut <Self::Binding as ParabyzantineTaskDataBinding>::Data,
+		task_inferences: TaskInferences<Data>,
+		data: &mut Data,
 	) {
 		data.commit_parabyzantine_task(task_inferences);
 	}
 }
 
-impl<Binding: ParabyzantineTaskDataBinding, TaskHandler: ParabyzantineTask<Binding = Binding>>
-	Act<Task, Binding::Data> for TaskHandler
+impl<Data: ParabyzantineTaskData, TaskHandler: ParabyzantineTask<Data>> Act<Task, Data>
+	for TaskHandler
 {
-	fn act(&mut self, _action: Task, data: &mut Binding::Data) {
+	fn act(&mut self, _action: Task, data: &mut Data) {
 		let mut world = self.parabyzantine_task_world(data);
 		self.update_parabyzantine_task(&mut world);
 		self.commit_parabyzantine_task(world.into(), data);
 	}
-}
-
-impl ParabyzantineTaskDataBinding for NoOp {
-	type Data = NoOpData;
 }

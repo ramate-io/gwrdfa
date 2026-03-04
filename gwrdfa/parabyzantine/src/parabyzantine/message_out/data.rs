@@ -52,10 +52,3 @@ pub trait ParabyzantineMessageOut<Data: ParabyzantineMessageOutData>: Sized {
 	/// Compute the parabyzantine message out.
 	fn compute_parabyzantine_message_out(&mut self, data: &mut MessageOutWorld<Data>);
 }
-
-/// A [ParabyzantineMessageOutDataBinding] is a binding for the [ParabyzantineMessageOut] protocol.
-///
-/// It binds to [ParabyzantineMessageOutData].
-pub trait ParabyzantineMessageOutDataBinding {
-	type Data: ParabyzantineMessageOutData;
-}

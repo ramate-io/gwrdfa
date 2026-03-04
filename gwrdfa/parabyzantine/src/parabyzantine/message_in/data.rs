@@ -74,10 +74,3 @@ pub trait ParabyzantineMessageIn<Data: ParabyzantineMessageInData>: Sized {
 	/// Compute the parabyzantine message in.
 	fn compute_parabyzantine_message_in(&mut self, data: &mut MessageInWorld<Data>);
 }
-
-/// A [ParabyzantineMessageInDataBinding] is a binding for the [ParabyzantineMessageIn] protocol.
-///
-/// It binds to [ParabyzantineMessageInData].
-pub trait ParabyzantineMessageInDataBinding {
-	type Data: ParabyzantineMessageInData;
-}

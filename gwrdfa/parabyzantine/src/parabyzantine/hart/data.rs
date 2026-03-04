@@ -184,37 +184,33 @@ impl<'a, Data: ParabyzantineData> From<ParabyzantineWorld<'a, Data>>
 }
 
 /// A [ParabyzantineHart] trait describes operations on the parabyzantine hart.
-pub trait ParabyzantineHart: Sized {
-	type Binding: ParabyzantineDataBinding;
-
+pub trait ParabyzantineHart<Data: ParabyzantineData>: Sized {
 	/// Borrows the [ParabyzantineWorld] for the parabyzantine hart.
 	fn parabyzantine_hart_world<'a>(
 		&mut self,
-		data: &'a mut <Self::Binding as ParabyzantineDataBinding>::Data,
-	) -> ParabyzantineWorld<'a, <Self::Binding as ParabyzantineDataBinding>::Data> {
+		data: &'a mut Data,
+	) -> ParabyzantineWorld<'a, Data> {
 		data.parabyzantine_world()
 	}
 
 	/// Compute the parabyzantine hart.
 	fn update_parabyzantine_hart(
 		&mut self,
-		data: &mut ParabyzantineWorld<<Self::Binding as ParabyzantineDataBinding>::Data>,
+		data: &mut ParabyzantineWorld<Data>,
 	);
 
 	/// Commits the inferences for the parabyzantine hart.
 	fn commit_parabyzantine_hart(
 		&mut self,
-		hart_inferences: ParabyzantineHartInferences<
-			<Self::Binding as ParabyzantineDataBinding>::Data,
-		>,
-		data: &mut <Self::Binding as ParabyzantineDataBinding>::Data,
+		hart_inferences: ParabyzantineHartInferences<Data>,
+		data: &mut Data,
 	) {
 		data.commit_parabyzantine_hart(hart_inferences);
 	}
 
 	fn act_on_parabyzantine_hart(
 		&mut self,
-		data: &mut <Self::Binding as ParabyzantineDataBinding>::Data,
+		data: &mut Data,
 	) {
 		let mut world = self.parabyzantine_hart_world(data);
 		self.update_parabyzantine_hart(&mut world);
@@ -222,19 +218,12 @@ pub trait ParabyzantineHart: Sized {
 	}
 }
 
-impl<Binding: ParabyzantineDataBinding, HartHandler: ParabyzantineHart<Binding = Binding>>
-	Act<Hart, Binding::Data> for HartHandler
+impl<Data: ParabyzantineData, HartHandler: ParabyzantineHart<Data>> Act<Hart, Data>
+	for HartHandler
 {
-	fn act(&mut self, _action: Hart, data: &mut Binding::Data) {
+	fn act(&mut self, _action: Hart, data: &mut Data) {
 		self.act_on_parabyzantine_hart(data);
 	}
-}
-
-/// A [ParabyzantineDataBinding] is a binding for the [Parabyzantine] protocol.
-///
-/// It binds to [ParabyzantineData].
-pub trait ParabyzantineDataBinding {
-	type Data: ParabyzantineData;
 }
 
 /// A [ParabyzantineData] for the [NoOpData] struct.
@@ -309,6 +298,3 @@ impl ParabyzantineData for NoOpData {
 	}
 }
 
-impl ParabyzantineDataBinding for NoOp {
-	type Data = NoOpData;
-}
