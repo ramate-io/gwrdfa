@@ -10,70 +10,79 @@ pub mod subcommittee;
 pub mod test_util;
 
 use crate::Resample;
+use core::marker::PhantomData;
 pub use certificate::CertificateSet;
 pub use consensus::Condition;
 pub use data::ResampleAgreementData;
 use parabyzantine::agreement::{
 	Agreement, AgreementWorld, ParabyzantineAgreement, ParabyzantineAgreementData,
 };
-use parabyzantine::{NoOp, NoOpData};
 pub use sampler::Sampler;
 pub use storage::ResampleAgreementStorage;
 pub use subcommittee::Subcommittee;
 
-/// A [ResampleAgreementBinding] is a binding for the [ResampleAgreement] protocol.
-///
-/// It binds between the agreement data and the [ResampleAgreementData].
-pub trait ResampleAgreementBinding: Sized
-where
-	<Self::ParabyzantineAgreementData as ParabyzantineAgreementData>::AgreementDraftBuffer:
-		ResampleAgreementStorage<
-			<Self::ParabyzantineAgreementData as ParabyzantineAgreementData>::AgreementEntity,
-			<Self::ResampleAgreementData as ResampleAgreementData<
-				Self::ParabyzantineAgreementData,
-			>>::Index,
-			<Self::ResampleAgreementData as ResampleAgreementData<
-				Self::ParabyzantineAgreementData,
-			>>::Subcommittee,
-			<Self::ResampleAgreementData as ResampleAgreementData<
-				Self::ParabyzantineAgreementData,
-			>>::Value,
-		>,
-{
-	type ParabyzantineAgreementData: ParabyzantineAgreementData;
-	type ResampleAgreementData: ResampleAgreementData<Self::ParabyzantineAgreementData>;
-}
-
-/// [ResampleAgreement] wraps around the ResampleAgreement data indicated by the binding.
+/// [ResampleAgreement] wraps around resample agreement data for a given parabyzantine data type.
 ///
 /// This is mainly used s.t. we can implement the foreign trait for [ParabyzantineAgreement].
 ///
 /// [ResampleAgreement] does not enforce countability restrictions on the [Sampler].
 /// Hence, it is sort of an abstraction that exists before the more common [CountableResampleAgreement] implementation.
 #[derive(Debug, Clone)]
-pub struct ResampleAgreement<Binding: ResampleAgreementBinding>(pub Binding::ResampleAgreementData);
+pub struct ResampleAgreement<
+	Data: ParabyzantineAgreementData,
+	ResampleData: ResampleAgreementData<Data>,
+>(
+	pub ResampleData,
+	PhantomData<Data>,
+)
+where
+	Data::AgreementDraftBuffer: ResampleAgreementStorage<
+		Data::AgreementEntity,
+		ResampleData::Index,
+		ResampleData::Subcommittee,
+		ResampleData::Value,
+	>;
 // Because where bounds are not inferred on traits we need to manually specify them,
 // this is incredibly ugly and we should find a way to improve this
 
-impl<Binding: ResampleAgreementBinding> ResampleAgreement<Binding>
+impl<Data: ParabyzantineAgreementData, ResampleData: ResampleAgreementData<Data>>
+	ResampleAgreement<Data, ResampleData>
+where
+	Data::AgreementDraftBuffer: ResampleAgreementStorage<
+		Data::AgreementEntity,
+		ResampleData::Index,
+		ResampleData::Subcommittee,
+		ResampleData::Value,
+	>,
 // Because where bounds are not inferred on traits we need to manually specify them,
 // this is incredibly ugly and we should find a way to improve this.
 {
-	pub fn data(&self) -> &Binding::ResampleAgreementData {
+	pub fn new(data: ResampleData) -> Self {
+		Self(data, PhantomData)
+	}
+
+	pub fn data(&self) -> &ResampleData {
 		&self.0
 	}
 
-	pub fn data_mut(&mut self) -> &mut Binding::ResampleAgreementData {
+	pub fn data_mut(&mut self) -> &mut ResampleData {
 		&mut self.0
 	}
 }
 
-impl<Binding: ResampleAgreementBinding> ParabyzantineAgreement<Binding::ParabyzantineAgreementData>
-	for ResampleAgreement<Binding>
+impl<Data: ParabyzantineAgreementData, ResampleData: ResampleAgreementData<Data>>
+	ParabyzantineAgreement<Data> for ResampleAgreement<Data, ResampleData>
+where
+	Data::AgreementDraftBuffer: ResampleAgreementStorage<
+		Data::AgreementEntity,
+		ResampleData::Index,
+		ResampleData::Subcommittee,
+		ResampleData::Value,
+	>,
 {
 	fn update_parabyzantine_agreement(
 		&mut self,
-		agreement_world: &mut AgreementWorld<Binding::ParabyzantineAgreementData>,
+		agreement_world: &mut AgreementWorld<Data>,
 	) {
 		// over all the index subcommittee agreements
 		let index_query = self.data_mut().index_subcommittee_agreement_query_plan();
@@ -132,23 +141,26 @@ impl<Binding: ResampleAgreementBinding> ParabyzantineAgreement<Binding::Parabyza
 	}
 }
 
-impl<Binding: ResampleAgreementBinding> ResampleAgreement<Binding> {
+impl<Data: ParabyzantineAgreementData, ResampleData: ResampleAgreementData<Data>>
+	ResampleAgreement<Data, ResampleData>
+where
+	Data::AgreementDraftBuffer: ResampleAgreementStorage<
+		Data::AgreementEntity,
+		ResampleData::Index,
+		ResampleData::Subcommittee,
+		ResampleData::Value,
+	>,
+{
 	/// A direct implementation of resampling on an agreement world.
 	///
 	/// This is most useful for experimenting and testing.
-	pub fn resample_agreement(&mut self, agreement_data: &mut Binding::ParabyzantineAgreementData) {
+	pub fn resample_agreement(&mut self, agreement_data: &mut Data) {
 		let mut agreement_world = agreement_data.parabyzantine_agreement_world();
 
 		self.update_parabyzantine_agreement(&mut agreement_world);
 
 		agreement_data.commit_parabyzantine_agreement(agreement_world.into());
 	}
-}
-
-/// A [ResampleAgreementBinding] for the [NoOp] struct.
-impl ResampleAgreementBinding for NoOp {
-	type ParabyzantineAgreementData = NoOpData;
-	type ResampleAgreementData = NoOpData;
 }
 
 #[cfg(test)]
@@ -162,23 +174,17 @@ mod tests {
 	use crate::agreement::test_util::*;
 	use crate::task::ResampleTask;
 	use gwrdfa_container::Component;
-	use parabyzantine::{agreement::Agreement, Parabyzantine};
+	use parabyzantine::{agreement::Agreement, NoOpData, Parabyzantine};
 	use std::collections::BTreeSet;
 	use std::vec;
 
-	impl ResampleAgreementBinding for TestResampleAgreementData<u32, u32, TestSubcommittee<u32>> {
-		type ParabyzantineAgreementData =
-			TestResampleParabyzantineData<u32, u32, TestSubcommittee<u32>>;
-		type ResampleAgreementData = TestResampleAgreementData<u32, u32, TestSubcommittee<u32>>;
-	}
-
 	#[test]
 	fn test_noop_resample_agreement_noops() {
-		let resample_agreement = ResampleAgreement::<NoOp>(NoOpData::new());
+		let resample_agreement = ResampleAgreement::new(NoOpData::new());
 		let mut parabyzantine = Parabyzantine::new(
 			NoOpData::new(),
 			resample_agreement,
-			ResampleTask::<NoOp>(NoOpData::new()),
+			ResampleTask::new(NoOpData::new()),
 		);
 		parabyzantine.update_agreement(Agreement);
 	}
@@ -186,8 +192,9 @@ mod tests {
 	#[test]
 	fn test_resample_agreement_with_test_util() {
 		let mut resample_agreement = ResampleAgreement::<
+			TestResampleParabyzantineData<u32, u32, TestSubcommittee<u32>>,
 			TestResampleAgreementData<u32, u32, TestSubcommittee<u32>>,
-		>(TestResampleAgreementData::new());
+		>::new(TestResampleAgreementData::new());
 
 		// Insert genesis agreement
 		let genesis: Index<u32> = Index::new(0);
