@@ -171,14 +171,32 @@ where
 mod tests {
 	use super::*;
 	use crate::agreement::std::{
-		AgreementContainer, AgreementParabyzantineData, CertificateContainer, MemoryAgreementData,
-		Index, Subcom, Value, VoterSet,
+		AgreementContainer, AgreementParabyzantineData, CertificateContainer, Index,
+		MemoryAgreementData, Subcom, Value, VoterSet,
 	};
 	use crate::task::ResampleTask;
+	use crate::ForResample;
 	use ::std::collections::BTreeSet;
 	use ::std::vec;
 	use gwrdfa_container::Component;
 	use parabyzantine::{agreement::Agreement, NoOpData, Parabyzantine};
+
+	fn insert_certificate(
+		agreement_data: &mut AgreementParabyzantineData<u32, u32, VoterSet<u32>>,
+		index: u32,
+		value: u32,
+		subcommittee: Subcom<VoterSet<u32>>,
+	) {
+		agreement_data
+			.parabyzantine_agreement_certificate_buffer_mut()
+			.insert_container(CertificateContainer {
+				for_resample: Component::Present(ForResample),
+				index: Component::Present(Index::new(index)),
+				value: Component::Present(Value::new(value)),
+				subcommittee: Component::Present(subcommittee),
+				..Default::default()
+			});
+	}
 
 	#[test]
 	fn test_noop_resample_agreement_noops() {
@@ -215,15 +233,7 @@ mod tests {
 			.insert_container(genesis_agreement_container.clone());
 
 		// Insert a certificate from the genesis subcommittee
-		agreement_data
-			.parabyzantine_agreement_certificate_buffer_mut()
-			.insert_container(CertificateContainer {
-				for_resample: Component::Present(crate::ForResample),
-				index: Component::Present(Index::new(0)),
-				value: Component::Present(Value::new(1)),
-				subcommittee: Component::Present(genesis_subcommittee.clone()),
-				..Default::default()
-			});
+		insert_certificate(&mut agreement_data, 0, 1, genesis_subcommittee.clone());
 
 		// Run the resample agreement
 		resample_agreement.resample_agreement(&mut agreement_data);
@@ -259,5 +269,126 @@ mod tests {
 		.into_iter()
 		.collect::<BTreeSet<_>>();
 		assert_eq!(agreement_containers, reference_agreement_containers);
+	}
+
+	#[test]
+	fn test_resample_agreement_transitions_across_updates() {
+		let mut resample_agreement = ResampleAgreement::<
+			AgreementParabyzantineData<u32, u32, VoterSet<u32>>,
+			MemoryAgreementData<u32, u32, VoterSet<u32>>,
+		>::new(MemoryAgreementData::new());
+		let mut agreement_data = AgreementParabyzantineData::<u32, u32, VoterSet<u32>>::new();
+
+		let all_voters: Subcom<VoterSet<u32>> =
+			Subcom::new(VoterSet::new().with_members(vec![1, 2, 3, 4, 5, 6, 7].into_iter()));
+		let first_half: Subcom<VoterSet<u32>> =
+			Subcom::new(VoterSet::new().with_members(vec![1, 2, 3].into_iter()));
+		let second_half: Subcom<VoterSet<u32>> =
+			Subcom::new(VoterSet::new().with_members(vec![4, 5, 6].into_iter()));
+
+		let genesis_agreement = AgreementContainer {
+			agreement: Component::Present(Agreement),
+			index: Component::Present(Index::new(0)),
+			subcommittee: Component::Present(all_voters.clone()),
+			..Default::default()
+		};
+		agreement_data
+			.parabyzantine_agreement_agreement_buffer_mut()
+			.insert_container(genesis_agreement.clone());
+
+		// Transition 1: InProgress (insufficient support) -> no new agreements.
+		insert_certificate(&mut agreement_data, 0, 10, first_half.clone());
+		resample_agreement.resample_agreement(&mut agreement_data);
+		let agreement_containers = agreement_data
+			.parabyzantine_agreement_agreement_buffer()
+			.iter()
+			.map(|(_entity, container)| container.clone())
+			.collect::<BTreeSet<_>>();
+		assert_eq!(
+			agreement_containers,
+			vec![genesis_agreement.clone()].into_iter().collect::<BTreeSet<_>>()
+		);
+
+		// Transition 2: Consensus at index 0 -> emit value agreement and next index committee.
+		insert_certificate(&mut agreement_data, 0, 10, second_half.clone());
+		resample_agreement.resample_agreement(&mut agreement_data);
+		let agreement_containers = agreement_data
+			.parabyzantine_agreement_agreement_buffer()
+			.iter()
+			.map(|(_entity, container)| container.clone())
+			.collect::<BTreeSet<_>>();
+		let expected_after_index_0_consensus = vec![
+			genesis_agreement.clone(),
+			AgreementContainer {
+				agreement: Component::Present(Agreement),
+				resample: Component::Present(Resample),
+				index: Component::Present(Index::new(0)),
+				value: Component::Present(Value::new(10)),
+				..Default::default()
+			},
+			AgreementContainer {
+				agreement: Component::Present(Agreement),
+				resample: Component::Present(Resample),
+				index: Component::Present(Index::new(1)),
+				subcommittee: Component::Present(all_voters.clone()),
+				..Default::default()
+			},
+		]
+		.into_iter()
+		.collect::<BTreeSet<_>>();
+		assert_eq!(agreement_containers, expected_after_index_0_consensus);
+
+		// Transition 3: InProgress at index 1 -> no additional agreements yet.
+		insert_certificate(&mut agreement_data, 1, 20, first_half);
+		resample_agreement.resample_agreement(&mut agreement_data);
+		let agreement_containers = agreement_data
+			.parabyzantine_agreement_agreement_buffer()
+			.iter()
+			.map(|(_entity, container)| container.clone())
+			.collect::<BTreeSet<_>>();
+		assert_eq!(agreement_containers, expected_after_index_0_consensus);
+
+		// Transition 4: Consensus at index 1 -> emit value agreement and index 2 committee.
+		insert_certificate(&mut agreement_data, 1, 20, second_half);
+		resample_agreement.resample_agreement(&mut agreement_data);
+		let agreement_containers = agreement_data
+			.parabyzantine_agreement_agreement_buffer()
+			.iter()
+			.map(|(_entity, container)| container.clone())
+			.collect::<BTreeSet<_>>();
+		let expected_after_index_1_consensus = vec![
+			genesis_agreement,
+			AgreementContainer {
+				agreement: Component::Present(Agreement),
+				resample: Component::Present(Resample),
+				index: Component::Present(Index::new(0)),
+				value: Component::Present(Value::new(10)),
+				..Default::default()
+			},
+			AgreementContainer {
+				agreement: Component::Present(Agreement),
+				resample: Component::Present(Resample),
+				index: Component::Present(Index::new(1)),
+				subcommittee: Component::Present(all_voters.clone()),
+				..Default::default()
+			},
+			AgreementContainer {
+				agreement: Component::Present(Agreement),
+				resample: Component::Present(Resample),
+				index: Component::Present(Index::new(1)),
+				value: Component::Present(Value::new(20)),
+				..Default::default()
+			},
+			AgreementContainer {
+				agreement: Component::Present(Agreement),
+				resample: Component::Present(Resample),
+				index: Component::Present(Index::new(2)),
+				subcommittee: Component::Present(all_voters),
+				..Default::default()
+			},
+		]
+		.into_iter()
+		.collect::<BTreeSet<_>>();
+		assert_eq!(agreement_containers, expected_after_index_1_consensus);
 	}
 }
