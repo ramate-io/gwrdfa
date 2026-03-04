@@ -1,9 +1,19 @@
+//! Data contracts for resample agreement processing.
+
 use super::{CertificateSet, ResampleAgreementStorage, Sampler, Subcommittee};
 use crate::ForResample;
 use parabyzantine::agreement::ParabyzantineAgreementData;
 use parabyzantine::buffer::query::{QueryPlanlike, Querylike};
 use parabyzantine::{NoOp, NoOpData};
 
+/// Data contract consumed by `ResampleAgreement`.
+///
+/// This trait bridges:
+/// - parabyzantine agreement/certificate buffers, and
+/// - resample-specific index/value/subcommittee semantics.
+///
+/// Query plans are explicitly modeled so implementations can choose their own
+/// buffer/query backend as long as they expose the required tuple projections.
 pub trait ResampleAgreementData<Data: ParabyzantineAgreementData>: Sized
 where
 	Data::AgreementDraftBuffer:

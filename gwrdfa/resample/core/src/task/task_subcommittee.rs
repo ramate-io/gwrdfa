@@ -1,9 +1,15 @@
+//! Task-specific subcommittee abstractions.
+
 use crate::agreement::Subcommittee;
 use parabyzantine::NoOp;
 
-/// A [TaskSubcommittee] is a subcommittee that can determine whether a task has been assigned to a given [Sender].
+/// Task-assignment flavored subcommittee.
+///
+/// Extends agreement-level subcommittees with "who should execute" semantics.
+/// A [TaskSubcommittee] is a subcommittee that can determine whether a task has
+/// been assigned to a given sender.
 pub trait TaskSubcommittee<Value: Eq + 'static, Sender: Eq>: Subcommittee<Value> {
-	/// Whether the subcommittee has assigned a task to a given [Sender]
+	/// Whether the subcommittee has assigned a task to a given sender.
 	fn is_task_assigned_to(&self, sender: &Sender) -> bool;
 }
 
@@ -14,6 +20,7 @@ impl<T: Eq + 'static> TaskSubcommittee<T, NoOp> for NoOp {
 	}
 }
 
+/// Read-only view over an agreed `(index, task-subcommittee)` tuple.
 pub trait IndexTaskSubcommitteeAgreement<
 	Index: Eq,
 	Value: Eq + 'static,
@@ -28,7 +35,7 @@ pub trait IndexTaskSubcommitteeAgreement<
 	fn subcommittee(&self) -> Sub;
 }
 
-/// A [IndexSubcommitteeAgreement] for the [NoOp] struct.
+/// A no-op implementation of [IndexTaskSubcommitteeAgreement].
 impl<T: Eq + 'static> IndexTaskSubcommitteeAgreement<NoOp, T, NoOp, NoOp> for NoOp {
 	fn index(&self) -> NoOp {
 		NoOp

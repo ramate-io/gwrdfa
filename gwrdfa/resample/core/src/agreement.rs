@@ -1,3 +1,10 @@
+//! Resample agreement protocol.
+//!
+//! This module wires together:
+//! - certificate projection (`ResampleAgreementData::certificate_query_plan`),
+//! - condition evaluation (`Subcommittee::condition`), and
+//! - next-step election (`Sampler::elect_subcommittee_from_condition`).
+
 pub mod certificate;
 pub mod consensus;
 pub mod data;
@@ -25,7 +32,8 @@ pub use subcommittee::Subcommittee;
 /// This is mainly used s.t. we can implement the foreign trait for [ParabyzantineAgreement].
 ///
 /// [ResampleAgreement] does not enforce countability restrictions on the [Sampler].
-/// Hence, it is sort of an abstraction that exists before the more common [CountableResampleAgreement] implementation.
+/// It is intentionally a lower-level abstraction that can be wrapped by
+/// countability-constrained protocols.
 #[derive(Debug, Clone)]
 pub struct ResampleAgreement<
 	Data: ParabyzantineAgreementData,
@@ -53,14 +61,17 @@ where
 	// Because where bounds are not inferred on traits we need to manually specify them,
 	// this is incredibly ugly and we should find a way to improve this.
 {
+	/// Creates a protocol wrapper over concrete resample agreement data.
 	pub fn new(data: ResampleData) -> Self {
 		Self(data, PhantomData)
 	}
 
+	/// Immutable access to the underlying resample data implementation.
 	pub fn data(&self) -> &ResampleData {
 		&self.0
 	}
 
+	/// Mutable access to the underlying resample data implementation.
 	pub fn data_mut(&mut self) -> &mut ResampleData {
 		&mut self.0
 	}

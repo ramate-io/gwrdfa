@@ -1,6 +1,12 @@
+//! Certificate abstractions for resample agreement evaluation.
+
 use super::Subcommittee;
 use parabyzantine::NoOp;
 
+/// Certificate index keyed view used during agreement evaluation.
+///
+/// Implementations store `(index, value, subcommittee)` certificate evidence and
+/// can stream partial evidence for a specific index.
 pub trait CertificateSet<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>> {
 	fn insert(&mut self, index: Index, value: Value, subcommittee: Sub);
 

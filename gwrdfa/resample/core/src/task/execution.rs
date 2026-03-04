@@ -1,3 +1,5 @@
+//! Execution hooks for resample task processing.
+
 use super::{IndexTaskSubcommitteeAgreement, TaskSubcommittee};
 use parabyzantine::{
 	buffer::{Facts, Inferences},
@@ -21,6 +23,7 @@ pub trait ResampleTasker<
 	Data: ParabyzantineTaskData,
 >: Sized
 {
+	/// Computes task-side inferences for one agreed `(index, subcommittee)` unit.
 	fn compute_resample_task(
 		&mut self,
 		index: &SubAg,

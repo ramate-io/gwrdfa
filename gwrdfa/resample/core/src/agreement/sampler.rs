@@ -1,6 +1,13 @@
+//! Sampler traits for electing future subcommittees.
+
 use super::{Condition, Subcommittee};
 use parabyzantine::NoOp;
 
+/// Election policy for producing the next subcommittee agreement.
+///
+/// Given a current `(index, subcommittee)` and derived condition, implementations
+/// may emit a next `(index, subcommittee)` pair to insert into agreement
+/// inferences.
 pub trait Sampler<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>>: Sized {
 	/// Given a value and the subcommittee agreeement which gave that value,
 	/// the sampler has the option to insert agreements into the buffer.

@@ -5,6 +5,12 @@ use std::{
 	vec::Vec,
 };
 
+/// A concrete `Subcommittee` implementation represented as a set of voters.
+///
+/// Each partial contributes `(voter-set, value)` evidence. The condition logic:
+/// - returns `Consensus(v)` when at least `2f + 1` voters support `v`,
+/// - returns `Hung` when remaining unknown votes can no longer satisfy quorum,
+/// - otherwise returns `InProgress`.
 #[derive(Debug, Eq, PartialEq, Clone, Hash, PartialOrd, Ord, Default)]
 pub struct VoterSet<Sender: PartialEq + Eq + PartialOrd + Ord + Hash + Clone> {
 	members: BTreeSet<Sender>,

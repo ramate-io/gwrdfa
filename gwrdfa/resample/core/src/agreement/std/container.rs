@@ -1,3 +1,11 @@
+//! Container-backed adapters used by `agreement::std`.
+//!
+//! These modules define:
+//! - concrete container shapes (`agreement`, `certificate`),
+//! - their delta types (`AgreementDelta`, `CertificateDelta`),
+//! - an adapter implementing `ParabyzantineAgreementData` over container buffers
+//!   (`parabyzantine_data`).
+
 pub mod agreement;
 pub use agreement::*;
 

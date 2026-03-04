@@ -11,6 +11,21 @@ use parabyzantine::agreement::Agreement;
 use parabyzantine::agreement::ParabyzantineAgreementData;
 use crate::Resample;
 
+/// Generic adapter from container buffers to `ParabyzantineAgreementData`.
+///
+/// This type is intentionally parameterized over:
+/// - certificate/agreement container shapes, and
+/// - certificate/agreement delta types,
+///
+/// so downstream code can swap data layouts while preserving the same agreement
+/// execution model.
+///
+/// Trait bounds enforce two key contracts:
+/// - containers must expose required fields via `ContainerGiving` so query plans
+///   can project protocol tuples;
+/// - agreement draft buffers must satisfy `ResampleAgreementStorage` to support
+///   both `(Agreement, Resample, Index, Subcom)` and
+///   `(Agreement, Resample, Index, Value)` inference writes.
 pub struct AgreementParabyzantineData<
 	I: Eq,
 	V: Eq + 'static,
@@ -35,6 +50,7 @@ impl<
 		AgreementDeltaT,
 	> AgreementParabyzantineData<I, V, S, CertContainer, CertDelta, AgreementContainerT, AgreementDeltaT>
 {
+	/// Builds empty certificate/agreement buffers using default container buffers.
 	pub fn new() -> Self {
 		Self {
 			certificate_buffer: ContainerEntityBuffer::new(),

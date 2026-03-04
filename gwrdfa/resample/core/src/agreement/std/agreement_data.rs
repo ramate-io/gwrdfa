@@ -8,6 +8,18 @@ use crate::ForResample;
 use gwrdfa_container::query::matching_tuple::{MatchingTuple, MatchingTupleQuery};
 use std::hash::Hash;
 
+/// In-memory `ResampleAgreementData` implementation backed by container buffers.
+///
+/// Design notes:
+/// - Uses strongly-typed wrappers (`Index`, `Value`, `Subcom`) to avoid accidental
+///   tuple-position errors across agreement/certificate flows.
+/// - Uses `MatchingTuple` queries so the same container shape can be queried by
+///   different tuple projections.
+/// - Keeps sampler pluggable via `Sm` (defaulting to [`ConstantCommittee`]),
+///   which is useful for testing alternate election strategies.
+///
+/// This type is intended as a reusable reference implementation for std/testing
+/// contexts, not as the only production storage strategy.
 pub struct MemoryAgreementData<
 	I: Eq + Hash + Clone + NextRound + 'static,
 	V: Eq + Hash + Clone + 'static,
@@ -25,6 +37,7 @@ impl<
 		Sm: Sampler<Index<I>, Value<V>, Subcom<S>> + Default,
 	> MemoryAgreementData<I, V, S, Sm>
 {
+	/// Builds with empty in-memory certificate state and `Sm::default()`.
 	pub fn new() -> Self {
 		Self { certificate_set: MemoryCertificateSet::new(), sampler: Sm::default() }
 	}
@@ -37,6 +50,7 @@ impl<
 		Sm: Sampler<Index<I>, Value<V>, Subcom<S>>,
 	> MemoryAgreementData<I, V, S, Sm>
 {
+	/// Builds with empty in-memory certificate state and a caller-provided sampler.
 	pub fn with_sampler(sampler: Sm) -> Self {
 		Self { certificate_set: MemoryCertificateSet::new(), sampler }
 	}

@@ -1,3 +1,14 @@
+//! Standard-library support types for `resample::agreement`.
+//!
+//! The core crate remains `no_std` capable, but this module provides ergonomic
+//! in-memory/reference implementations for:
+//! - typed wrappers (`Index`, `Value`, `Subcom`) to avoid tuple mixups,
+//! - sampler and committee policies (`ConstantCommittee`, `VoterSet`),
+//! - container-backed data adapters (`container::*`),
+//! - an opinionated data implementation (`MemoryAgreementData`).
+//!
+//! All items here are gated behind `cfg(any(test, feature = "std"))`.
+
 pub mod container;
 pub mod agreement_data;
 pub mod constant_committee;
@@ -43,6 +54,9 @@ impl<T: Eq + 'static + Subcommittee<V>, V: Eq + 'static> Subcommittee<Value<V>> 
 	}
 }
 
+/// Minimal helper trait used by [`ConstantCommittee`] to derive the next index.
+///
+/// This keeps the sampler generic across index types without requiring arithmetic.
 pub trait NextRound: Sized {
 	fn next(&self) -> Option<Self>;
 }

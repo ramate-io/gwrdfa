@@ -3,6 +3,11 @@ use crate::agreement::{Resample, Subcommittee};
 use gwrdfa_container::{Component, ContainerGiving, ContainerStores, Delta, DeltasContainer};
 use parabyzantine::agreement::Agreement;
 
+/// Agreement-side container used by `MatchingTuple` queries.
+///
+/// It intentionally stores both protocol markers (`Agreement`, `Resample`) and
+/// typed payload fields (`Index`, `Value`, `Subcom`) so queries can project
+/// exactly what a phase needs.
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct AgreementContainer<I: Eq, V: Eq + 'static, S: Subcommittee<V>> {
 	pub agreement: Component<Agreement>,
@@ -52,6 +57,10 @@ impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<Subcom<S>>
 	}
 }
 
+/// Delta representation for [`AgreementContainer`].
+///
+/// This allows draft buffers to compact and apply updates field-by-field while
+/// preserving entity identity.
 pub struct AgreementDelta<I: Eq, V: Eq + 'static, S: Subcommittee<V>> {
 	pub agreement: Delta<Agreement>,
 	pub resample: Delta<Resample>,

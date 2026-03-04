@@ -3,6 +3,10 @@ use crate::agreement::Subcommittee;
 use crate::ForResample;
 use gwrdfa_container::{Component, ContainerGiving, Delta, DeltasContainer};
 
+/// Certificate-side container used by agreement ingestion queries.
+///
+/// `for_resample` is an explicit semantic marker to scope which certificates are
+/// considered by the resample pipeline.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct CertificateContainer<I: Eq, V: Eq + 'static, S: Subcommittee<V>> {
 	pub for_resample: Component<ForResample>,
@@ -43,6 +47,10 @@ impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<Subcom<S>>
 	}
 }
 
+/// Delta representation for [`CertificateContainer`].
+///
+/// The marker field is also delta-tracked so routing semantics can be added or
+/// removed without rebuilding entities.
 pub struct CertificateDelta<I: Eq, V: Eq + 'static, S: Subcommittee<V>> {
 	pub for_resample: Delta<ForResample>,
 	pub index: Delta<Index<I>>,

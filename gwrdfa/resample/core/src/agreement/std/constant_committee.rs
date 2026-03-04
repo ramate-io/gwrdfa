@@ -1,6 +1,11 @@
 use crate::agreement::std::NextRound;
 use crate::agreement::{Condition, Sampler, Subcommittee};
 
+/// A deterministic sampler that keeps the same subcommittee membership.
+///
+/// On consensus it advances to the next index (`NextRound`) and reuses the
+/// current subcommittee unchanged. On `Hung` / `InProgress` it emits no next
+/// agreement.
 #[derive(Debug, Clone, Default)]
 pub struct ConstantCommittee;
 
