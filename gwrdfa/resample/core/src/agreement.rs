@@ -160,7 +160,7 @@ where
 mod tests {
 	use super::*;
 	use crate::agreement::std::{
-		AgreementContainer, AgreementData, AgreementParabyzantineData, CertificateContainer,
+		AgreementContainer, AgreementParabyzantineData, CertificateContainer, MemoryAgreementData,
 		Index, Subcom, Value, VoterSet,
 	};
 	use crate::task::ResampleTask;
@@ -184,8 +184,8 @@ mod tests {
 	fn test_resample_agreement_with_std_support() {
 		let mut resample_agreement = ResampleAgreement::<
 			AgreementParabyzantineData<u32, u32, VoterSet<u32>>,
-			AgreementData<u32, u32, VoterSet<u32>>,
-		>::new(AgreementData::new());
+			MemoryAgreementData<u32, u32, VoterSet<u32>>,
+		>::new(MemoryAgreementData::new());
 
 		// Insert genesis agreement
 		let genesis: Index<u32> = Index::new(0);

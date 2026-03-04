@@ -3,27 +3,29 @@ use crate::agreement::std::{
 	AgreementContainer, AgreementParabyzantineData, CertificateContainer, ConstantCommittee, Index,
 	NextRound, Subcom, Value,
 };
-use crate::agreement::{ResampleAgreementData, Subcommittee};
+use crate::agreement::{ResampleAgreementData, Sampler, Subcommittee};
 use gwrdfa_container::query::matching_tuple::{MatchingTuple, MatchingTupleQuery};
 use std::hash::Hash;
 
-pub struct AgreementData<
+pub struct MemoryAgreementData<
 	I: Eq + Hash + Clone + NextRound + 'static,
 	V: Eq + Hash + Clone + 'static,
 	S: Subcommittee<V> + Hash + Clone + 'static,
+	Sm: Sampler<Index<I>, Value<V>, Subcom<S>> = ConstantCommittee,
 > {
 	pub certificate_set: MemoryCertificateSet<Index<I>, Value<V>, Subcom<S>>,
-	pub sampler: ConstantCommittee,
+	pub sampler: Sm,
 }
 
 impl<
 		I: Eq + Hash + Clone + NextRound + 'static,
 		V: Eq + Hash + Clone + 'static,
 		S: Subcommittee<V> + Hash + Clone + 'static,
-	> AgreementData<I, V, S>
+		Sm: Sampler<Index<I>, Value<V>, Subcom<S>> + Default,
+	> MemoryAgreementData<I, V, S, Sm>
 {
 	pub fn new() -> Self {
-		Self { certificate_set: MemoryCertificateSet::new(), sampler: ConstantCommittee::new() }
+		Self { certificate_set: MemoryCertificateSet::new(), sampler: Sm::default() }
 	}
 }
 
@@ -31,7 +33,20 @@ impl<
 		I: Eq + Hash + Clone + NextRound + 'static,
 		V: Eq + Hash + Clone + 'static,
 		S: Subcommittee<V> + Hash + Clone + 'static,
-	> ResampleAgreementData<AgreementParabyzantineData<I, V, S>> for AgreementData<I, V, S>
+		Sm: Sampler<Index<I>, Value<V>, Subcom<S>>,
+	> MemoryAgreementData<I, V, S, Sm>
+{
+	pub fn with_sampler(sampler: Sm) -> Self {
+		Self { certificate_set: MemoryCertificateSet::new(), sampler }
+	}
+}
+
+impl<
+		I: Eq + Hash + Clone + NextRound + 'static,
+		V: Eq + Hash + Clone + 'static,
+		S: Subcommittee<V> + Hash + Clone + 'static,
+		Sm: Sampler<Index<I>, Value<V>, Subcom<S>>,
+	> ResampleAgreementData<AgreementParabyzantineData<I, V, S>> for MemoryAgreementData<I, V, S, Sm>
 {
 	type Index = Index<I>;
 	type Value = Value<V>;
@@ -43,7 +58,7 @@ impl<
 		MatchingTupleQuery<'a, CertificateContainer<I, V, S>, (Index<I>, Value<V>, Subcom<S>)>;
 	type CertificateQueryPlan = MatchingTuple<(Index<I>, Value<V>, Subcom<S>)>;
 	type CertificateSet = MemoryCertificateSet<Index<I>, Value<V>, Subcom<S>>;
-	type Sampler = ConstantCommittee;
+	type Sampler = Sm;
 
 	fn certificate_set(&self) -> &MemoryCertificateSet<Index<I>, Value<V>, Subcom<S>> {
 		&self.certificate_set
@@ -60,11 +75,11 @@ impl<
 		MatchingTuple::new()
 	}
 
-	fn sampler(&self) -> &ConstantCommittee {
+	fn sampler(&self) -> &Sm {
 		&self.sampler
 	}
 
-	fn sampler_mut(&mut self) -> &mut ConstantCommittee {
+	fn sampler_mut(&mut self) -> &mut Sm {
 		&mut self.sampler
 	}
 
@@ -81,7 +96,7 @@ mod tests {
 
 	#[test]
 	fn agreement_data_uses_memory_certificate_set() {
-		let mut data = AgreementData::<u32, u32, VoterSet<u32>>::new();
+		let mut data = MemoryAgreementData::<u32, u32, VoterSet<u32>>::new();
 		let index = Index::new(0);
 		let value = Value::new(0);
 		let subcom = Subcom::new(VoterSet::new());

@@ -59,7 +59,7 @@ impl<T: Eq + 'static + NextRound> NextRound for Index<T> {
 	}
 }
 
-pub use agreement_data::AgreementData;
+pub use agreement_data::MemoryAgreementData;
 pub use constant_committee::ConstantCommittee;
 pub use voter_set::VoterSet;
 pub use container::{
