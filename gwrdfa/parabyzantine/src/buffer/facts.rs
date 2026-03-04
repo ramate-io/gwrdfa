@@ -17,34 +17,30 @@ impl<'a, Entity: Sized, Buffer: Bufferlike<Entity>> Facts<'a, Entity, Buffer> {
 	}
 
 	/// Queries the facts in the buffer.
-	pub fn query<QueryPlan>(
+	pub fn query<
+		Item,
+		Query: Querylike<Entity, Item> + 'a,
+		QueryPlan: QueryPlanlike<Entity, &'a Buffer, Item, Query>,
+	>(
 		&self,
 		query_plan: QueryPlan,
-	) -> impl Iterator<
-		Item = (
-			Entity,
-			<<QueryPlan as QueryPlanlike<Entity, &'a Buffer>>::Query as Querylike<Entity>>::Item,
-		),
-	> + 'a
-	where
-		Entity: 'a,
-		QueryPlan: QueryPlanlike<Entity, &'a Buffer> + 'a,
-	{
+	) -> impl Iterator<Item = (Entity, Item)> + 'a {
 		let mut q = query_plan.into_query(self.inner);
 		core::iter::from_fn(move || q.next())
 	}
 
 	/// Gets a bundle from the facts in the buffer.
-	pub fn get<B, Query: Querylike<Entity, Item = B>, QueryPlan>(
+	pub fn get<
+		Item,
+		Query: Querylike<Entity, Item> + 'a,
+		QueryPlan: QueryPlanlike<Entity, &'a Buffer, Item, Query> + 'a,
+	>(
 		&self,
 		entity: Entity,
 		query_plan: QueryPlan,
-	) -> Option<B>
-	where
-		QueryPlan: QueryPlanlike<Entity, &'a Buffer, Query = Query>,
-	{
-		let query = query_plan.into_query(self.inner);
-		query.get(entity)
+	) -> Option<Item> {
+		let q = query_plan.into_query(self.inner);
+		q.get(entity)
 	}
 }
 

@@ -3,31 +3,29 @@ use core::marker::PhantomData;
 use parabyzantine::buffer::query::{QueryPlanlike, Querylike};
 
 /// A query over a container.
-pub struct AllComponentsQuery<'a, T: ContainerGiving<B> + Sized, B> {
+pub struct AllComponentsQuery<'a, T: ContainerGiving<Item> + Sized, Item> {
 	buffer: &'a ContainerEntityBuffer<T>,
 	iter: std::collections::hash_map::Iter<'a, ContainerEntity, T>,
-	_phantom: PhantomData<B>,
+	_phantom: PhantomData<Item>,
 }
 
-impl<'a, T: ContainerGiving<B> + Sized, B> AllComponentsQuery<'a, T, B> {
+impl<'a, T: ContainerGiving<Item> + Sized, Item> AllComponentsQuery<'a, T, Item> {
 	/// Creates a new query over a container.
 	pub fn new(buffer: &'a ContainerEntityBuffer<T>) -> Self {
 		Self { buffer, iter: buffer.iter(), _phantom: PhantomData }
 	}
 }
 
-impl<'a, T: ContainerGiving<B> + Sized, B> Querylike<ContainerEntity>
-	for AllComponentsQuery<'a, T, B>
+impl<'a, T: ContainerGiving<Item> + Sized, Item> Querylike<ContainerEntity, Component<&'a Item>>
+	for AllComponentsQuery<'a, T, Item>
 where
-	B: 'a,
+	Item: 'a,
 {
-	type Item = Component<&'a B>;
-
-	fn next(&mut self) -> Option<(ContainerEntity, Component<&'a B>)> {
+	fn next(&mut self) -> Option<(ContainerEntity, Component<&'a Item>)> {
 		self.iter.next().map(|(entity, data)| (entity.clone(), data.as_component()))
 	}
 
-	fn get(&self, entity: ContainerEntity) -> Option<Component<&'a B>> {
+	fn get(&self, entity: ContainerEntity) -> Option<Component<&'a Item>> {
 		self.buffer.get(entity).map(|container| container.as_component())
 	}
 }
@@ -42,14 +40,18 @@ impl<B> AllComponents<B> {
 	}
 }
 
-impl<'a, T, B> QueryPlanlike<ContainerEntity, &'a ContainerEntityBuffer<T>> for AllComponents<B>
+impl<'a, T, Item>
+	QueryPlanlike<
+		ContainerEntity,
+		&'a ContainerEntityBuffer<T>,
+		Component<&'a Item>,
+		AllComponentsQuery<'a, T, Item>,
+	> for AllComponents<Item>
 where
-	T: ContainerGiving<B> + Sized,
-	B: 'a,
+	T: ContainerGiving<Item> + Sized,
+	Item: 'a,
 {
-	type Query = AllComponentsQuery<'a, T, B>;
-
-	fn into_query(self, buffer: &'a ContainerEntityBuffer<T>) -> AllComponentsQuery<'a, T, B> {
+	fn into_query(self, buffer: &'a ContainerEntityBuffer<T>) -> AllComponentsQuery<'a, T, Item> {
 		AllComponentsQuery::new(buffer)
 	}
 }

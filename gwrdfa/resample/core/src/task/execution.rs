@@ -15,8 +15,9 @@ use parabyzantine::{
 pub trait ResampleTasker<
 	Index: Eq,
 	Sender: Eq,
-	Sub: TaskSubcommittee<Sender>,
-	SubAg: IndexTaskSubcommitteeAgreement<Index, Sender, Sub>,
+	Value: Eq + 'static,
+	Sub: TaskSubcommittee<Value, Sender>,
+	SubAg: IndexTaskSubcommitteeAgreement<Index, Value, Sender, Sub>,
 	Binding: ParabyzantineTaskDataBinding,
 >: Sized
 {
@@ -51,10 +52,11 @@ pub trait ResampleTasker<
 impl<
 		Index: Eq,
 		Sender: Eq,
-		Sub: TaskSubcommittee<Sender>,
-		SubAg: IndexTaskSubcommitteeAgreement<Index, Sender, Sub>,
+		Value: Eq + 'static,
+		Sub: TaskSubcommittee<Value, Sender>,
+		SubAg: IndexTaskSubcommitteeAgreement<Index, Value, Sender, Sub>,
 		Binding: ParabyzantineTaskDataBinding,
-	> ResampleTasker<Index, Sender, Sub, SubAg, Binding> for NoOp
+	> ResampleTasker<Index, Sender, Value, Sub, SubAg, Binding> for NoOp
 {
 	fn compute_resample_task(
 		&mut self,

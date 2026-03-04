@@ -17,7 +17,7 @@ where
 
 	type OutQuery<'a>: Querylike<
 		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
-		Item = (&'a Out, &'a Self::Message),
+		(&'a Out, &'a Self::Message),
 	>
 	where
 		Self::Message: 'a;
@@ -25,7 +25,8 @@ where
 	type OutQueryPlan: for<'a> QueryPlanlike<
 		<Binding::Spec as ParabyzantineDataSpec>::MessageEntity,
 		&'a <Binding::Spec as ParabyzantineDataSpec>::MessageBuffer,
-		Query = Self::OutQuery<'a>,
+		(&'a Out, &'a Self::Message),
+		Self::OutQuery<'a>,
 	>;
 
 	type Messages: GossamerMessages<

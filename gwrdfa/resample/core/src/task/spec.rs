@@ -13,8 +13,11 @@ pub trait ResampleTaskSpec<Binding: ParabyzantineTaskDataBinding>: Sized {
 	/// The type of the sender of a task.
 	type Sender: Eq;
 
+	/// The type of the value of a task.
+	type Value: Eq + 'static;
+
 	/// The type of the task subcommittee.
-	type TaskSubcommittee: TaskSubcommittee<Self::Sender>;
+	type TaskSubcommittee: TaskSubcommittee<Self::Value, Self::Sender>;
 
 	/// The type queried for indicating agreement on an index.
 	type IndexTaskSubcommitteeAgreementQueryData<'a>;
@@ -22,19 +25,24 @@ pub trait ResampleTaskSpec<Binding: ParabyzantineTaskDataBinding>: Sized {
 	/// The query for the index subcommittee agreement.
 	type IndexTaskSubcommitteeAgreementQuery<'a>: Querylike<
 		<Binding::Spec as ParabyzantineTaskDataSpec>::AgreementEntity,
-		Item = Self::IndexTaskSubcommitteeAgreementQueryData<'a>,
+		Self::IndexTaskSubcommitteeAgreementQueryData<'a>,
 	>;
 
 	/// The query plan for the index subcommittee agreement.
 	type IndexTaskSubcommitteeAgreementQueryPlan: for<'a> QueryPlanlike<
 		<Binding::Spec as ParabyzantineTaskDataSpec>::AgreementEntity,
 		&'a <Binding::Spec as ParabyzantineTaskDataSpec>::AgreementBuffer,
-		Query = Self::IndexTaskSubcommitteeAgreementQuery<'a>,
+		Self::IndexTaskSubcommitteeAgreementQueryData<'a>,
+		Self::IndexTaskSubcommitteeAgreementQuery<'a>,
 	>;
 
 	/// The type of the index subcommittee agreement.
-	type IndexTaskSubcommitteeAgreement: IndexTaskSubcommitteeAgreement<Self::Index, Self::Sender, Self::TaskSubcommittee>
-		+ for<'a> From<(
+	type IndexTaskSubcommitteeAgreement: IndexTaskSubcommitteeAgreement<
+			Self::Index,
+			Self::Value,
+			Self::Sender,
+			Self::TaskSubcommittee,
+		> + for<'a> From<(
 			<Binding::Spec as ParabyzantineTaskDataSpec>::AgreementEntity,
 			Self::IndexTaskSubcommitteeAgreementQueryData<'a>,
 		)>;
@@ -43,6 +51,7 @@ pub trait ResampleTaskSpec<Binding: ParabyzantineTaskDataBinding>: Sized {
 	type ResampleTasker: ResampleTasker<
 		Self::Index,
 		Self::Sender,
+		Self::Value,
 		Self::TaskSubcommittee,
 		Self::IndexTaskSubcommitteeAgreement,
 		Binding,
@@ -52,6 +61,7 @@ pub trait ResampleTaskSpec<Binding: ParabyzantineTaskDataBinding>: Sized {
 impl ResampleTaskSpec<NoOp> for NoOp {
 	type Index = NoOp;
 	type Sender = NoOp;
+	type Value = NoOp;
 	type TaskSubcommittee = NoOp;
 	type IndexTaskSubcommitteeAgreementQueryData<'a> = NoOp;
 	type IndexTaskSubcommitteeAgreementQuery<'a> = NoOp;

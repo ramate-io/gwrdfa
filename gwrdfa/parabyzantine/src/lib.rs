@@ -23,6 +23,8 @@ impl<T> Spec<T> {
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
 pub struct NoOp;
 
+pub static NO_OP: NoOp = NoOp;
+
 /// A [NoOpData] is a container for the [NoOp] struct.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct NoOpData {

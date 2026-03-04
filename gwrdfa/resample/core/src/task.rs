@@ -113,7 +113,7 @@ mod tests {
 	};
 
 	#[test]
-	fn test_noop_resample_agreement_noops() {
+	fn test_noop_resample_task_noops() {
 		let resample_task = ResampleTask::<NoOp>(NoOpData::new());
 		let mut parabyzantine: Parabyzantine<
 			Spec<(

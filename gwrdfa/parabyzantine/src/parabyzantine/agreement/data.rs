@@ -2,7 +2,7 @@ use crate::act::Act;
 use crate::buffer::{facts::Facts, inferences::Inferences, Bufferlike, DraftBufferlike};
 use crate::{NoOp, NoOpData};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Agreement;
 
 /// Specifies the entities and buffers for a parabyzantine agreement Data.

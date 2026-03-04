@@ -1,7 +1,4 @@
-use super::{
-	Certificate, CertificateSet, IndexSubcommitteeAgreement, ResampleAgreementConsensusUpdate,
-	Sampler, Subcommittee,
-};
+use super::{CertificateSet, ResampleAgreementStorage, Sampler, Subcommittee};
 use parabyzantine::NoOp;
 use parabyzantine::{
 	agreement::{ParabyzantineAgreementDataBinding, ParabyzantineAgreementDataSpec},
@@ -9,107 +6,130 @@ use parabyzantine::{
 };
 
 /// A [ResampleAgreementSpec] is a specification for ResampleAgreement consensus.
-pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Sized {
+pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Sized
+where
+	<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementDraftBuffer:
+		ResampleAgreementStorage<
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
+			Self::Index,
+			Self::Subcommittee,
+			Self::Value,
+		>,
+{
 	/// The type of the index.
-	type Index: Eq;
+	/// The index must be clonable in order to be able to insert index subcommittee agreement facts.
+	type Index: Clone + Eq;
 
 	/// The type of the value.
-	type Value: Eq;
-
-	/// The type of the sender of a certificate.
-	type Sender: Eq;
+	/// The value must be clonable in order to be able to insert value agreement facts.
+	type Value: Clone + Eq + 'static;
 
 	/// The type of the subcommittee.
-	type Subcommittee: Subcommittee<Self::Sender>;
-
-	/// The bundle of the agreement in the buffer.
-	type IndexSubcommitteeAgreementQueryData<'a>;
+	/// The subcommittee must be clonable in order to be able to insert subcommittee agreement facts.
+	type Subcommittee: Subcommittee<Self::Value> + Clone;
 
 	/// The query for the index subcommittee agreement.
 	type IndexSubcommitteeAgreementQuery<'a>: Querylike<
 		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
-		Item = Self::IndexSubcommitteeAgreementQueryData<'a>,
-	>;
+		(&'a Self::Index, &'a Self::Subcommittee),
+	>
+	where
+		Self::Index: 'a,
+		Self::Subcommittee: 'a;
 
 	/// The query plan for the index subcommittee agreement.
 	type IndexSubcommitteeAgreementQueryPlan: for<'a> QueryPlanlike<
 		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
 		&'a <Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer,
-		Query = Self::IndexSubcommitteeAgreementQuery<'a>,
+		(&'a Self::Index, &'a Self::Subcommittee),
+		Self::IndexSubcommitteeAgreementQuery<'a>,
 	>;
-
-	/// The type of the index subcommittee agreement.
-	type IndexSubcommitteeAgreement: IndexSubcommitteeAgreement<Self::Index, Self::Sender, Self::Subcommittee>
-		+ for<'a> From<(
-			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
-			Self::IndexSubcommitteeAgreementQueryData<'a>,
-		)>;
-
-	/// The bundle of the certificate in the buffer.
-	type CertificateQueryData<'a>;
 
 	/// The query for the certificate.
 	type CertificateQuery<'a>: Querylike<
 		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
-		Item = Self::CertificateQueryData<'a>,
-	>;
+		(&'a Self::Index, &'a Self::Value, &'a Self::Subcommittee),
+	>
+	where
+		Self::Index: 'a,
+		Self::Value: 'a,
+		Self::Subcommittee: 'a;
 
 	/// The query plan for the certificate.
 	type CertificateQueryPlan: for<'a> QueryPlanlike<
 		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
 		&'a <Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateBuffer,
-		Query = Self::CertificateQuery<'a>,
+		(&'a Self::Index, &'a Self::Value, &'a Self::Subcommittee),
+		Self::CertificateQuery<'a>,
 	>;
-
-	/// The type of the certificate.
-	type Certificate: Certificate<Self::Index, Self::Value, Self::Sender>
-		+ for<'a> From<(
-			<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
-			Self::CertificateQueryData<'a>,
-		)>;
 
 	/// The type of the certificate set.
-	type CertificateSet: CertificateSet<
-		Self::Index,
-		Self::Value,
-		Self::Sender,
-		Self::Certificate,
-		Self::Subcommittee,
-	>;
+	type CertificateSet: CertificateSet<Self::Index, Self::Value, Self::Subcommittee>;
 
 	/// The type of the sampler.
-	type Sampler: Sampler<
-		Self::Index,
-		Self::Value,
-		Self::Sender,
-		Self::Subcommittee,
-		Self::IndexSubcommitteeAgreement,
-		Binding,
-	>;
-
-	/// The type of the ResampleAgreement consensus update.
-	type ResampleAgreementConsensusUpdate: ResampleAgreementConsensusUpdate<
-		Self::Index,
-		Self::Value,
-		Self::Sender,
-		Binding,
-	>;
+	type Sampler: Sampler<Self::Index, Self::Value, Self::Subcommittee>;
 }
 
-impl ResampleAgreementSpec<NoOp> for NoOp {
+impl<Binding: ParabyzantineAgreementDataBinding> ResampleAgreementSpec<Binding> for NoOp
+where
+	<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementDraftBuffer:
+		ResampleAgreementStorage<
+			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
+			NoOp,
+			NoOp,
+			NoOp,
+		>,
+{
 	type Index = NoOp;
 	type Value = NoOp;
-	type Sender = NoOp;
 	type Subcommittee = NoOp;
-	type IndexSubcommitteeAgreementQueryData<'a> = NoOp;
 	type IndexSubcommitteeAgreementQuery<'a> = NoOp;
 	type IndexSubcommitteeAgreementQueryPlan = NoOp;
-	type IndexSubcommitteeAgreement = NoOp;
-	type CertificateQueryData<'a> = NoOp;
 	type CertificateQuery<'a> = NoOp;
 	type CertificateQueryPlan = NoOp;
-	type Certificate = NoOp;
 	type CertificateSet = NoOp;
 	type Sampler = NoOp;
-	type ResampleAgreementConsensusUpdate = NoOp;
+}
+
+#[cfg(test)]
+pub mod test {
+	use super::*;
+	use crate::agreement::certificate::test::TestCertificateSet;
+	use crate::agreement::sampler::test::TestSampler;
+	use crate::agreement::test_util::container::{
+		TestResampleAgreementContainer, TestResampleCertificateContainer,
+		TestResampleParabyzantineData,
+	};
+	use crate::agreement::test_util::TextIndexabled;
+	use crate::agreement::test_util::{Index, Sub, Value};
+	use core::marker::PhantomData;
+	use gwrdfa_container::query::matching_tuple::{MatchingTuple, MatchingTupleQuery};
+	use std::hash::Hash;
+
+	pub struct TestResampleAgreementSpec<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>> {
+		__marker: PhantomData<(Index, Value, Sub)>,
+	}
+
+	impl<
+			I: Eq + Clone + Hash + TextIndexabled + 'static,
+			V: Eq + Clone + Hash + 'static,
+			S: Subcommittee<V> + Clone + Hash + 'static,
+		> ResampleAgreementSpec<TestResampleParabyzantineData<I, V, S>>
+		for TestResampleAgreementSpec<I, V, S>
+	{
+		type Index = Index<I>;
+		type Value = Value<V>;
+		type Subcommittee = Sub<S>;
+		type IndexSubcommitteeAgreementQuery<'a> =
+			MatchingTupleQuery<'a, TestResampleAgreementContainer<I, V, S>, (Index<I>, Sub<S>)>;
+		type IndexSubcommitteeAgreementQueryPlan = MatchingTuple<(Index<I>, Sub<S>)>;
+		type CertificateQuery<'a> = MatchingTupleQuery<
+			'a,
+			TestResampleCertificateContainer<I, V, S>,
+			(Index<I>, Value<V>, Sub<S>),
+		>;
+		type CertificateQueryPlan = MatchingTuple<(Index<I>, Value<V>, Sub<S>)>;
+		type CertificateSet = TestCertificateSet<Index<I>, Value<V>, Sub<S>>;
+		type Sampler = TestSampler;
+	}
 }

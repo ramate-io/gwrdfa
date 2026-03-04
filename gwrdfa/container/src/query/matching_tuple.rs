@@ -15,10 +15,8 @@ impl<'a, Container, T> MatchingTupleQuery<'a, Container, T> {
 }
 
 impl<'a, T: ContainerGiving<A> + ContainerGiving<B> + Sized, A: 'a, B: 'a>
-	Querylike<ContainerEntity> for MatchingTupleQuery<'a, T, (A, B)>
+	Querylike<ContainerEntity, (&'a A, &'a B)> for MatchingTupleQuery<'a, T, (A, B)>
 {
-	type Item = (&'a A, &'a B);
-
 	fn next(&mut self) -> Option<(ContainerEntity, (&'a A, &'a B))> {
 		while let Some((entity, container)) = self.iter.next() {
 			if let (Component::Present(a), Component::Present(b)) =
@@ -40,6 +38,86 @@ impl<'a, T: ContainerGiving<A> + ContainerGiving<B> + Sized, A: 'a, B: 'a>
 	}
 }
 
+impl<
+		'a,
+		T: ContainerGiving<A> + ContainerGiving<B> + ContainerGiving<C> + Sized,
+		A: 'a,
+		B: 'a,
+		C: 'a,
+	> Querylike<ContainerEntity, (&'a A, &'a B, &'a C)> for MatchingTupleQuery<'a, T, (A, B, C)>
+{
+	fn next(&mut self) -> Option<(ContainerEntity, (&'a A, &'a B, &'a C))> {
+		while let Some((entity, container)) = self.iter.next() {
+			if let (Component::Present(a), Component::Present(b), Component::Present(c)) =
+				(container.as_component(), container.as_component(), container.as_component())
+			{
+				return Some((*entity, (a, b, c)));
+			}
+		}
+		None
+	}
+
+	fn get(&self, entity: ContainerEntity) -> Option<(&'a A, &'a B, &'a C)> {
+		let a = self.buffer.get(entity).map(|container| container.as_component());
+		let b = self.buffer.get(entity).map(|container| container.as_component());
+		let c = self.buffer.get(entity).map(|container| container.as_component());
+		match (a, b, c) {
+			(
+				Some(Component::Present(a)),
+				Some(Component::Present(b)),
+				Some(Component::Present(c)),
+			) => Some((a, b, c)),
+			_ => None,
+		}
+	}
+}
+
+impl<
+		'a,
+		T: ContainerGiving<A> + ContainerGiving<B> + ContainerGiving<C> + ContainerGiving<D> + Sized,
+		A: 'a,
+		B: 'a,
+		C: 'a,
+		D: 'a,
+	> Querylike<ContainerEntity, (&'a A, &'a B, &'a C, &'a D)>
+	for MatchingTupleQuery<'a, T, (A, B, C, D)>
+{
+	fn next(&mut self) -> Option<(ContainerEntity, (&'a A, &'a B, &'a C, &'a D))> {
+		while let Some((entity, container)) = self.iter.next() {
+			if let (
+				Component::Present(a),
+				Component::Present(b),
+				Component::Present(c),
+				Component::Present(d),
+			) = (
+				container.as_component(),
+				container.as_component(),
+				container.as_component(),
+				container.as_component(),
+			) {
+				return Some((*entity, (a, b, c, d)));
+			}
+		}
+		None
+	}
+
+	fn get(&self, entity: ContainerEntity) -> Option<(&'a A, &'a B, &'a C, &'a D)> {
+		let a = self.buffer.get(entity).map(|container| container.as_component());
+		let b = self.buffer.get(entity).map(|container| container.as_component());
+		let c = self.buffer.get(entity).map(|container| container.as_component());
+		let d = self.buffer.get(entity).map(|container| container.as_component());
+		match (a, b, c, d) {
+			(
+				Some(Component::Present(a)),
+				Some(Component::Present(b)),
+				Some(Component::Present(c)),
+				Some(Component::Present(d)),
+			) => Some((a, b, c, d)),
+			_ => None,
+		}
+	}
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct MatchingTuple<T>(PhantomData<T>);
 
@@ -49,16 +127,62 @@ impl<T> MatchingTuple<T> {
 	}
 }
 
-impl<'a, T, A, B> QueryPlanlike<ContainerEntity, &'a ContainerEntityBuffer<T>>
-	for MatchingTuple<(A, B)>
+impl<'a, T, A, B>
+	QueryPlanlike<
+		ContainerEntity,
+		&'a ContainerEntityBuffer<T>,
+		(&'a A, &'a B),
+		MatchingTupleQuery<'a, T, (A, B)>,
+	> for MatchingTuple<(A, B)>
 where
 	T: ContainerGiving<A> + ContainerGiving<B>,
 	A: 'a,
 	B: 'a,
 {
-	type Query = MatchingTupleQuery<'a, T, (A, B)>;
-
 	fn into_query(self, buffer: &'a ContainerEntityBuffer<T>) -> MatchingTupleQuery<'a, T, (A, B)> {
+		MatchingTupleQuery::new(buffer)
+	}
+}
+
+impl<'a, T, A, B, C>
+	QueryPlanlike<
+		ContainerEntity,
+		&'a ContainerEntityBuffer<T>,
+		(&'a A, &'a B, &'a C),
+		MatchingTupleQuery<'a, T, (A, B, C)>,
+	> for MatchingTuple<(A, B, C)>
+where
+	T: ContainerGiving<A> + ContainerGiving<B> + ContainerGiving<C>,
+	A: 'a,
+	B: 'a,
+	C: 'a,
+{
+	fn into_query(
+		self,
+		buffer: &'a ContainerEntityBuffer<T>,
+	) -> MatchingTupleQuery<'a, T, (A, B, C)> {
+		MatchingTupleQuery::new(buffer)
+	}
+}
+
+impl<'a, T, A, B, C, D>
+	QueryPlanlike<
+		ContainerEntity,
+		&'a ContainerEntityBuffer<T>,
+		(&'a A, &'a B, &'a C, &'a D),
+		MatchingTupleQuery<'a, T, (A, B, C, D)>,
+	> for MatchingTuple<(A, B, C, D)>
+where
+	T: ContainerGiving<A> + ContainerGiving<B> + ContainerGiving<C> + ContainerGiving<D>,
+	A: 'a,
+	B: 'a,
+	C: 'a,
+	D: 'a,
+{
+	fn into_query(
+		self,
+		buffer: &'a ContainerEntityBuffer<T>,
+	) -> MatchingTupleQuery<'a, T, (A, B, C, D)> {
 		MatchingTupleQuery::new(buffer)
 	}
 }

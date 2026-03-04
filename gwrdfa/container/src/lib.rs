@@ -2,6 +2,7 @@ pub mod buffer;
 pub use buffer::ContainerEntityBuffer;
 
 pub mod draft_buffer;
+pub use draft_buffer::*;
 
 pub mod container;
 pub use container::*;

@@ -13,13 +13,11 @@ impl<'a, T: ContainerGiving<B> + Sized, B> MatchingComponentsQuery<'a, T, B> {
 	}
 }
 
-impl<'a, T: ContainerGiving<B> + Sized, B> Querylike<ContainerEntity>
+impl<'a, T: ContainerGiving<B> + Sized, B> Querylike<ContainerEntity, &'a B>
 	for MatchingComponentsQuery<'a, T, B>
 where
 	B: 'a,
 {
-	type Item = &'a B;
-
 	fn next(&mut self) -> Option<(ContainerEntity, &'a B)> {
 		while let Some((entity, data)) = self.container_query.next() {
 			if let Component::Present(data) = data {
@@ -47,14 +45,17 @@ impl<B> MatchingComponents<B> {
 	}
 }
 
-impl<'a, T, B> QueryPlanlike<ContainerEntity, &'a ContainerEntityBuffer<T>>
-	for MatchingComponents<B>
+impl<'a, T, B>
+	QueryPlanlike<
+		ContainerEntity,
+		&'a ContainerEntityBuffer<T>,
+		&'a B,
+		MatchingComponentsQuery<'a, T, B>,
+	> for MatchingComponents<B>
 where
 	T: ContainerGiving<B> + Sized,
 	B: 'a,
 {
-	type Query = MatchingComponentsQuery<'a, T, B>;
-
 	fn into_query(self, buffer: &'a ContainerEntityBuffer<T>) -> MatchingComponentsQuery<'a, T, B> {
 		MatchingComponentsQuery::new(buffer)
 	}

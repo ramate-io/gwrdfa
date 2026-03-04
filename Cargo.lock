@@ -1158,6 +1158,7 @@ dependencies = [
 name = "gwrdfa-resample"
 version = "0.0.1"
 dependencies = [
+ "gwrdfa-container",
  "parabyzantine",
 ]
 

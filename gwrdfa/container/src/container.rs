@@ -1,6 +1,6 @@
 pub mod tuple;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Component<T: Sized> {
 	Present(T),
 	Absent,
@@ -22,6 +22,14 @@ impl<T: Sized> Component<T> {
 			Self::Present(data) => Component::Present(data),
 			Self::Absent => Component::Absent,
 		}
+	}
+
+	pub fn is_present(&self) -> bool {
+		matches!(self, Self::Present(_))
+	}
+
+	pub fn is_absent(&self) -> bool {
+		matches!(self, Self::Absent)
 	}
 }
 
