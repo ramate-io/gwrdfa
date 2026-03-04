@@ -1,51 +1,79 @@
-use super::{ResampleAgreementSpec, ResampleAgreementStorage};
+use super::{CertificateSet, ResampleAgreementStorage, Sampler, Subcommittee};
 use parabyzantine::agreement::ParabyzantineAgreementData;
+use parabyzantine::buffer::query::{QueryPlanlike, Querylike};
 use parabyzantine::{NoOp, NoOpData};
 
-pub trait ResampleAgreementData<
-	Data: ParabyzantineAgreementData,
-	Spec: ResampleAgreementSpec<Data>,
->: Sized where
+pub trait ResampleAgreementData<Data: ParabyzantineAgreementData>: Sized
+where
 	Data::AgreementDraftBuffer:
 		ResampleAgreementStorage<
 			Data::AgreementEntity,
-			Spec::Index,
-			Spec::Subcommittee,
-			Spec::Value,
+			Self::Index,
+			Self::Subcommittee,
+			Self::Value,
 		>,
 {
-	/// A [ResampleAgreement] data must be able to provide a [CertificateSet]
-	fn certificate_set(&self) -> &Spec::CertificateSet;
+	type Index: Clone + Eq;
+	type Value: Clone + Eq + 'static;
+	type Subcommittee: Subcommittee<Self::Value> + Clone;
+	type IndexSubcommitteeAgreementQuery<'a>: Querylike<
+		Data::AgreementEntity,
+		(&'a Self::Index, &'a Self::Subcommittee),
+	>
+	where
+		Self::Index: 'a,
+		Self::Subcommittee: 'a;
+	type IndexSubcommitteeAgreementQueryPlan: for<'a> QueryPlanlike<
+		Data::AgreementEntity,
+		&'a Data::AgreementBuffer,
+		(&'a Self::Index, &'a Self::Subcommittee),
+		Self::IndexSubcommitteeAgreementQuery<'a>,
+	>;
+	type CertificateQuery<'a>: Querylike<
+		Data::CertificateEntity,
+		(&'a Self::Index, &'a Self::Value, &'a Self::Subcommittee),
+	>
+	where
+		Self::Index: 'a,
+		Self::Value: 'a,
+		Self::Subcommittee: 'a;
+	type CertificateQueryPlan: for<'a> QueryPlanlike<
+		Data::CertificateEntity,
+		&'a Data::CertificateBuffer,
+		(&'a Self::Index, &'a Self::Value, &'a Self::Subcommittee),
+		Self::CertificateQuery<'a>,
+	>;
+	type CertificateSet: CertificateSet<Self::Index, Self::Value, Self::Subcommittee>;
+	type Sampler: Sampler<Self::Index, Self::Value, Self::Subcommittee>;
 
-	/// A [ResampleAgreement] data must be able to provide a mutable [CertificateSet]
-	fn certificate_set_mut(&mut self) -> &mut Spec::CertificateSet;
-
-	/// ResampleAgreement data must be able to provide a [Sampler]
-	fn sampler(&self) -> &Spec::Sampler;
-
-	/// ResampleAgreement data must be able to provide a mutable [Sampler]
-	fn sampler_mut(&mut self) -> &mut Spec::Sampler;
-
-	/// ResampleAgreement data must be able to prduce a [Spec::IndexSubcommitteeAgreementQuery]
-	fn index_subcommittee_agreement_query_plan(
-		&mut self,
-	) -> Spec::IndexSubcommitteeAgreementQueryPlan;
-
-	/// ResampleAgreement data must be able to produce a [Spec::CertificateQuery]
-	fn certificate_query_plan(&mut self, index: &Spec::Index) -> Spec::CertificateQueryPlan;
+	fn certificate_set(&self) -> &Self::CertificateSet;
+	fn certificate_set_mut(&mut self) -> &mut Self::CertificateSet;
+	fn sampler(&self) -> &Self::Sampler;
+	fn sampler_mut(&mut self) -> &mut Self::Sampler;
+	fn index_subcommittee_agreement_query_plan(&mut self) -> Self::IndexSubcommitteeAgreementQueryPlan;
+	fn certificate_query_plan(&mut self, index: &Self::Index) -> Self::CertificateQueryPlan;
 }
 
-impl ResampleAgreementData<NoOpData, NoOp> for NoOpData
+impl ResampleAgreementData<NoOpData> for NoOpData
 where
 	NoOp: ResampleAgreementStorage<NoOp, NoOp, NoOp, NoOp>,
 {
+	type Index = NoOp;
+	type Value = NoOp;
+	type Subcommittee = NoOp;
+	type IndexSubcommitteeAgreementQuery<'a> = NoOp;
+	type IndexSubcommitteeAgreementQueryPlan = NoOp;
+	type CertificateQuery<'a> = NoOp;
+	type CertificateQueryPlan = NoOp;
+	type CertificateSet = NoOp;
+	type Sampler = NoOp;
+
 	fn certificate_set(&self) -> &NoOp {
 		&self.no_op
 	}
 	fn certificate_set_mut(&mut self) -> &mut NoOp {
 		&mut self.no_op
 	}
-
 	fn sampler(&self) -> &NoOp {
 		&self.no_op
 	}
@@ -65,13 +93,11 @@ pub mod test {
 	use super::*;
 	use crate::agreement::certificate::test::TestCertificateSet;
 	use crate::agreement::sampler::test::TestSampler;
-	use crate::agreement::spec::test::TestResampleAgreementSpec;
 	use crate::agreement::subcommittee::test::TestSubcommittee;
 	use crate::agreement::test_util::container::*;
 	use crate::agreement::test_util::{Index, Sub, TextIndexabled, Value};
-	use crate::agreement::CertificateSet;
-	use crate::agreement::Subcommittee;
-	use gwrdfa_container::query::matching_tuple::MatchingTuple;
+	use crate::agreement::{CertificateSet, Subcommittee};
+	use gwrdfa_container::query::matching_tuple::{MatchingTuple, MatchingTupleQuery};
 	use std::hash::Hash;
 
 	pub struct TestResampleAgreementData<
@@ -99,11 +125,24 @@ pub mod test {
 			V: Eq + Hash + Clone + 'static,
 			S: Subcommittee<V> + Hash + Clone + 'static,
 		>
-		ResampleAgreementData<
-			TestResampleParabyzantineData<I, V, S>,
-			TestResampleAgreementSpec<I, V, S>,
-		> for TestResampleAgreementData<I, V, S>
+		ResampleAgreementData<TestResampleParabyzantineData<I, V, S>>
+		for TestResampleAgreementData<I, V, S>
 	{
+		type Index = Index<I>;
+		type Value = Value<V>;
+		type Subcommittee = Sub<S>;
+		type IndexSubcommitteeAgreementQuery<'a> =
+			MatchingTupleQuery<'a, TestResampleAgreementContainer<I, V, S>, (Index<I>, Sub<S>)>;
+		type IndexSubcommitteeAgreementQueryPlan = MatchingTuple<(Index<I>, Sub<S>)>;
+		type CertificateQuery<'a> = MatchingTupleQuery<
+			'a,
+			TestResampleCertificateContainer<I, V, S>,
+			(Index<I>, Value<V>, Sub<S>),
+		>;
+		type CertificateQueryPlan = MatchingTuple<(Index<I>, Value<V>, Sub<S>)>;
+		type CertificateSet = TestCertificateSet<Index<I>, Value<V>, Sub<S>>;
+		type Sampler = TestSampler;
+
 		fn certificate_set(&self) -> &TestCertificateSet<Index<I>, Value<V>, Sub<S>> {
 			&self.certificate_set
 		}

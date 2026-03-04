@@ -8,16 +8,11 @@ use execution::ResampleTasker;
 use parabyzantine::task::{ParabyzantineTask, ParabyzantineTaskData, TaskWorld};
 use parabyzantine::NoOp;
 use parabyzantine::NoOpData;
-pub use spec::ResampleTaskSpec;
 pub use task_subcommittee::{IndexTaskSubcommitteeAgreement, TaskSubcommittee};
 
 pub trait ResampleTaskBinding: Sized {
 	type ParabyzantineTaskData: ParabyzantineTaskData;
-	type ResampleTaskSpec: ResampleTaskSpec<Self::ParabyzantineTaskData>;
-	type ResampleTaskData: ResampleTaskData<
-		Self::ParabyzantineTaskData,
-		Self::ResampleTaskSpec,
-	>;
+	type ResampleTaskData: ResampleTaskData<Self::ParabyzantineTaskData>;
 }
 
 /// [ResampleTask] wraps around the ResampleTask data indicated by the binding.
@@ -33,27 +28,6 @@ impl<Binding: ResampleTaskBinding> ResampleTask<Binding> {
 	}
 }
 
-impl<Binding: ResampleTaskBinding>
-	ResampleTaskData<Binding::ParabyzantineTaskData, Binding::ResampleTaskSpec>
-	for ResampleTask<Binding>
-{
-	fn me(
-		&self,
-	) -> &<Binding::ResampleTaskSpec as ResampleTaskSpec<Binding::ParabyzantineTaskData>>::Sender{
-		self.data().me()
-	}
-
-	fn index_task_subcommittee_agreement_query_plan(
-		&self,
-	) -> <Binding::ResampleTaskSpec as ResampleTaskSpec<Binding::ParabyzantineTaskData>>::IndexTaskSubcommitteeAgreementQueryPlan{
-		self.data().index_task_subcommittee_agreement_query_plan()
-	}
-
-	fn resample_tasker_mut(&mut self) -> &mut <Binding::ResampleTaskSpec as ResampleTaskSpec<Binding::ParabyzantineTaskData>>::ResampleTasker{
-		self.data_mut().resample_tasker_mut()
-	}
-}
-
 impl<Binding: ResampleTaskBinding> ParabyzantineTask<Binding::ParabyzantineTaskData>
 	for ResampleTask<Binding>
 {
@@ -62,15 +36,15 @@ impl<Binding: ResampleTaskBinding> ParabyzantineTask<Binding::ParabyzantineTaskD
 		data: &mut TaskWorld<Binding::ParabyzantineTaskData>,
 	) {
 		let index_task_subcommittee_agreement_query_plan =
-			self.index_task_subcommittee_agreement_query_plan();
+			self.data().index_task_subcommittee_agreement_query_plan();
 		for index_data in data.agreement_facts.query(index_task_subcommittee_agreement_query_plan) {
-			let index: <Binding::ResampleTaskSpec as ResampleTaskSpec<
+			let index: <Binding::ResampleTaskData as ResampleTaskData<
 				Binding::ParabyzantineTaskData,
 			>>::IndexTaskSubcommitteeAgreement = (index_data).into();
 
 			// If the task is assigned to this replica, compute the resample task.
-			if self.is_task_assigned_to_me(&index.subcommittee()) {
-				let resample_tasker = self.resample_tasker_mut();
+			if self.data().is_task_assigned_to_me(&index.subcommittee()) {
+				let resample_tasker = self.data_mut().resample_tasker_mut();
 				resample_tasker.compute_resample_task(
 					&index,
 					&data.agreement_facts,
@@ -96,7 +70,6 @@ impl<Binding: ResampleTaskBinding> ResampleTask<Binding> {
 
 impl ResampleTaskBinding for NoOp {
 	type ParabyzantineTaskData = NoOpData;
-	type ResampleTaskSpec = NoOp;
 	type ResampleTaskData = NoOpData;
 }
 
