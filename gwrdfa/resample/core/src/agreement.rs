@@ -228,16 +228,13 @@ mod tests {
 	use crate::agreement::test_util::container::TestResampleCertificateContainer;
 	use crate::agreement::test_util::container::TestResampleParabyzantineData;
 	use crate::agreement::test_util::*;
-	use gwrdfa_container::query::matching_tuple::MatchingTuple;
-	use gwrdfa_container::{Component, ContainerEntity};
-	use parabyzantine::buffer::{Bufferlike, Stores};
+	use gwrdfa_container::Component;
 	use parabyzantine::{
 		agreement::Agreement, task::Task, AgreementAction, AgreementHandler, DataBinding,
 		Parabyzantine, Spec, TaskAction, TaskHandler,
 	};
 	use std::collections::BTreeSet;
 	use std::vec;
-	use std::vec::Vec;
 
 	impl ResampleAgreementBinding for TestResampleAgreementData<u32, u32, TestSubcommittee<u32>> {
 		type ParabyzantineAgreementDataBinding =
