@@ -3,7 +3,6 @@ pub mod consensus;
 pub mod countable;
 pub mod data;
 pub mod sampler;
-pub mod spec;
 pub mod storage;
 pub mod subcommittee;
 

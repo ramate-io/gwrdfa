@@ -1,6 +1,5 @@
 pub mod data;
 pub mod execution;
-pub mod spec;
 pub mod task_subcommittee;
 
 pub use data::ResampleTaskData;
@@ -31,10 +30,7 @@ impl<Binding: ResampleTaskBinding> ResampleTask<Binding> {
 impl<Binding: ResampleTaskBinding> ParabyzantineTask<Binding::ParabyzantineTaskData>
 	for ResampleTask<Binding>
 {
-	fn update_parabyzantine_task(
-		&mut self,
-		data: &mut TaskWorld<Binding::ParabyzantineTaskData>,
-	) {
+	fn update_parabyzantine_task(&mut self, data: &mut TaskWorld<Binding::ParabyzantineTaskData>) {
 		let index_task_subcommittee_agreement_query_plan =
 			self.data().index_task_subcommittee_agreement_query_plan();
 		for index_data in data.agreement_facts.query(index_task_subcommittee_agreement_query_plan) {
@@ -59,10 +55,7 @@ impl<Binding: ResampleTaskBinding> ParabyzantineTask<Binding::ParabyzantineTaskD
 }
 
 impl<Binding: ResampleTaskBinding> ResampleTask<Binding> {
-	pub fn resample_task(
-		&mut self,
-		task_data: &Binding::ParabyzantineTaskData,
-	) {
+	pub fn resample_task(&mut self, task_data: &Binding::ParabyzantineTaskData) {
 		let mut task_world = task_data.parabyzantine_task_world();
 		self.update_parabyzantine_task(&mut task_world);
 	}
@@ -78,8 +71,8 @@ mod tests {
 	use super::*;
 	use crate::agreement::ResampleAgreement;
 	use parabyzantine::{
-		agreement::Agreement, task::Task, AgreementAction, AgreementHandler, Data, NoOp,
-		NoOpData, Parabyzantine, Spec, TaskAction, TaskHandler,
+		agreement::Agreement, task::Task, AgreementAction, AgreementHandler, Data, NoOp, NoOpData,
+		Parabyzantine, Spec, TaskAction, TaskHandler,
 	};
 
 	#[test]
