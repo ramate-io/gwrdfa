@@ -70,20 +70,12 @@ impl ResampleTaskBinding for NoOp {
 mod tests {
 	use super::*;
 	use crate::agreement::ResampleAgreement;
-	use parabyzantine::{
-		agreement::Agreement, task::Task, NoOp, NoOpData, Parabyzantine,
-	};
+	use parabyzantine::{task::Task, NoOp, NoOpData, Parabyzantine};
 
 	#[test]
 	fn test_noop_resample_task_noops() {
 		let resample_task = ResampleTask::<NoOp>(NoOpData::new());
-		let mut parabyzantine: Parabyzantine<
-			NoOpData,
-			Agreement,
-			ResampleAgreement<NoOp>,
-			Task,
-			ResampleTask<NoOp>,
-		> = Parabyzantine::new(
+		let mut parabyzantine = Parabyzantine::new(
 			NoOpData::new(),
 			ResampleAgreement::<NoOp>(NoOpData::new()),
 			resample_task,
