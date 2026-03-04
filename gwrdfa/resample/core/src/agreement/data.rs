@@ -1,14 +1,14 @@
 use super::{ResampleAgreementSpec, ResampleAgreementStorage};
-use parabyzantine::agreement::{ParabyzantineAgreementDataBinding, ParabyzantineAgreementDataSpec};
+use parabyzantine::agreement::ParabyzantineAgreementData;
 use parabyzantine::{NoOp, NoOpData};
 
 pub trait ResampleAgreementData<
-	Binding: ParabyzantineAgreementDataBinding,
-	Spec: ResampleAgreementSpec<Binding>,
+	Data: ParabyzantineAgreementData,
+	Spec: ResampleAgreementSpec<Data>,
 >: Sized where
-	<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementDraftBuffer:
+	Data::AgreementDraftBuffer:
 		ResampleAgreementStorage<
-			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
+			Data::AgreementEntity,
 			Spec::Index,
 			Spec::Subcommittee,
 			Spec::Value,
@@ -35,15 +35,9 @@ pub trait ResampleAgreementData<
 	fn certificate_query_plan(&mut self, index: &Spec::Index) -> Spec::CertificateQueryPlan;
 }
 
-impl<Binding: ParabyzantineAgreementDataBinding> ResampleAgreementData<Binding, NoOp> for NoOpData
+impl ResampleAgreementData<NoOpData, NoOp> for NoOpData
 where
-	<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementDraftBuffer:
-		ResampleAgreementStorage<
-			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
-			NoOp,
-			NoOp,
-			NoOp,
-		>,
+	NoOp: ResampleAgreementStorage<NoOp, NoOp, NoOp, NoOp>,
 {
 	fn certificate_set(&self) -> &NoOp {
 		&self.no_op

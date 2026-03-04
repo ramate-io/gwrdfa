@@ -1,12 +1,12 @@
 use super::{IndexTaskSubcommitteeAgreement, ResampleTasker, TaskSubcommittee};
 use parabyzantine::{
 	buffer::query::{QueryPlanlike, Querylike},
-	task::ParabyzantineTaskDataBinding,
-	task::ParabyzantineTaskDataSpec,
+	task::ParabyzantineTaskData,
 	NoOp,
+	NoOpData,
 };
 
-pub trait ResampleTaskSpec<Binding: ParabyzantineTaskDataBinding>: Sized {
+pub trait ResampleTaskSpec<Data: ParabyzantineTaskData>: Sized {
 	/// The type of the index.
 	type Index: Eq;
 
@@ -24,14 +24,14 @@ pub trait ResampleTaskSpec<Binding: ParabyzantineTaskDataBinding>: Sized {
 
 	/// The query for the index subcommittee agreement.
 	type IndexTaskSubcommitteeAgreementQuery<'a>: Querylike<
-		<Binding::Spec as ParabyzantineTaskDataSpec>::AgreementEntity,
+		Data::AgreementEntity,
 		Self::IndexTaskSubcommitteeAgreementQueryData<'a>,
 	>;
 
 	/// The query plan for the index subcommittee agreement.
 	type IndexTaskSubcommitteeAgreementQueryPlan: for<'a> QueryPlanlike<
-		<Binding::Spec as ParabyzantineTaskDataSpec>::AgreementEntity,
-		&'a <Binding::Spec as ParabyzantineTaskDataSpec>::AgreementBuffer,
+		Data::AgreementEntity,
+		&'a Data::AgreementBuffer,
 		Self::IndexTaskSubcommitteeAgreementQueryData<'a>,
 		Self::IndexTaskSubcommitteeAgreementQuery<'a>,
 	>;
@@ -43,7 +43,7 @@ pub trait ResampleTaskSpec<Binding: ParabyzantineTaskDataBinding>: Sized {
 			Self::Sender,
 			Self::TaskSubcommittee,
 		> + for<'a> From<(
-			<Binding::Spec as ParabyzantineTaskDataSpec>::AgreementEntity,
+			Data::AgreementEntity,
 			Self::IndexTaskSubcommitteeAgreementQueryData<'a>,
 		)>;
 
@@ -54,11 +54,11 @@ pub trait ResampleTaskSpec<Binding: ParabyzantineTaskDataBinding>: Sized {
 		Self::Value,
 		Self::TaskSubcommittee,
 		Self::IndexTaskSubcommitteeAgreement,
-		Binding,
+		Data,
 	>;
 }
 
-impl ResampleTaskSpec<NoOp> for NoOp {
+impl ResampleTaskSpec<NoOpData> for NoOp {
 	type Index = NoOp;
 	type Sender = NoOp;
 	type Value = NoOp;

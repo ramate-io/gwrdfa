@@ -1,16 +1,17 @@
 use super::{CertificateSet, ResampleAgreementStorage, Sampler, Subcommittee};
 use parabyzantine::NoOp;
 use parabyzantine::{
-	agreement::{ParabyzantineAgreementDataBinding, ParabyzantineAgreementDataSpec},
+	agreement::ParabyzantineAgreementData,
 	buffer::query::{QueryPlanlike, Querylike},
+	NoOpData,
 };
 
 /// A [ResampleAgreementSpec] is a specification for ResampleAgreement consensus.
-pub trait ResampleAgreementSpec<Binding: ParabyzantineAgreementDataBinding>: Sized
+pub trait ResampleAgreementSpec<Data: ParabyzantineAgreementData>: Sized
 where
-	<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementDraftBuffer:
+	Data::AgreementDraftBuffer:
 		ResampleAgreementStorage<
-			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
+			Data::AgreementEntity,
 			Self::Index,
 			Self::Subcommittee,
 			Self::Value,
@@ -30,7 +31,7 @@ where
 
 	/// The query for the index subcommittee agreement.
 	type IndexSubcommitteeAgreementQuery<'a>: Querylike<
-		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
+		Data::AgreementEntity,
 		(&'a Self::Index, &'a Self::Subcommittee),
 	>
 	where
@@ -39,15 +40,15 @@ where
 
 	/// The query plan for the index subcommittee agreement.
 	type IndexSubcommitteeAgreementQueryPlan: for<'a> QueryPlanlike<
-		<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
-		&'a <Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementBuffer,
+		Data::AgreementEntity,
+		&'a Data::AgreementBuffer,
 		(&'a Self::Index, &'a Self::Subcommittee),
 		Self::IndexSubcommitteeAgreementQuery<'a>,
 	>;
 
 	/// The query for the certificate.
 	type CertificateQuery<'a>: Querylike<
-		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
+		Data::CertificateEntity,
 		(&'a Self::Index, &'a Self::Value, &'a Self::Subcommittee),
 	>
 	where
@@ -57,8 +58,8 @@ where
 
 	/// The query plan for the certificate.
 	type CertificateQueryPlan: for<'a> QueryPlanlike<
-		<Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateEntity,
-		&'a <Binding::Spec as ParabyzantineAgreementDataSpec>::CertificateBuffer,
+		Data::CertificateEntity,
+		&'a Data::CertificateBuffer,
 		(&'a Self::Index, &'a Self::Value, &'a Self::Subcommittee),
 		Self::CertificateQuery<'a>,
 	>;
@@ -70,15 +71,9 @@ where
 	type Sampler: Sampler<Self::Index, Self::Value, Self::Subcommittee>;
 }
 
-impl<Binding: ParabyzantineAgreementDataBinding> ResampleAgreementSpec<Binding> for NoOp
+impl ResampleAgreementSpec<NoOpData> for NoOp
 where
-	<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementDraftBuffer:
-		ResampleAgreementStorage<
-			<Binding::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
-			NoOp,
-			NoOp,
-			NoOp,
-		>,
+	NoOp: ResampleAgreementStorage<NoOp, NoOp, NoOp, NoOp>,
 {
 	type Index = NoOp;
 	type Value = NoOp;

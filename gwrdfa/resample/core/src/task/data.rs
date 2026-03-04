@@ -1,10 +1,10 @@
 use super::TaskSubcommittee;
-use parabyzantine::task::ParabyzantineTaskDataBinding;
+use parabyzantine::task::ParabyzantineTaskData;
 use parabyzantine::{NoOp, NoOpData};
 
 use super::ResampleTaskSpec;
 
-pub trait ResampleTaskData<Binding: ParabyzantineTaskDataBinding, Spec: ResampleTaskSpec<Binding>>:
+pub trait ResampleTaskData<Data: ParabyzantineTaskData, Spec: ResampleTaskSpec<Data>>:
 	Sized
 {
 	/// Gets the sender identifier for the Hart.
@@ -24,7 +24,7 @@ pub trait ResampleTaskData<Binding: ParabyzantineTaskDataBinding, Spec: Resample
 	fn resample_tasker_mut(&mut self) -> &mut Spec::ResampleTasker;
 }
 
-impl ResampleTaskData<NoOp, NoOp> for NoOpData {
+impl ResampleTaskData<NoOpData, NoOp> for NoOpData {
 	fn me(&self) -> &NoOp {
 		&self.no_op
 	}

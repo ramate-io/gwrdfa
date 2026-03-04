@@ -16,7 +16,6 @@ pub use consensus::Condition;
 pub use data::ResampleAgreementData;
 use parabyzantine::agreement::{
 	Agreement, AgreementWorld, ParabyzantineAgreement, ParabyzantineAgreementData,
-	ParabyzantineAgreementDataBinding, ParabyzantineAgreementDataSpec,
 };
 use parabyzantine::{NoOp, NoOpData};
 pub use sampler::Sampler;
@@ -26,18 +25,21 @@ pub use subcommittee::Subcommittee;
 
 /// A [ResampleAgreementBinding] is a binding for the [ResampleAgreement] protocol.
 ///
-/// It binds between the [ParabyzantineAgreementDataBinding] and the [ResampleAgreementSpec] and the [ResampleAgreementData].
-pub trait ResampleAgreementBinding: Sized where <<Self::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::AgreementDraftBuffer: ResampleAgreementStorage<
-			<<Self::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec as ParabyzantineAgreementDataSpec>::AgreementEntity,
-			<Self::ResampleAgreementSpec as ResampleAgreementSpec<Self::ParabyzantineAgreementDataBinding>>::Index,
-			<Self::ResampleAgreementSpec as ResampleAgreementSpec<Self::ParabyzantineAgreementDataBinding>>::Subcommittee,
-			<Self::ResampleAgreementSpec as ResampleAgreementSpec<Self::ParabyzantineAgreementDataBinding>>::Value,
+/// It binds between the agreement data, the [ResampleAgreementSpec], and the [ResampleAgreementData].
+pub trait ResampleAgreementBinding: Sized
+where
+	<Self::ParabyzantineAgreementData as ParabyzantineAgreementData>::AgreementDraftBuffer:
+		ResampleAgreementStorage<
+			<Self::ParabyzantineAgreementData as ParabyzantineAgreementData>::AgreementEntity,
+			<Self::ResampleAgreementSpec as ResampleAgreementSpec<Self::ParabyzantineAgreementData>>::Index,
+			<Self::ResampleAgreementSpec as ResampleAgreementSpec<Self::ParabyzantineAgreementData>>::Subcommittee,
+			<Self::ResampleAgreementSpec as ResampleAgreementSpec<Self::ParabyzantineAgreementData>>::Value,
 		>,
 {
-	type ParabyzantineAgreementDataBinding: ParabyzantineAgreementDataBinding;
-	type ResampleAgreementSpec: ResampleAgreementSpec<Self::ParabyzantineAgreementDataBinding>;
+	type ParabyzantineAgreementData: ParabyzantineAgreementData;
+	type ResampleAgreementSpec: ResampleAgreementSpec<Self::ParabyzantineAgreementData>;
 	type ResampleAgreementData: ResampleAgreementData<
-		Self::ParabyzantineAgreementDataBinding,
+		Self::ParabyzantineAgreementData,
 		Self::ResampleAgreementSpec,
 	>;
 }
@@ -68,7 +70,7 @@ impl<Binding: ResampleAgreementBinding> ResampleAgreement<Binding>
 
 impl<Binding: ResampleAgreementBinding>
 	ResampleAgreementData<
-		Binding::ParabyzantineAgreementDataBinding,
+		Binding::ParabyzantineAgreementData,
 		Binding::ResampleAgreementSpec,
 	> for ResampleAgreement<Binding>
 {
@@ -76,7 +78,7 @@ impl<Binding: ResampleAgreementBinding>
 	fn certificate_set(
 		&self,
 	) -> &<Binding::ResampleAgreementSpec as ResampleAgreementSpec<
-		Binding::ParabyzantineAgreementDataBinding,
+		Binding::ParabyzantineAgreementData,
 	>>::CertificateSet {
 		self.data().certificate_set()
 	}
@@ -85,7 +87,7 @@ impl<Binding: ResampleAgreementBinding>
 	fn certificate_set_mut(
 		&mut self,
 	) -> &mut <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
-		Binding::ParabyzantineAgreementDataBinding,
+		Binding::ParabyzantineAgreementData,
 	>>::CertificateSet {
 		self.data_mut().certificate_set_mut()
 	}
@@ -94,7 +96,7 @@ impl<Binding: ResampleAgreementBinding>
 	fn sampler(
 		&self,
 	) -> &<Binding::ResampleAgreementSpec as ResampleAgreementSpec<
-		Binding::ParabyzantineAgreementDataBinding,
+		Binding::ParabyzantineAgreementData,
 	>>::Sampler {
 		self.data().sampler()
 	}
@@ -103,7 +105,7 @@ impl<Binding: ResampleAgreementBinding>
 	fn sampler_mut(
 		&mut self,
 	) -> &mut <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
-		Binding::ParabyzantineAgreementDataBinding,
+		Binding::ParabyzantineAgreementData,
 	>>::Sampler {
 		self.data_mut().sampler_mut()
 	}
@@ -112,7 +114,7 @@ impl<Binding: ResampleAgreementBinding>
 	fn index_subcommittee_agreement_query_plan(
 		&mut self,
 	) -> <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
-		Binding::ParabyzantineAgreementDataBinding,
+		Binding::ParabyzantineAgreementData,
 	>>::IndexSubcommitteeAgreementQueryPlan {
 		self.data_mut().index_subcommittee_agreement_query_plan()
 	}
@@ -121,23 +123,21 @@ impl<Binding: ResampleAgreementBinding>
 	fn certificate_query_plan(
 		&mut self,
 		index: &<Binding::ResampleAgreementSpec as ResampleAgreementSpec<
-			Binding::ParabyzantineAgreementDataBinding,
+			Binding::ParabyzantineAgreementData,
 		>>::Index,
 	) -> <Binding::ResampleAgreementSpec as ResampleAgreementSpec<
-		Binding::ParabyzantineAgreementDataBinding,
+		Binding::ParabyzantineAgreementData,
 	>>::CertificateQueryPlan {
 		self.data_mut().certificate_query_plan(index)
 	}
 }
 
-impl<Binding: ResampleAgreementBinding> ParabyzantineAgreement for ResampleAgreement<Binding> {
-	type Binding = Binding::ParabyzantineAgreementDataBinding;
-
+impl<Binding: ResampleAgreementBinding> ParabyzantineAgreement<Binding::ParabyzantineAgreementData>
+	for ResampleAgreement<Binding>
+{
 	fn update_parabyzantine_agreement(
 		&mut self,
-		agreement_world: &mut AgreementWorld<
-			<Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Spec,
-		>,
+		agreement_world: &mut AgreementWorld<Binding::ParabyzantineAgreementData>,
 	) {
 		// over all the index subcommittee agreements
 		let index_query = self.index_subcommittee_agreement_query_plan();
@@ -201,7 +201,7 @@ impl<Binding: ResampleAgreementBinding> ResampleAgreement<Binding> {
 	/// This is most useful for experimenting and testing.
 	pub fn resample_agreement(
 		&mut self,
-		agreement_data: &mut <Binding::ParabyzantineAgreementDataBinding as ParabyzantineAgreementDataBinding>::Data,
+		agreement_data: &mut Binding::ParabyzantineAgreementData,
 	) {
 		let mut agreement_world = agreement_data.parabyzantine_agreement_world();
 
@@ -213,7 +213,7 @@ impl<Binding: ResampleAgreementBinding> ResampleAgreement<Binding> {
 
 /// A [ResampleAgreementBinding] for the [NoOp] struct.
 impl ResampleAgreementBinding for NoOp {
-	type ParabyzantineAgreementDataBinding = NoOp;
+	type ParabyzantineAgreementData = NoOpData;
 	type ResampleAgreementSpec = NoOp;
 	type ResampleAgreementData = NoOpData;
 }
@@ -228,16 +228,17 @@ mod tests {
 	use crate::agreement::test_util::container::TestResampleCertificateContainer;
 	use crate::agreement::test_util::container::TestResampleParabyzantineData;
 	use crate::agreement::test_util::*;
+	use crate::task::ResampleTask;
 	use gwrdfa_container::Component;
 	use parabyzantine::{
-		agreement::Agreement, task::Task, AgreementAction, AgreementHandler, DataBinding,
+		agreement::Agreement, task::Task, AgreementAction, AgreementHandler, Data,
 		Parabyzantine, Spec, TaskAction, TaskHandler,
 	};
 	use std::collections::BTreeSet;
 	use std::vec;
 
 	impl ResampleAgreementBinding for TestResampleAgreementData<u32, u32, TestSubcommittee<u32>> {
-		type ParabyzantineAgreementDataBinding =
+		type ParabyzantineAgreementData =
 			TestResampleParabyzantineData<u32, u32, TestSubcommittee<u32>>;
 		type ResampleAgreementSpec = TestResampleAgreementSpec<u32, u32, TestSubcommittee<u32>>;
 		type ResampleAgreementData = TestResampleAgreementData<u32, u32, TestSubcommittee<u32>>;
@@ -248,16 +249,16 @@ mod tests {
 		let resample_agreement = ResampleAgreement::<NoOp>(NoOpData::new());
 		let mut parabyzantine: Parabyzantine<
 			Spec<(
-				DataBinding<NoOp>,
+				Data<NoOpData>,
 				AgreementAction<Agreement>,
 				AgreementHandler<ResampleAgreement<NoOp>>,
 				TaskAction<Task>,
-				TaskHandler<NoOp>,
+				TaskHandler<ResampleTask<NoOp>>,
 			)>,
 		> = Parabyzantine {
 			data: NoOpData::new(),
 			agreement_handler: resample_agreement,
-			task_handler: NoOp,
+			task_handler: ResampleTask::<NoOp>(NoOpData::new()),
 		};
 		parabyzantine.update_agreement(Agreement);
 	}
