@@ -1,41 +1,31 @@
-use crate::agreement::{ParabyzantineAgreementData, ParabyzantineAgreementDataSpec};
-use crate::hart::{ParabyzantineData, ParabyzantineDataSpec};
-
-/// Blanket implementation for the agreement spec.
-///
-/// Downcasting the world to an agreement world.
-///
-/// Note that because of blanket implementations on the Data,
-/// we don't also have blanket implementations here.
-impl<Spec: ParabyzantineDataSpec> ParabyzantineAgreementDataSpec for Spec {
-	type CertificateEntity = Spec::CertificateEntity;
-	type CertificateBuffer = Spec::CertificateBuffer;
-	type CertificateDraftBuffer = Spec::CertificateDraftBuffer;
-	type AgreementEntity = Spec::AgreementEntity;
-	type AgreementBuffer = Spec::AgreementBuffer;
-	type AgreementDraftBuffer = Spec::AgreementDraftBuffer;
-}
+use crate::agreement::ParabyzantineAgreementData;
+use crate::hart::ParabyzantineData;
 
 /// Blanket implementation for the agreement data.
-impl<Spec: ParabyzantineDataSpec, Data: ParabyzantineData<Spec>> ParabyzantineAgreementData<Spec>
-	for Data
-{
-	fn parabyzantine_agreement_certificate_buffer(&self) -> &Spec::CertificateBuffer {
+impl<Data: ParabyzantineData> ParabyzantineAgreementData for Data {
+	type CertificateEntity = Data::CertificateEntity;
+	type CertificateBuffer = Data::CertificateBuffer;
+	type CertificateDraftBuffer = Data::CertificateDraftBuffer;
+	type AgreementEntity = Data::AgreementEntity;
+	type AgreementBuffer = Data::AgreementBuffer;
+	type AgreementDraftBuffer = Data::AgreementDraftBuffer;
+
+	fn parabyzantine_agreement_certificate_buffer(&self) -> &Data::CertificateBuffer {
 		self.parabyzantine_certificate_buffer()
 	}
-	fn parabyzantine_agreement_certificate_buffer_mut(&mut self) -> &mut Spec::CertificateBuffer {
+	fn parabyzantine_agreement_certificate_buffer_mut(&mut self) -> &mut Data::CertificateBuffer {
 		self.parabyzantine_certificate_buffer_mut()
 	}
-	fn parabyzantine_agreement_certificate_draft_buffer(&self) -> Spec::CertificateDraftBuffer {
+	fn parabyzantine_agreement_certificate_draft_buffer(&self) -> Data::CertificateDraftBuffer {
 		self.parabyzantine_certificate_draft_buffer()
 	}
-	fn parabyzantine_agreement_agreement_buffer(&self) -> &Spec::AgreementBuffer {
+	fn parabyzantine_agreement_agreement_buffer(&self) -> &Data::AgreementBuffer {
 		self.parabyzantine_agreement_buffer()
 	}
-	fn parabyzantine_agreement_agreement_buffer_mut(&mut self) -> &mut Spec::AgreementBuffer {
+	fn parabyzantine_agreement_agreement_buffer_mut(&mut self) -> &mut Data::AgreementBuffer {
 		self.parabyzantine_agreement_buffer_mut()
 	}
-	fn parabyzantine_agreement_agreement_draft_buffer(&self) -> Spec::AgreementDraftBuffer {
+	fn parabyzantine_agreement_agreement_draft_buffer(&self) -> Data::AgreementDraftBuffer {
 		self.parabyzantine_agreement_draft_buffer()
 	}
 }

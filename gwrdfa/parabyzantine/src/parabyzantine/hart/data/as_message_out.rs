@@ -1,32 +1,25 @@
-use crate::message_out::{ParabyzantineMessageOutData, ParabyzantineMessageOutDataSpec};
-use crate::hart::{ParabyzantineData, ParabyzantineDataSpec};
-
-/// Blanket implementation for the message out spec.
-///
-/// Downcasting the world to a message out world.
-impl<Spec: ParabyzantineDataSpec> ParabyzantineMessageOutDataSpec for Spec {
-	type TaskEntity = Spec::TaskEntity;
-	type TaskBuffer = Spec::TaskBuffer;
-	type TaskDraftBuffer = Spec::TaskDraftBuffer;
-	type MessageEntity = Spec::MessageEntity;
-	type MessageBuffer = Spec::MessageBuffer;
-	type MessageDraftBuffer = Spec::MessageDraftBuffer;
-}
+use crate::message_out::ParabyzantineMessageOutData;
+use crate::hart::ParabyzantineData;
 
 /// Blanket implementation for the message out data.
-impl<Spec: ParabyzantineDataSpec, Data: ParabyzantineData<Spec>> ParabyzantineMessageOutData<Spec>
-	for Data
-{
-	fn parabyzantine_message_out_task_buffer(&self) -> &Spec::TaskBuffer {
+impl<Data: ParabyzantineData> ParabyzantineMessageOutData for Data {
+	type TaskEntity = Data::TaskEntity;
+	type TaskBuffer = Data::TaskBuffer;
+	type TaskDraftBuffer = Data::TaskDraftBuffer;
+	type MessageEntity = Data::MessageEntity;
+	type MessageBuffer = Data::MessageBuffer;
+	type MessageDraftBuffer = Data::MessageDraftBuffer;
+
+	fn parabyzantine_message_out_task_buffer(&self) -> &Data::TaskBuffer {
 		self.parabyzantine_task_buffer()
 	}
-	fn parabyzantine_message_out_task_draft_buffer(&self) -> Spec::TaskDraftBuffer {
+	fn parabyzantine_message_out_task_draft_buffer(&self) -> Data::TaskDraftBuffer {
 		self.parabyzantine_task_draft_buffer()
 	}
-	fn parabyzantine_message_out_message_buffer(&self) -> &Spec::MessageBuffer {
+	fn parabyzantine_message_out_message_buffer(&self) -> &Data::MessageBuffer {
 		self.parabyzantine_message_buffer()
 	}
-	fn parabyzantine_message_out_message_draft_buffer(&self) -> Spec::MessageDraftBuffer {
+	fn parabyzantine_message_out_message_draft_buffer(&self) -> Data::MessageDraftBuffer {
 		self.parabyzantine_message_draft_buffer()
 	}
 }

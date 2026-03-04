@@ -6,7 +6,7 @@ pub struct MessageOut;
 /// Specifies the entities and buffers for a parabyzantine message out Data.
 ///
 /// A Parabyzantine message out Data is concerned with deriving messages from tasks.
-pub trait ParabyzantineMessageOutDataSpec: Sized {
+pub trait ParabyzantineMessageOutData: Sized {
 	/// The entity type for the task.
 	type TaskEntity: Sized;
 	/// The buffer type for the task.
@@ -20,20 +20,17 @@ pub trait ParabyzantineMessageOutDataSpec: Sized {
 	type MessageBuffer: Bufferlike<Self::MessageEntity>;
 	/// The draft buffer type for the message.
 	type MessageDraftBuffer: DraftBufferlike<Self::MessageEntity, Self::MessageBuffer>;
-}
-
-pub trait ParabyzantineMessageOutData<Spec: ParabyzantineMessageOutDataSpec>: Sized {
 	/// The buffer for the task.
-	fn parabyzantine_message_out_task_buffer(&self) -> &Spec::TaskBuffer;
+	fn parabyzantine_message_out_task_buffer(&self) -> &Self::TaskBuffer;
 	/// The draft buffer for the task.
-	fn parabyzantine_message_out_task_draft_buffer(&self) -> Spec::TaskDraftBuffer;
+	fn parabyzantine_message_out_task_draft_buffer(&self) -> Self::TaskDraftBuffer;
 	/// The buffer for the message.
-	fn parabyzantine_message_out_message_buffer(&self) -> &Spec::MessageBuffer;
+	fn parabyzantine_message_out_message_buffer(&self) -> &Self::MessageBuffer;
 	/// The draft buffer for the message.
-	fn parabyzantine_message_out_message_draft_buffer(&self) -> Spec::MessageDraftBuffer;
+	fn parabyzantine_message_out_message_draft_buffer(&self) -> Self::MessageDraftBuffer;
 
 	/// The world of the message out.
-	fn parabyzantine_message_out_world<'a>(&'a self) -> MessageOutWorld<'a, Spec> {
+	fn parabyzantine_message_out_world<'a>(&'a self) -> MessageOutWorld<'a, Self> {
 		MessageOutWorld {
 			task_facts: self.parabyzantine_message_out_task_buffer().into(),
 			task_inferences: self.parabyzantine_message_out_task_draft_buffer().into(),
@@ -43,25 +40,22 @@ pub trait ParabyzantineMessageOutData<Spec: ParabyzantineMessageOutDataSpec>: Si
 	}
 }
 /// The world of the message out step of a parabyzantine message out Data.
-pub struct MessageOutWorld<'a, Spec: ParabyzantineMessageOutDataSpec> {
-	pub task_facts: Facts<'a, Spec::TaskEntity, Spec::TaskBuffer>,
-	pub task_inferences: Inferences<Spec::TaskEntity, Spec::TaskBuffer, Spec::TaskDraftBuffer>,
-	pub message_facts: Facts<'a, Spec::MessageEntity, Spec::MessageBuffer>,
+pub struct MessageOutWorld<'a, Data: ParabyzantineMessageOutData> {
+	pub task_facts: Facts<'a, Data::TaskEntity, Data::TaskBuffer>,
+	pub task_inferences: Inferences<Data::TaskEntity, Data::TaskBuffer, Data::TaskDraftBuffer>,
+	pub message_facts: Facts<'a, Data::MessageEntity, Data::MessageBuffer>,
 	pub message_inferences:
-		Inferences<Spec::MessageEntity, Spec::MessageBuffer, Spec::MessageDraftBuffer>,
+		Inferences<Data::MessageEntity, Data::MessageBuffer, Data::MessageDraftBuffer>,
 }
 
-pub trait ParabyzantineMessageOut: Sized {
-	type Spec: ParabyzantineMessageOutDataSpec;
-
+pub trait ParabyzantineMessageOut<Data: ParabyzantineMessageOutData>: Sized {
 	/// Compute the parabyzantine message out.
-	fn compute_parabyzantine_message_out(&mut self, data: &mut MessageOutWorld<Self::Spec>);
+	fn compute_parabyzantine_message_out(&mut self, data: &mut MessageOutWorld<Data>);
 }
 
 /// A [ParabyzantineMessageOutDataBinding] is a binding for the [ParabyzantineMessageOut] protocol.
 ///
-/// It binds between the [ParabyzantineMessageOutDataSpec] and the [ParabyzantineMessageOutData].
+/// It binds to [ParabyzantineMessageOutData].
 pub trait ParabyzantineMessageOutDataBinding {
-	type Spec: ParabyzantineMessageOutDataSpec;
-	type Data: ParabyzantineMessageOutData<Self::Spec>;
+	type Data: ParabyzantineMessageOutData;
 }
