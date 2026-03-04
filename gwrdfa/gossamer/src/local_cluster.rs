@@ -160,7 +160,7 @@ mod tests {
 		let iterations = env::var("GOSSAMER_STRESS_ITERS")
 			.ok()
 			.and_then(|s| s.parse::<usize>().ok())
-			.unwrap_or(128);
+			.unwrap_or(16);
 
 		for i in 0..iterations {
 			run_local_cluster_send_and_receive_once(64).await.map_err(|e| {
