@@ -1,6 +1,6 @@
 # This workflow runs cargo test on every pushed commit.
 
-name: Cargo Test
+name: Cargo Test Ignored (Resource Acquiring)
 
 on:
   push:
