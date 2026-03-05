@@ -6,7 +6,6 @@ use libp2p::{
 	multiaddr::Protocol,
 	noise, ping, tcp, yamux, Multiaddr, PeerId,
 };
-use std::collections::VecDeque;
 use tokio::sync::mpsc::unbounded_channel;
 use tokio::sync::oneshot::{self, Receiver};
 
@@ -16,6 +15,7 @@ pub struct GossamerConfig {
 	pub topic: String,
 	pub listen_on: Multiaddr,
 	pub bootstrap_peers: Vec<Multiaddr>,
+	pub max_pending_outbound_bytes: usize,
 }
 
 impl Default for GossamerConfig {
@@ -25,6 +25,7 @@ impl Default for GossamerConfig {
 			topic: "gossamer".to_string(),
 			listen_on: "/ip4/0.0.0.0/tcp/0".parse().unwrap(),
 			bootstrap_peers: vec![],
+			max_pending_outbound_bytes: 1024 * 1024,
 		}
 	}
 }
@@ -55,6 +56,11 @@ impl GossamerConfig {
 
 	pub fn with_bootstrap_peers(mut self, bootstrap_peers: Vec<Multiaddr>) -> Self {
 		self.bootstrap_peers = bootstrap_peers;
+		self
+	}
+
+	pub fn with_max_pending_outbound_bytes(mut self, max_pending_outbound_bytes: usize) -> Self {
+		self.max_pending_outbound_bytes = max_pending_outbound_bytes;
 		self
 	}
 
@@ -135,7 +141,7 @@ impl GossamerConfig {
 				message_into_gossamer_sender,
 				entity_message_from_gossamer_receiver,
 				entity_into_gossamer_sender,
-				pending_outbound: VecDeque::new(),
+				pending_outbound: crate::task::PendingOutbound::new(self.max_pending_outbound_bytes),
 				topic_hash: topic.hash(),
 				swarm,
 				listen_addr_sender: Some(listen_addr_sender),

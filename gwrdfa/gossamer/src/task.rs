@@ -30,7 +30,7 @@ pub struct GossamerTask<Entity: Send + Sync + 'static> {
 	pub(crate) entity_message_from_gossamer_receiver: UnboundedReceiver<(Entity, Vec<u8>)>,
 	pub(crate) entity_into_gossamer_sender:
 		UnboundedSender<Result<Entity, (Entity, GossamerTaskError)>>,
-	pub(crate) pending_outbound: VecDeque<(Entity, Vec<u8>)>,
+	pub(crate) pending_outbound: PendingOutbound<Entity>,
 	pub(crate) topic_hash: TopicHash,
 	pub(crate) swarm: Swarm<GossamerBehaviour>,
 	pub(crate) listen_addr_sender: Option<Sender<Multiaddr>>,
@@ -52,6 +52,67 @@ pub enum GossamerTaskError {
 	SwarmStreamDisconnected,
 	#[error("Error sending listen address to the sender: {0}")]
 	ListenAddrSenderError(String),
+	#[error(
+		"Pending outbound queue is full: attempted={attempted_message_bytes} bytes, pending={pending_bytes} bytes, max={max_pending_outbound_bytes} bytes"
+	)]
+	PendingOutboundFull {
+		attempted_message_bytes: usize,
+		pending_bytes: usize,
+		max_pending_outbound_bytes: usize,
+	},
+}
+
+#[derive(Debug)]
+pub struct PendingOutbound<Entity> {
+	queue: VecDeque<(Entity, Vec<u8>)>,
+	current_pending_bytes: usize,
+	max_pending_bytes: usize,
+}
+
+impl<Entity> PendingOutbound<Entity> {
+	pub fn new(max_pending_bytes: usize) -> Self {
+		Self { queue: VecDeque::new(), current_pending_bytes: 0, max_pending_bytes }
+	}
+
+	pub fn push(
+		&mut self,
+		entity: Entity,
+		msg: Vec<u8>,
+	) -> Result<(), (Entity, GossamerTaskError)> {
+		let attempted_message_bytes = msg.len();
+		let Some(new_pending_bytes) = self.current_pending_bytes.checked_add(attempted_message_bytes)
+		else {
+			return Err((
+				entity,
+				GossamerTaskError::PendingOutboundFull {
+					attempted_message_bytes,
+					pending_bytes: self.current_pending_bytes,
+					max_pending_outbound_bytes: self.max_pending_bytes,
+				},
+			));
+		};
+
+		if new_pending_bytes > self.max_pending_bytes {
+			return Err((
+				entity,
+				GossamerTaskError::PendingOutboundFull {
+					attempted_message_bytes,
+					pending_bytes: self.current_pending_bytes,
+					max_pending_outbound_bytes: self.max_pending_bytes,
+				},
+			));
+		}
+
+		self.current_pending_bytes = new_pending_bytes;
+		self.queue.push_back((entity, msg));
+		Ok(())
+	}
+
+	pub fn pop(&mut self) -> Option<(Entity, Vec<u8>)> {
+		let popped = self.queue.pop_front()?;
+		self.current_pending_bytes = self.current_pending_bytes.saturating_sub(popped.1.len());
+		Some(popped)
+	}
 }
 
 impl<Entity: Send + Sync + 'static> Future for GossamerTask<Entity> {
@@ -76,7 +137,14 @@ impl<Entity: Send + Sync + 'static> Future for GossamerTask<Entity> {
 					Ok(true)
 				}
 				Err(gossipsub::PublishError::InsufficientPeers) => {
-					task.pending_outbound.push_back((entity, msg));
+					if let Err((entity, e)) = task.pending_outbound.push(entity, msg) {
+						task.entity_into_gossamer_sender
+							.send(Err((entity, e)))
+							.map_err(|e| {
+								GossamerTaskError::BroadcastResultRelayError(e.to_string())
+							})?;
+						return Ok(true);
+					}
 					Ok(false)
 				}
 				Err(e) => {
@@ -97,7 +165,7 @@ impl<Entity: Send + Sync + 'static> Future for GossamerTask<Entity> {
 		loop {
 			let mut progressed = false;
 
-			if let Some((entity, msg)) = this.pending_outbound.pop_front() {
+			if let Some((entity, msg)) = this.pending_outbound.pop() {
 				let publish_result = try_publish(this, entity, msg)?;
 				progressed = progressed || publish_result;
 			}
