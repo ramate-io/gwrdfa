@@ -34,6 +34,8 @@ pub trait GossamerMessage: Sized {
 	fn from_gossamer_bytes(bytes: Vec<u8>) -> Result<Self, GossamerMessageError>;
 }
 
+pub type GossamerConfirmation<Entity> = Result<Entity, (Entity, GossamerTaskError)>;
+
 impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 	/// Spawns a Gossamer task in a tokio runtime.
 	pub async fn spawn_tokio(
@@ -130,10 +132,11 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 	///
 	/// For example, if you use Gossamer as a client to send a transaction,
 	/// you will want to confirm the transaction has been received via enough peers.
-	pub fn try_recv_confirmation(&mut self) -> Result<Option<Entity>, GossamerMessageError> {
+	pub fn try_recv_confirmation(
+		&mut self,
+	) -> Result<Option<GossamerConfirmation<Entity>>, GossamerMessageError> {
 		match self.entity_into_gossamer_receiver.try_recv() {
-			Ok(Ok(entity)) => Ok(Some(entity)),
-			Ok(Err((_entity, e))) => Err(GossamerMessageError::InternalError(e.to_string())),
+			Ok(confirmation) => Ok(Some(confirmation)),
 			Err(TryRecvError::Empty) => Ok(None),
 			Err(TryRecvError::Disconnected) => {
 				Err(GossamerMessageError::ReceiveFromSwarmError(TryRecvError::Disconnected))
@@ -142,10 +145,11 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 	}
 
 	/// Waits for a confirmation.
-	pub async fn wait_for_confirmation(&mut self) -> Result<Option<Entity>, GossamerMessageError> {
+	pub async fn wait_for_confirmation(
+		&mut self,
+	) -> Result<Option<GossamerConfirmation<Entity>>, GossamerMessageError> {
 		match self.entity_into_gossamer_receiver.recv().await {
-			Some(Ok(entity)) => Ok(Some(entity)),
-			Some(Err((_entity, e))) => Err(GossamerMessageError::InternalError(e.to_string())),
+			Some(confirmation) => Ok(Some(confirmation)),
 			None => Ok(None),
 		}
 	}
@@ -154,7 +158,7 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 	pub async fn wait_for_confirmation_with_timeout(
 		&mut self,
 		duration: Duration,
-	) -> Result<Option<Entity>, GossamerMessageError> {
+	) -> Result<Option<GossamerConfirmation<Entity>>, GossamerMessageError> {
 		timeout(duration, self.wait_for_confirmation())
 			.await
 			.map_err(|_| GossamerMessageError::Timeout {
@@ -183,7 +187,9 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 		message: &M,
 	) -> Result<(), GossamerMessageError> {
 		self.send_message(entity, message)?;
-		self.wait_for_confirmation().await?;
+		if let Some(Err((_entity, e))) = self.wait_for_confirmation().await? {
+			return Err(GossamerMessageError::InternalError(e.to_string()));
+		}
 		Ok(())
 	}
 
@@ -195,7 +201,9 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 		duration: Duration,
 	) -> Result<(), GossamerMessageError> {
 		self.send_message(entity, message)?;
-		self.wait_for_confirmation_with_timeout(duration).await?;
+		if let Some(Err((_entity, e))) = self.wait_for_confirmation_with_timeout(duration).await? {
+			return Err(GossamerMessageError::InternalError(e.to_string()));
+		}
 		Ok(())
 	}
 }
@@ -275,7 +283,10 @@ mod tests {
 		let entity1 = 1;
 		entity_into_gossamer_sender.send(Ok(entity1))?;
 		let confirmation = gossamer.try_recv_confirmation()?;
-		assert_eq!(confirmation, Some(entity1));
+		match confirmation {
+			Some(Ok(entity)) => assert_eq!(entity, entity1),
+			other => return Err(anyhow::anyhow!("Unexpected confirmation state: {other:?}")),
+		}
 
 		Ok(())
 	}
