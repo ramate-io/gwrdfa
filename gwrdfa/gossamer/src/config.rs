@@ -6,6 +6,7 @@ use libp2p::{
 	multiaddr::Protocol,
 	noise, ping, tcp, yamux, Multiaddr, PeerId,
 };
+use std::collections::VecDeque;
 use tokio::sync::mpsc::unbounded_channel;
 use tokio::sync::oneshot::{self, Receiver};
 
@@ -134,6 +135,7 @@ impl GossamerConfig {
 				message_into_gossamer_sender,
 				entity_message_from_gossamer_receiver,
 				entity_into_gossamer_sender,
+				pending_outbound: VecDeque::new(),
 				topic_hash: topic.hash(),
 				swarm,
 				listen_addr_sender: Some(listen_addr_sender),
