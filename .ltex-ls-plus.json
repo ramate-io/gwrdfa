@@ -15,7 +15,9 @@
         "STYLE_REPEATED_WORD_RULE",
         "WORD_REPEAT_BEGINNING_RULE",
         "TOO_LONG_SENTENCE",
-        "ENGLISH_WORD_REPEAT_BEGINNING_RULE"
+        "ENGLISH_WORD_REPEAT_BEGINNING_RULE",
+        "ARROWS",
+        "UPPERCASE_SENTENCE_START"
       ]
     },
     "enabledRules": {
@@ -171,7 +173,15 @@
         "Aegeri",
         "aegeri",
         "Fuste",
-        "fuste"
+        "fuste",
+        "gossipsub",
+        "libp2p",
+        "backpressure",
+        "kad",
+        "Yamux",
+        "kademlia",
+        "Tokio",
+        "->"
       ]
     },
     "bibtex": {

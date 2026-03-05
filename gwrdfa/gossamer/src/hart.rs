@@ -46,13 +46,18 @@ where
 		// Check confirmations on any messages that were in flight
 		for _ in 0..self.max_batch_size {
 			match self.gossamer.try_recv_confirmation() {
-				Ok(Some(entity)) => {
+				Ok(Some(Ok(entity))) => {
 					// This message is no longer in flight...
 					data.message_inferences.remove::<InFlight>(entity);
 					// ...for the purpose of Gossamer, it has been broadcast.
 					data.message_inferences.insert(Some(entity), Broadcast);
 					// NOTE: we do not remove the entity or any other data besides these markers.
 					// We allow a consumeing service to take care of garbage collection.
+				}
+				Ok(Some(Err((entity, e)))) => {
+					// Insert the confirmation error on the originating entity.
+					data.message_inferences
+						.insert(Some(entity), crate::GossamerMessageError::InternalError(e.to_string()));
 				}
 				Ok(None) => {
 					break;

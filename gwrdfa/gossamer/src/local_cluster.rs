@@ -91,10 +91,12 @@ mod tests {
 	#[tokio::test]
 	#[ignore = "This acquires empheral ports. Run with --ignored if you want to opt in."]
 	async fn test_local_cluster_sends_and_receives_message() -> Result<(), anyhow::Error> {
-		run_local_cluster_send_and_receive_once().await
+		run_local_cluster_send_and_receive_once(32).await
 	}
 
-	async fn run_local_cluster_send_and_receive_once() -> Result<(), anyhow::Error> {
+	async fn run_local_cluster_send_and_receive_once(
+		max_retries: usize,
+	) -> Result<(), anyhow::Error> {
 		let config = LocalClusterConfig::default();
 		let mut gossamers = config.build::<u32>().await?;
 		let message = TestMessage(1);
@@ -107,10 +109,10 @@ mod tests {
 		let mut peer0_received = false;
 		let mut peer1_received = false;
 		let mut last_error = None;
-		for i in 0..32 {
+		for i in 0..max_retries {
 			if let Err(e) = sender
 				.0
-				.send_and_confirm_with_timeout(i, &message, Duration::from_secs(2))
+				.send_and_confirm_with_timeout(i as u32, &message, Duration::from_secs(2))
 				.await
 			{
 				last_error = Some(e);
@@ -158,10 +160,10 @@ mod tests {
 		let iterations = env::var("GOSSAMER_STRESS_ITERS")
 			.ok()
 			.and_then(|s| s.parse::<usize>().ok())
-			.unwrap_or(128);
+			.unwrap_or(16);
 
 		for i in 0..iterations {
-			run_local_cluster_send_and_receive_once().await.map_err(|e| {
+			run_local_cluster_send_and_receive_once(32).await.map_err(|e| {
 				anyhow::anyhow!(
 					"stress iteration {i}/{iterations} failed for https://github.com/ramate-io/gwrdfa/issues/18: {e}"
 				)

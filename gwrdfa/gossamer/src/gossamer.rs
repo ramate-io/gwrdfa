@@ -1,14 +1,24 @@
 use crate::config::{GossamerConfig, GossamerConfigError};
 use crate::GossamerTaskError;
-use libp2p::Multiaddr;
+use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tokio::time::{timeout, Duration};
 
 #[derive(Debug)]
 pub struct Gossamer<Entity: Send + Sync> {
+	/// Inbound raw bytes received from gossipsub and forwarded by `GossamerTask`.
+	///
+	/// Public APIs like `recv_message*` decode these bytes into `GossamerMessage`.
 	pub(crate) message_into_gossamer_receiver: UnboundedReceiver<Vec<u8>>,
+	/// Outbound entities and encoded messages to be published by `GossamerTask`.
+	///
+	/// `send_message` pushes into this channel; publication/deferral happens in the task.
 	pub(crate) entity_message_from_gossamer_sender: UnboundedSender<(Entity, Vec<u8>)>,
+	/// Publish confirmations emitted by `GossamerTask`, scoped to the original entity.
+	///
+	/// A confirmation can be success (`Ok(entity)`) or entity-scoped failure
+	/// (`Err((entity, GossamerTaskError))`).
 	pub(crate) entity_into_gossamer_receiver:
 		UnboundedReceiver<Result<Entity, (Entity, GossamerTaskError)>>,
 }
@@ -34,11 +44,18 @@ pub trait GossamerMessage: Sized {
 	fn from_gossamer_bytes(bytes: Vec<u8>) -> Result<Self, GossamerMessageError>;
 }
 
+/// Outcome of a publish confirmation for a specific entity.
+///
+/// - `Ok(entity)`: publish accepted by the local gossamer task.
+/// - `Err((entity, task_error))`: task-level failure for that same entity.
+pub type GossamerConfirmation<Entity> = Result<Entity, (Entity, GossamerTaskError)>;
+
 impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 	/// Spawns a Gossamer task in a tokio runtime.
 	pub async fn spawn_tokio(
 		config: GossamerConfig,
 	) -> Result<(Gossamer<Entity>, Multiaddr), GossamerConfigError> {
+		let peer_id = PeerId::from(config.identity.public());
 		let (gossamer_task, listen_addr_receiver, gossamer) = config.build().await?;
 		tokio::spawn(async move {
 			if let Err(e) = gossamer_task.await {
@@ -48,7 +65,8 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 
 			Ok(()) as Result<(), GossamerTaskError>
 		});
-		let listen_addr = listen_addr_receiver.await?;
+		let mut listen_addr = listen_addr_receiver.await?;
+		listen_addr.push(Protocol::P2p(peer_id));
 		Ok((gossamer, listen_addr))
 	}
 
@@ -128,10 +146,14 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 	///
 	/// For example, if you use Gossamer as a client to send a transaction,
 	/// you will want to confirm the transaction has been received via enough peers.
-	pub fn try_recv_confirmation(&mut self) -> Result<Option<Entity>, GossamerMessageError> {
+	///
+	/// The inner result is entity-scoped so higher layers can apply per-entity
+	/// policy (retry bookkeeping, eviction, metrics) without losing attribution.
+	pub fn try_recv_confirmation(
+		&mut self,
+	) -> Result<Option<GossamerConfirmation<Entity>>, GossamerMessageError> {
 		match self.entity_into_gossamer_receiver.try_recv() {
-			Ok(Ok(entity)) => Ok(Some(entity)),
-			Ok(Err((_entity, e))) => Err(GossamerMessageError::InternalError(e.to_string())),
+			Ok(confirmation) => Ok(Some(confirmation)),
 			Err(TryRecvError::Empty) => Ok(None),
 			Err(TryRecvError::Disconnected) => {
 				Err(GossamerMessageError::ReceiveFromSwarmError(TryRecvError::Disconnected))
@@ -139,20 +161,23 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 		}
 	}
 
-	/// Waits for a confirmation.
-	pub async fn wait_for_confirmation(&mut self) -> Result<Option<Entity>, GossamerMessageError> {
+	/// Waits for a confirmation, returning an entity-scoped success or failure.
+	pub async fn wait_for_confirmation(
+		&mut self,
+	) -> Result<Option<GossamerConfirmation<Entity>>, GossamerMessageError> {
 		match self.entity_into_gossamer_receiver.recv().await {
-			Some(Ok(entity)) => Ok(Some(entity)),
-			Some(Err((_entity, e))) => Err(GossamerMessageError::InternalError(e.to_string())),
+			Some(confirmation) => Ok(Some(confirmation)),
 			None => Ok(None),
 		}
 	}
 
 	/// Waits for a confirmation up to a timeout.
+	///
+	/// On success, this still returns an entity-scoped nested result.
 	pub async fn wait_for_confirmation_with_timeout(
 		&mut self,
 		duration: Duration,
-	) -> Result<Option<Entity>, GossamerMessageError> {
+	) -> Result<Option<GossamerConfirmation<Entity>>, GossamerMessageError> {
 		timeout(duration, self.wait_for_confirmation())
 			.await
 			.map_err(|_| GossamerMessageError::Timeout {
@@ -181,7 +206,9 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 		message: &M,
 	) -> Result<(), GossamerMessageError> {
 		self.send_message(entity, message)?;
-		self.wait_for_confirmation().await?;
+		if let Some(Err((_entity, e))) = self.wait_for_confirmation().await? {
+			return Err(GossamerMessageError::InternalError(e.to_string()));
+		}
 		Ok(())
 	}
 
@@ -193,7 +220,9 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 		duration: Duration,
 	) -> Result<(), GossamerMessageError> {
 		self.send_message(entity, message)?;
-		self.wait_for_confirmation_with_timeout(duration).await?;
+		if let Some(Err((_entity, e))) = self.wait_for_confirmation_with_timeout(duration).await? {
+			return Err(GossamerMessageError::InternalError(e.to_string()));
+		}
 		Ok(())
 	}
 }
@@ -273,7 +302,10 @@ mod tests {
 		let entity1 = 1;
 		entity_into_gossamer_sender.send(Ok(entity1))?;
 		let confirmation = gossamer.try_recv_confirmation()?;
-		assert_eq!(confirmation, Some(entity1));
+		match confirmation {
+			Some(Ok(entity)) => assert_eq!(entity, entity1),
+			other => return Err(anyhow::anyhow!("Unexpected confirmation state: {other:?}")),
+		}
 
 		Ok(())
 	}
