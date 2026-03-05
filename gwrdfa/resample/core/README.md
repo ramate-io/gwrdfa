@@ -11,7 +11,7 @@ Resample is modeled as a facts-to-inferences pipeline over Parabyzantine worlds:
 3. `Subcommittee::condition(...)` computes `Consensus | Hung | InProgress` per index.
 4. `Sampler::elect_subcommittee_from_condition(...)` is invoked for every condition and may elect the next `(index, subcommittee)`.
 5. `ResampleAgreement` inserts value-agreement inferences only when the condition is `Consensus`.
-6. If a sampler election is returned, `ResampleAgreement` inserts an induced subcommittee-agreement inference.
+6. If a sampler election is returned, `ResampleAgreement` inserts that induced subcommittee agreement into `agreement_inferences`.
 
 The type-level structures behind that flow are:
 - [`src/agreement.rs`](./src/agreement.rs): `ResampleAgreement`, `ParabyzantineAgreement` integration, `AgreementWorld<Data>` updates.
@@ -29,9 +29,9 @@ flowchart TB
     COND --> SAM["Sampler::elect_subcommittee_from_condition(index, subcommittee, condition)"]
     COND --> Consensus
     COND --> Hung
-    Cond --> InProcess
+    COND --> InProgress
     Consensus --> AV["agreement_inferences += (Agreement, Resample, index, value)"]
-    SAM --> AI["agreement_inferences += induce_subcommittee_agreement := (Agreement, Resample, next_index, next_subcommittee)"]
+    SAM -- "induce_subcommittee_agreement" --> AI["agreement_inferences += (Agreement, Resample, next_index, next_subcommittee)"]
 ```
 
 ## Crate Structure
