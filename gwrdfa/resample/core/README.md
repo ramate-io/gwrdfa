@@ -22,15 +22,16 @@ The type-level structures behind that flow are:
 - [`src/agreement/consensus.rs`](./src/agreement/consensus.rs): `Condition` state machine.
 
 ```mermaid
-flowchart LR
+flowchart TB
     CF["certificate_facts"] --> CQ["certificate_query_plan(index)"]
     CQ --> CS["CertificateSet::insert(index, value, subcommittee)"]
     CS --> COND["Subcommittee::condition(partials)"]
     COND --> SAM["Sampler::elect_subcommittee_from_condition(index, subcommittee, condition)"]
-    SAM -->|Some(next)| AI["agreement_inferences += (Agreement, Resample, next_index, next_subcommittee)"]
-    SAM -->|None| HOLD["No induced subcommittee agreement"]
-    COND -->|Consensus(value)| AV["agreement_inferences += (Agreement, Resample, index, value)"]
-    COND -->|Hung or InProgress| NOV["No value-agreement inference"]
+    COND --> Consensus
+    COND --> Hung
+    Cond --> InProcess
+    Consensus --> AV["agreement_inferences += (Agreement, Resample, index, value)"]
+    SAM --> AI["agreement_inferences += induce_subcommittee_agreement := (Agreement, Resample, next_index, next_subcommittee)"]
 ```
 
 ## Crate Structure
