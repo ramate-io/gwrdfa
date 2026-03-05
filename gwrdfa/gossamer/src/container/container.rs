@@ -1,13 +1,23 @@
 use crate::{Broadcast, GossamerMessage, GossamerMessageError, In, InFlight, Out};
 use gwrdfa_container::{Component, ContainerGiving};
 
+/// Canonical message container used by the Gossamer Hart integration.
+///
+/// The container keeps the message payload plus lifecycle/error markers as
+/// components so Parabyzantine queries can reason over transport state.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct GossamerContainer<T: GossamerMessage> {
+	/// Message payload component.
 	pub message: Component<T>,
+	/// Marker indicating this message was received from the network.
 	pub message_in: Component<In>,
+	/// Marker indicating this message is queued to be sent.
 	pub message_out: Component<Out>,
+	/// Marker indicating this message has been handed off to Gossamer for publish.
 	pub message_in_flight: Component<InFlight>,
+	/// Marker indicating Gossamer confirmed publish handling for this message.
 	pub message_broadcast: Component<Broadcast>,
+	/// Message-level transport/serialization error marker.
 	pub message_error: Component<GossamerMessageError>,
 }
 

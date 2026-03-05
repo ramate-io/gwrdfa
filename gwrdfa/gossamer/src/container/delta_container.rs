@@ -4,17 +4,28 @@ use crate::{
 };
 use gwrdfa_container::{ContainerStores, Delta, DeltasContainer};
 
+/// Delta form of [`GossamerContainer`], used by draft buffers/inferences.
+///
+/// Each field tracks whether a component is unchanged, modified, or removed.
+/// This allows Hart systems to update only the lifecycle pieces that changed.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct GossamerDeltasContainer<T: GossamerMessage> {
+	/// Delta for message payload.
 	pub message: Delta<T>,
+	/// Delta for inbound marker.
 	pub message_in: Delta<In>,
+	/// Delta for outbound marker.
 	pub message_out: Delta<Out>,
+	/// Delta for in-flight marker.
 	pub message_in_flight: Delta<InFlight>,
+	/// Delta for broadcast marker.
 	pub message_broadcast: Delta<Broadcast>,
+	/// Delta for error marker.
 	pub message_error: Delta<GossamerMessageError>,
 }
 
 impl<T: GossamerMessage> DeltasContainer<GossamerContainer<T>> for GossamerDeltasContainer<T> {
+	/// Apply all component deltas to an existing container instance.
 	fn apply_deltas(self, container: &mut GossamerContainer<T>) {
 		self.message.apply(&mut container.message);
 		self.message_in.apply(&mut container.message_in);
