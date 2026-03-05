@@ -1,6 +1,6 @@
 use crate::config::{GossamerConfig, GossamerConfigError};
 use crate::GossamerTaskError;
-use libp2p::Multiaddr;
+use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tokio::time::{timeout, Duration};
@@ -39,6 +39,7 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 	pub async fn spawn_tokio(
 		config: GossamerConfig,
 	) -> Result<(Gossamer<Entity>, Multiaddr), GossamerConfigError> {
+		let peer_id = PeerId::from(config.identity.public());
 		let (gossamer_task, listen_addr_receiver, gossamer) = config.build().await?;
 		tokio::spawn(async move {
 			if let Err(e) = gossamer_task.await {
@@ -48,7 +49,8 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 
 			Ok(()) as Result<(), GossamerTaskError>
 		});
-		let listen_addr = listen_addr_receiver.await?;
+		let mut listen_addr = listen_addr_receiver.await?;
+		listen_addr.push(Protocol::P2p(peer_id));
 		Ok((gossamer, listen_addr))
 	}
 

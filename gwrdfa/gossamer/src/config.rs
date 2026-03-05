@@ -64,7 +64,14 @@ impl GossamerConfig {
 		let peer_id = PeerId::from(self.identity.public());
 
 		// ---- GOSSIPSUB ----
-		let gossipsub_config = gossipsub::Config::default();
+		let gossipsub_config = gossipsub::ConfigBuilder::default()
+			// Allow publishes before the local node has fully entered the mesh.
+			// This reduces startup flakiness in small, fresh clusters.
+			.flood_publish(true)
+			.build()
+			.map_err(|e| {
+				GossamerConfigError::BuildError(format!("build gossipsub config: {e:?}"))
+			})?;
 
 		let mut gossipsub = gossipsub::Behaviour::new(
 			MessageAuthenticity::Signed(self.identity.clone()),

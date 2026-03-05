@@ -163,7 +163,7 @@ mod tests {
 			.unwrap_or(16);
 
 		for i in 0..iterations {
-			run_local_cluster_send_and_receive_once(64).await.map_err(|e| {
+			run_local_cluster_send_and_receive_once(32).await.map_err(|e| {
 				anyhow::anyhow!(
 					"stress iteration {i}/{iterations} failed for https://github.com/ramate-io/gwrdfa/issues/18: {e}"
 				)

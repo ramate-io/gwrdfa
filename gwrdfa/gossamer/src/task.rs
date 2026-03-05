@@ -95,6 +95,31 @@ impl<Entity: Send + Sync + 'static> Future for GossamerTask<Entity> {
 					progressed = true;
 				}
 
+				Poll::Ready(Some(SwarmEvent::ConnectionEstablished { peer_id, .. })) => {
+					{
+						let behaviour = self.swarm.behaviour_mut();
+						behaviour.gossipsub.add_explicit_peer(&peer_id);
+						if let Err(e) = behaviour.kad.bootstrap() {
+							gossamer_log!(
+								"gossamer: kademlia bootstrap not started after connection to {peer_id}: {e}"
+							);
+						}
+					}
+					progressed = true;
+				}
+
+				Poll::Ready(Some(SwarmEvent::ConnectionClosed { peer_id, .. })) => {
+					self.swarm.behaviour_mut().gossipsub.remove_explicit_peer(&peer_id);
+					progressed = true;
+				}
+
+				Poll::Ready(Some(SwarmEvent::OutgoingConnectionError {
+					peer_id, error, ..
+				})) => {
+					gossamer_log!("gossamer: outgoing connection error to {:?}: {error}", peer_id);
+					progressed = true;
+				}
+
 				Poll::Ready(Some(SwarmEvent::NewListenAddr { address, .. })) => {
 					if let Some(sender) = self.listen_addr_sender.take() {
 						let _ = sender
