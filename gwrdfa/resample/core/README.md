@@ -9,8 +9,9 @@ Resample is modeled as a facts-to-inferences pipeline over Parabyzantine worlds:
 1. `certificate_facts` are queried through `ResampleAgreementData::certificate_query_plan(...)`.
 2. Matching tuples are inserted into `CertificateSet`.
 3. `Subcommittee::condition(...)` computes `Consensus | Hung | InProgress` per index.
-4. `Sampler::elect_subcommittee_from_condition(...)` may elect the next `(index, subcommittee)`.
-5. `ResampleAgreement` writes inferred agreements into `agreement_inferences`.
+4. `Sampler::elect_subcommittee_from_condition(...)` is invoked for every condition and may elect the next `(index, subcommittee)`.
+5. `ResampleAgreement` inserts value-agreement inferences only when the condition is `Consensus`.
+6. If a sampler election is returned, `ResampleAgreement` inserts an induced subcommittee-agreement inference.
 
 The type-level structures behind that flow are:
 - [`src/agreement.rs`](./src/agreement.rs): `ResampleAgreement`, `ParabyzantineAgreement` integration, `AgreementWorld<Data>` updates.
@@ -25,10 +26,11 @@ flowchart LR
     CF["certificate_facts"] --> CQ["certificate_query_plan(index)"]
     CQ --> CS["CertificateSet::insert(index, value, subcommittee)"]
     CS --> COND["Subcommittee::condition(partials)"]
-    COND -->|Consensus| SAM["Sampler::elect_subcommittee_from_condition(...)"]
-    COND -->|Hung/InProgress| HOLD["No transition"]
-    SAM --> AI["agreement_inferences: (Agreement, Resample, next_index, next_subcommittee)"]
-    COND --> AV["agreement_inferences: (Agreement, Resample, index, value)"]
+    COND --> SAM["Sampler::elect_subcommittee_from_condition(index, subcommittee, condition)"]
+    SAM -->|Some(next)| AI["agreement_inferences += (Agreement, Resample, next_index, next_subcommittee)"]
+    SAM -->|None| HOLD["No induced subcommittee agreement"]
+    COND -->|Consensus(value)| AV["agreement_inferences += (Agreement, Resample, index, value)"]
+    COND -->|Hung or InProgress| NOV["No value-agreement inference"]
 ```
 
 ## Crate Structure
@@ -48,12 +50,14 @@ For each agreed `(index, subcommittee)`:
 1. Query certificates marked with `ForResample`.
 2. Insert evidence into `CertificateSet`.
 3. Evaluate `subcommittee.condition(...)` -> `Consensus`, `Hung`, or `InProgress`.
-4. Ask `Sampler` for next subcommittee election when applicable.
-5. Emit inferred agreement tuples into the Parabyzantine draft buffer.
+4. Ask `Sampler` for next subcommittee election on that condition.
+5. If the sampler returns a next pair, emit induced subcommittee agreement into the Parabyzantine draft buffer.
+6. Emit value agreement into the Parabyzantine draft buffer only on `Consensus`.
 
-With the default std sampler (`ConstantCommittee`):
-- consensus advances to the next index with the same subcommittee,
-- `Hung`/`InProgress` do not advance.
+With the default std sampler (`ConstantCommittee` in [`src/agreement/std/constant_committee.rs`](./src/agreement/std/constant_committee.rs)):
+- the sampler is still invoked on all conditions,
+- it advances to the next index only on `Consensus`,
+- it returns `None` for `Hung`/`InProgress`.
 
 ## Task Pipeline (High Level)
 
