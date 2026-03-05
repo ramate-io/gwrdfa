@@ -30,6 +30,7 @@ pub struct GossamerTask<Entity: Send + Sync + 'static> {
 	pub(crate) entity_message_from_gossamer_receiver: UnboundedReceiver<(Entity, Vec<u8>)>,
 	pub(crate) entity_into_gossamer_sender:
 		UnboundedSender<Result<Entity, (Entity, GossamerTaskError)>>,
+	/// Deferred outbound messages retried after peer convergence.
 	pub(crate) pending_outbound: PendingOutbound<Entity>,
 	pub(crate) topic_hash: TopicHash,
 	pub(crate) swarm: Swarm<GossamerBehaviour>,
@@ -52,6 +53,7 @@ pub enum GossamerTaskError {
 	SwarmStreamDisconnected,
 	#[error("Error sending listen address to the sender: {0}")]
 	ListenAddrSenderError(String),
+	/// Deferred outbound queue cannot accept another message under byte cap.
 	#[error(
 		"Pending outbound queue is full: attempted={attempted_message_bytes} bytes, pending={pending_bytes} bytes, max={max_pending_outbound_bytes} bytes"
 	)]
@@ -70,10 +72,14 @@ pub struct PendingOutbound<Entity> {
 }
 
 impl<Entity> PendingOutbound<Entity> {
+	/// Create a pending queue with a hard byte cap.
 	pub fn new(max_pending_bytes: usize) -> Self {
 		Self { queue: VecDeque::new(), current_pending_bytes: 0, max_pending_bytes }
 	}
 
+	/// Enqueue a message for retry if it fits within the configured byte cap.
+	///
+	/// Returns `(entity, PendingOutboundFull)` when enqueue would exceed the cap.
 	pub fn push(
 		&mut self,
 		entity: Entity,
@@ -108,6 +114,7 @@ impl<Entity> PendingOutbound<Entity> {
 		Ok(())
 	}
 
+	/// Pop one deferred message and decrement tracked pending bytes.
 	pub fn pop(&mut self) -> Option<(Entity, Vec<u8>)> {
 		let popped = self.queue.pop_front()?;
 		self.current_pending_bytes = self.current_pending_bytes.saturating_sub(popped.1.len());

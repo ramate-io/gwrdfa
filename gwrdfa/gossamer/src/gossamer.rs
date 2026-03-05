@@ -7,8 +7,18 @@ use tokio::time::{timeout, Duration};
 
 #[derive(Debug)]
 pub struct Gossamer<Entity: Send + Sync> {
+	/// Inbound raw bytes received from gossipsub and forwarded by `GossamerTask`.
+	///
+	/// Public APIs like `recv_message*` decode these bytes into `GossamerMessage`.
 	pub(crate) message_into_gossamer_receiver: UnboundedReceiver<Vec<u8>>,
+	/// Outbound entities and encoded messages to be published by `GossamerTask`.
+	///
+	/// `send_message` pushes into this channel; publication/deferral happens in the task.
 	pub(crate) entity_message_from_gossamer_sender: UnboundedSender<(Entity, Vec<u8>)>,
+	/// Publish confirmations emitted by `GossamerTask`, scoped to the original entity.
+	///
+	/// A confirmation can be success (`Ok(entity)`) or entity-scoped failure
+	/// (`Err((entity, GossamerTaskError))`).
 	pub(crate) entity_into_gossamer_receiver:
 		UnboundedReceiver<Result<Entity, (Entity, GossamerTaskError)>>,
 }
@@ -34,6 +44,10 @@ pub trait GossamerMessage: Sized {
 	fn from_gossamer_bytes(bytes: Vec<u8>) -> Result<Self, GossamerMessageError>;
 }
 
+/// Outcome of a publish confirmation for a specific entity.
+///
+/// - `Ok(entity)`: publish accepted by the local gossamer task.
+/// - `Err((entity, task_error))`: task-level failure for that same entity.
 pub type GossamerConfirmation<Entity> = Result<Entity, (Entity, GossamerTaskError)>;
 
 impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
@@ -132,6 +146,9 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 	///
 	/// For example, if you use Gossamer as a client to send a transaction,
 	/// you will want to confirm the transaction has been received via enough peers.
+	///
+	/// The inner result is entity-scoped so higher layers can apply per-entity
+	/// policy (retry bookkeeping, eviction, metrics) without losing attribution.
 	pub fn try_recv_confirmation(
 		&mut self,
 	) -> Result<Option<GossamerConfirmation<Entity>>, GossamerMessageError> {
@@ -144,7 +161,7 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 		}
 	}
 
-	/// Waits for a confirmation.
+	/// Waits for a confirmation, returning an entity-scoped success or failure.
 	pub async fn wait_for_confirmation(
 		&mut self,
 	) -> Result<Option<GossamerConfirmation<Entity>>, GossamerMessageError> {
@@ -155,6 +172,8 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 	}
 
 	/// Waits for a confirmation up to a timeout.
+	///
+	/// On success, this still returns an entity-scoped nested result.
 	pub async fn wait_for_confirmation_with_timeout(
 		&mut self,
 		duration: Duration,

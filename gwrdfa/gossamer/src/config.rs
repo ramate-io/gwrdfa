@@ -11,10 +11,19 @@ use tokio::sync::oneshot::{self, Receiver};
 
 #[derive(Debug, Clone)]
 pub struct GossamerConfig {
+	/// Identity used to sign gossipsub messages and derive local peer id.
 	pub identity: Keypair,
+	/// Topic name this node subscribes and publishes to.
 	pub topic: String,
+	/// Local listen address for the swarm transport.
 	pub listen_on: Multiaddr,
+	/// Initial peers to dial on startup.
 	pub bootstrap_peers: Vec<Multiaddr>,
+	/// Maximum total bytes retained in the deferred outbound queue.
+	///
+	/// When publish returns `InsufficientPeers`, messages are queued for retry.
+	/// If adding a new deferred message would exceed this cap, the task emits
+	/// `GossamerTaskError::PendingOutboundFull` for that entity.
 	pub max_pending_outbound_bytes: usize,
 }
 
