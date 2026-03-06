@@ -9,11 +9,13 @@ homepage = { workspace = true }
 publish = { workspace = true }
 rust-version = { workspace = true }
 
+[features]
+default = ["std"]
+std = ["dep:gwrdfa-container"]
+
 [dependencies]
 parabyzantine = { workspace = true }
-
-[dev-dependencies]
-gwrdfa-container = { workspace = true }
+gwrdfa-container = { workspace = true, optional = true }
 
 [lints]
 workspace = true

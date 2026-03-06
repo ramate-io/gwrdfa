@@ -1,8 +1,14 @@
+//! Data contracts for resample task execution.
+
 use super::{execution::ResampleTasker, IndexTaskSubcommitteeAgreement, TaskSubcommittee};
 use parabyzantine::buffer::query::{QueryPlanlike, Querylike};
 use parabyzantine::task::ParabyzantineTaskData;
 use parabyzantine::{NoOp, NoOpData};
 
+/// Data contract consumed by `ResampleTask`.
+///
+/// This trait binds task-index agreement projection, local assignment checks, and
+/// a concrete `ResampleTasker` implementation into one reusable interface.
 pub trait ResampleTaskData<Data: ParabyzantineTaskData>: Sized {
 	/// The type of the index.
 	type Index: Eq;

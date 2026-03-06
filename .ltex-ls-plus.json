@@ -181,7 +181,9 @@
         "Yamux",
         "kademlia",
         "Tokio",
-        "->"
+        "->",
+        "entrypoint",
+        "newtype"
       ]
     },
     "bibtex": {

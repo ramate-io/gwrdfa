@@ -1,30 +1,32 @@
-use crate::agreement::test_util::{Index, Sub, Value};
+use crate::agreement::std::{Index, Subcom, Value};
 use crate::agreement::{Resample, Subcommittee};
 use gwrdfa_container::{Component, ContainerGiving, ContainerStores, Delta, DeltasContainer};
 use parabyzantine::agreement::Agreement;
 
+/// Agreement-side container used by `MatchingTuple` queries.
+///
+/// It intentionally stores both protocol markers (`Agreement`, `Resample`) and
+/// typed payload fields (`Index`, `Value`, `Subcom`) so queries can project
+/// exactly what a phase needs.
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-/// A container for an agreement.
-pub struct TestResampleAgreementContainer<I: Eq, V: Eq + 'static, S: Subcommittee<V>> {
+pub struct AgreementContainer<I: Eq, V: Eq + 'static, S: Subcommittee<V>> {
 	pub agreement: Component<Agreement>,
 	pub resample: Component<Resample>,
 	pub index: Component<Index<I>>,
 	pub value: Component<Value<V>>,
-	pub subcommittee: Component<Sub<S>>,
+	pub subcommittee: Component<Subcom<S>>,
 }
 
-/// A [ContainerGiving] implementation for [Agreement].
 impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<Agreement>
-	for TestResampleAgreementContainer<I, V, S>
+	for AgreementContainer<I, V, S>
 {
 	fn as_component(&self) -> Component<&Agreement> {
 		self.agreement.as_ref()
 	}
 }
 
-/// A [ContainerGiving] implementation for [Resample].
 impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<Resample>
-	for TestResampleAgreementContainer<I, V, S>
+	for AgreementContainer<I, V, S>
 {
 	fn as_component(&self) -> Component<&Resample> {
 		self.resample.as_ref()
@@ -32,7 +34,7 @@ impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<Resample>
 }
 
 impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<Index<I>>
-	for TestResampleAgreementContainer<I, V, S>
+	for AgreementContainer<I, V, S>
 {
 	fn as_component(&self) -> Component<&Index<I>> {
 		self.index.as_ref()
@@ -40,32 +42,34 @@ impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<Index<I>>
 }
 
 impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<Value<V>>
-	for TestResampleAgreementContainer<I, V, S>
+	for AgreementContainer<I, V, S>
 {
 	fn as_component(&self) -> Component<&Value<V>> {
 		self.value.as_ref()
 	}
 }
 
-impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<Sub<S>>
-	for TestResampleAgreementContainer<I, V, S>
+impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerGiving<Subcom<S>>
+	for AgreementContainer<I, V, S>
 {
-	fn as_component(&self) -> Component<&Sub<S>> {
+	fn as_component(&self) -> Component<&Subcom<S>> {
 		self.subcommittee.as_ref()
 	}
 }
-/// A [DeltasContainer] implementation for [TestResampleAgreementContainer<I, V, S>].
-pub struct TestResampleAgreementDelta<I: Eq, V: Eq + 'static, S: Subcommittee<V>> {
+
+/// Delta representation for [`AgreementContainer`].
+///
+/// This allows draft buffers to compact and apply updates field-by-field while
+/// preserving entity identity.
+pub struct AgreementDelta<I: Eq, V: Eq + 'static, S: Subcommittee<V>> {
 	pub agreement: Delta<Agreement>,
 	pub resample: Delta<Resample>,
 	pub index: Delta<Index<I>>,
 	pub value: Delta<Value<V>>,
-	pub subcommittee: Delta<Sub<S>>,
+	pub subcommittee: Delta<Subcom<S>>,
 }
 
-impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Agreement>
-	for TestResampleAgreementDelta<I, V, S>
-{
+impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Agreement> for AgreementDelta<I, V, S> {
 	fn from_data(data: Agreement) -> Self {
 		Self {
 			agreement: Delta::Modified(data),
@@ -95,9 +99,7 @@ impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Agreement>
 	}
 }
 
-impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Resample>
-	for TestResampleAgreementDelta<I, V, S>
-{
+impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Resample> for AgreementDelta<I, V, S> {
 	fn from_data(data: Resample) -> Self {
 		Self {
 			agreement: Delta::Unchanged,
@@ -127,9 +129,7 @@ impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Resample>
 	}
 }
 
-impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Index<I>>
-	for TestResampleAgreementDelta<I, V, S>
-{
+impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Index<I>> for AgreementDelta<I, V, S> {
 	fn from_data(data: Index<I>) -> Self {
 		Self {
 			agreement: Delta::Unchanged,
@@ -159,9 +159,7 @@ impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Index<I>>
 	}
 }
 
-impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Value<V>>
-	for TestResampleAgreementDelta<I, V, S>
-{
+impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Value<V>> for AgreementDelta<I, V, S> {
 	fn from_data(data: Value<V>) -> Self {
 		Self {
 			agreement: Delta::Unchanged,
@@ -191,10 +189,10 @@ impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Value<V>>
 	}
 }
 
-impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Sub<S>>
-	for TestResampleAgreementDelta<I, V, S>
+impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Subcom<S>>
+	for AgreementDelta<I, V, S>
 {
-	fn from_data(data: Sub<S>) -> Self {
+	fn from_data(data: Subcom<S>) -> Self {
 		Self {
 			agreement: Delta::Unchanged,
 			resample: Delta::Unchanged,
@@ -214,7 +212,7 @@ impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Sub<S>>
 		}
 	}
 
-	fn update_with_data(&mut self, data: Sub<S>) {
+	fn update_with_data(&mut self, data: Subcom<S>) {
 		self.subcommittee = Delta::Modified(data);
 	}
 
@@ -223,12 +221,10 @@ impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> ContainerStores<Sub<S>>
 	}
 }
 
-/// A [DeltasContainer] implementation for [TestResampleAgreementContainer<I, V, S>].
-impl<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>>
-	DeltasContainer<TestResampleAgreementContainer<Index, Value, Sub>>
-	for TestResampleAgreementDelta<Index, Value, Sub>
+impl<I: Eq, V: Eq + 'static, S: Subcommittee<V>> DeltasContainer<AgreementContainer<I, V, S>>
+	for AgreementDelta<I, V, S>
 {
-	fn apply_deltas(self, container: &mut TestResampleAgreementContainer<Index, Value, Sub>) {
+	fn apply_deltas(self, container: &mut AgreementContainer<I, V, S>) {
 		self.agreement.apply(&mut container.agreement);
 		self.resample.apply(&mut container.resample);
 		self.index.apply(&mut container.index);
@@ -236,8 +232,8 @@ impl<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>>
 		self.subcommittee.apply(&mut container.subcommittee);
 	}
 
-	fn into_container(self) -> TestResampleAgreementContainer<Index, Value, Sub> {
-		TestResampleAgreementContainer {
+	fn into_container(self) -> AgreementContainer<I, V, S> {
+		AgreementContainer {
 			agreement: self.agreement.into_component(),
 			resample: self.resample.into_component(),
 			index: self.index.into_component(),

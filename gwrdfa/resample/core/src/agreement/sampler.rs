@@ -1,6 +1,13 @@
+//! Sampler traits for electing future subcommittees.
+
 use super::{Condition, Subcommittee};
 use parabyzantine::NoOp;
 
+/// Election policy for producing the next subcommittee agreement.
+///
+/// Given a current `(index, subcommittee)` and derived condition, implementations
+/// may emit a next `(index, subcommittee)` pair to insert into agreement
+/// inferences.
 pub trait Sampler<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>>: Sized {
 	/// Given a value and the subcommittee agreeement which gave that value,
 	/// the sampler has the option to insert agreements into the buffer.
@@ -30,62 +37,3 @@ impl<Index: Eq, Value: Eq + 'static, Sub: Subcommittee<Value>> Sampler<Index, Va
 	}
 }
 
-#[cfg(test)]
-pub mod test {
-	use super::*;
-	use crate::agreement::subcommittee::test::TestSubcommittee;
-	use crate::agreement::test_util::TextIndexabled;
-
-	#[derive(Debug, Clone, Default)]
-	pub struct TestSampler;
-
-	impl TestSampler {
-		pub fn new() -> Self {
-			Self
-		}
-	}
-
-	impl<Index: Eq + TextIndexabled, Value: Eq + 'static, Sub: Subcommittee<Value> + Clone>
-		Sampler<Index, Value, Sub> for TestSampler
-	{
-		fn elect_subcommittee_from_condition(
-			&mut self,
-			index: &Index,
-			subcommittee: &Sub,
-			value: &Condition<Value>,
-		) -> Option<(Index, Sub)> {
-			match value {
-				Condition::Consensus(_value) => {
-					index.next().map(|index| (index, subcommittee.clone()))
-				}
-				Condition::Hung => None,
-				Condition::InProgress => None,
-			}
-		}
-	}
-
-	#[test]
-	fn test_test_sampler() {
-		let mut sampler = TestSampler;
-		let index = 0;
-		let mut subcommittee = TestSubcommittee::new();
-		subcommittee.add_member(1);
-		subcommittee.add_member(2);
-		subcommittee.add_member(3);
-
-		let value = Condition::Consensus(0);
-		let next_subcommittee =
-			sampler.elect_subcommittee_from_condition(&index, &subcommittee, &value);
-		assert_eq!(next_subcommittee, Some((1, subcommittee.clone())));
-
-		let value: Condition<u32> = Condition::Hung;
-		let next_subcommittee =
-			sampler.elect_subcommittee_from_condition(&index, &subcommittee, &value);
-		assert_eq!(next_subcommittee, None);
-
-		let value: Condition<u32> = Condition::InProgress;
-		let next_subcommittee =
-			sampler.elect_subcommittee_from_condition(&index, &subcommittee, &value);
-		assert_eq!(next_subcommittee, None);
-	}
-}
