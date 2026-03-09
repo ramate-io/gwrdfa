@@ -38,7 +38,7 @@ flowchart TB
 
     AT -- "build block from mempool" --> BlockTx["BlockTransactions"]
     BlockTx -- "collect joiners" --> JoinSet["JoinSet"]
-    JoinSet-..->Sub
+    JoinSet-. "derives" .->Sub
     BlockTx -- "execute ELF payloads" --> Fuste["Fuste"]
     Fuste -- "compute state deltas" --> BlockDeltas["BlockDeltas"]
 
