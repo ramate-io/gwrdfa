@@ -184,7 +184,8 @@
         "->",
         "entrypoint",
         "newtype",
-        "Dataflow"
+        "Dataflow",
+        "Aegeri-specific"
       ]
     },
     "bibtex": {
