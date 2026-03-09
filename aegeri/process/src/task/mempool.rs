@@ -7,8 +7,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 /// Transactions are inserted with a receive timestamp (epoch millis) and grouped
 /// by `slot = received_at_ms / slot_width_ms`.
 ///
-/// Pop behavior excludes the current slot and allows draining any older slot:
-/// transactions from slots `< t` are eligible at slot `t`.
+/// Pop behavior uses a one-slot maturity delay:
+/// transactions from slots `< t - 1` are eligible at slot `t`.
 pub struct Mempool {
 	slot_width_ms: u64,
 	by_slot: BTreeMap<u64, BTreeSet<Message<Transaction>>>,
@@ -52,7 +52,7 @@ impl Mempool {
 		Ok(())
 	}
 
-	/// Pops up to `max_items` transactions from any eligible slot `< t`.
+	/// Pops up to `max_items` transactions from any eligible slot `< t - 1`.
 	///
 	/// Pop priority is:
 	/// 1. Newer eligible slots first (global recency by slot).
@@ -63,13 +63,14 @@ impl Mempool {
 		}
 
 		let current_slot = self.slot_for_epoch_ms(now_epoch_ms);
-		if current_slot == 0 {
+		if current_slot <= 1 {
 			return Vec::new();
 		}
+		let upper_exclusive = current_slot - 1;
 		let mut popped = Vec::new();
 		let eligible_slots: Vec<u64> = self
 			.by_slot
-			.range(..current_slot)
+			.range(..upper_exclusive)
 			.map(|(slot, _)| *slot)
 			.collect();
 		for slot in eligible_slots.into_iter().rev() {
@@ -119,17 +120,20 @@ mod tests {
 		// Slot 10
 		mempool.insert_at(1000, message.clone());
 
-		// Still slot 10 -> eligible slot is 9, so nothing pops.
+		// Still slot 10 -> no slot is < (10 - 1) while message is in slot 10.
 		assert!(mempool.pop_ready_at(1099, 10).is_empty());
 
-		// Slot 11 -> eligible slot is 10, now it pops.
-		let popped = mempool.pop_ready_at(1100, 10);
+		// Slot 11 -> eligible slots are < 10, so slot 10 still does not pop.
+		assert!(mempool.pop_ready_at(1100, 10).is_empty());
+
+		// Slot 12 -> eligible slots are < 11, so slot 10 pops now.
+		let popped = mempool.pop_ready_at(1200, 10);
 		assert_eq!(popped.len(), 1);
 		assert_eq!(popped[0], message);
 	}
 
 	#[test]
-	fn pops_from_any_eligible_slot_less_than_current() {
+	fn pops_from_any_eligible_slot_less_than_current_minus_one() {
 		let mut mempool = Mempool::new(100).expect("valid slot width");
 		let older = tx(2, Transaction::Join, b"older");
 		let previous = tx(3, Transaction::Join, b"previous");
@@ -138,12 +142,12 @@ mod tests {
 		mempool.insert_at(850, older.clone());
 		mempool.insert_at(950, previous.clone());
 
-		// Current slot 10: both slots 8 and 9 are eligible.
+		// Current slot 10: only slots < 9 are eligible (slot 8).
 		let popped = mempool.pop_ready_at(1000, 10);
-		assert_eq!(popped, vec![previous, older]);
+		assert_eq!(popped, vec![older]);
 
-		// Everything older than current slot was already drained.
-		assert!(mempool.pop_ready_at(1100, 10).is_empty());
+		// Current slot 11: slots < 10 are eligible, so slot 9 pops.
+		assert_eq!(mempool.pop_ready_at(1100, 10), vec![previous]);
 	}
 
 	#[test]
@@ -163,8 +167,10 @@ mod tests {
 		expected.sort();
 		expected.reverse();
 
-		// now in slot 4, so slot 3 is eligible.
-		let popped = mempool.pop_ready_at(400, 3);
+		// Now in slot 4: eligible slots are < 3, so slot 3 is not eligible yet.
+		assert!(mempool.pop_ready_at(400, 3).is_empty());
+		// Now in slot 5: eligible slots are < 4, so slot 3 is eligible.
+		let popped = mempool.pop_ready_at(500, 3);
 		assert_eq!(popped, expected);
 	}
 }
