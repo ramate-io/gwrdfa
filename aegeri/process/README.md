@@ -48,6 +48,6 @@ flowchart TB
     AMO -- "sign + wrap UnifiedMessage + mark for broadcast" --> Messages
     Messages --> Gossamer
 
-    Sub["Subcommittee"]..>Certificates
-    JoinSet..>Sub
+    Sub["Subcommittee"]-..->Certificates
+    JoinSet-..->Sub
 ```
