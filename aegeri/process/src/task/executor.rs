@@ -15,7 +15,7 @@ use std::ops::ControlFlow;
 const TASK_MACHINE_MEMORY_SIZE: usize = 1024 * 1024 * 2;
 
 #[derive(Debug, thiserror::Error)]
-pub enum TaskFlowError {
+pub enum AegeriExecutionError {
 	#[error("failed to load or parse ELF payload: {0}")]
 	ElfLoader(#[from] ElfLoaderError),
 	#[error("failed while running the Fuste machine: {0}")]
@@ -72,7 +72,7 @@ impl AegeriExecutor {
 		Self { loader: Elf32Loader::default() }
 	}
 
-	fn run_elf_script(&self, elf_bytes: &[u8]) -> Result<(), TaskFlowError> {
+	fn run_elf_script(&self, elf_bytes: &[u8]) -> Result<(), AegeriExecutionError> {
 		let mut machine = Machine::<TASK_MACHINE_MEMORY_SIZE>::new();
 		self.loader.load_elf(&mut machine, elf_bytes)?;
 
@@ -112,7 +112,7 @@ impl AegeriExecutor {
 		Ok(())
 	}
 
-	pub fn execute_block(&self, block: &Block) -> Result<Value, TaskFlowError> {
+	pub fn execute_block(&self, block: &Block) -> Result<Value, AegeriExecutionError> {
 		let mut block_header = BlockHeader::new();
 		let mut join_set = JoinSet::new();
 		for transaction in block.transactions() {
