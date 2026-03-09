@@ -36,12 +36,12 @@ flowchart TB
     Transactions --> AT
 
     AT -- "build block from mempool" --> BlockTx["BlockTransactions"]
+    BlockTx -- "collect joiners" --> JoinSet["JoinSet"]
     BlockTx -- "execute ELF payloads" --> Fuste["Fuste"]
     Fuste -- "compute state deltas" --> BlockDeltas["BlockDeltas"]
-    BlockTx -- "collect joiners" --> JoinSet["JoinSet"]
 
-    BlockDeltas --> Block["Block"]
     JoinSet --> Block
+    BlockDeltas --> Block["Block"]
 
     Block --> Tasks["Tasks (aegeri containers)"]
     Tasks --> AMO["AegeriMessageOut (ParabyzantineMessageOut)"]
