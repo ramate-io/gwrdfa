@@ -30,6 +30,7 @@ flowchart TB
     AMI -- "verify + split transaction messages" --> Transactions["Transactions (aegeri containers)"]
 
     Certificates --> Resample["Resample agreement"]
+    Sub["Subcommittee"]-..->Certificates
     Resample -- "agreement inferences" --> Agreements["Agreements (resample std containers)"]
 
     Agreements --> AT["AegeriTasks (ParabyzantineTask)"]
@@ -48,6 +49,5 @@ flowchart TB
     AMO -- "sign + wrap UnifiedMessage + mark for broadcast" --> Messages
     Messages --> Gossamer
 
-    Sub["Subcommittee"]-..->Certificates
     JoinSet-..->Sub
 ```
