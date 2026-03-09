@@ -1,5 +1,6 @@
 use super::{Id, Message, PublicKey, Transaction};
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeSet;
 
 /// The index of a block in the system.
 ///
@@ -19,15 +20,15 @@ impl Index {
 
 /// The block itself which is a set of transactions.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Block(Vec<Message<Transaction>>);
+pub struct Block(BTreeSet<Message<Transaction>>);
 
 impl Block {
-	pub fn new(transactions: impl Into<Vec<Message<Transaction>>>) -> Self {
-		Self(transactions.into())
+	pub fn new(transactions: impl IntoIterator<Item = Message<Transaction>>) -> Self {
+		Self(transactions.into_iter().collect())
 	}
 
-	pub fn transactions(&self) -> &[Message<Transaction>] {
-		&self.0
+	pub fn transactions(&self) -> impl Iterator<Item = &Message<Transaction>> {
+		self.0.iter()
 	}
 }
 
