@@ -83,29 +83,29 @@ impl AegeriTaskFlow {
 		let mut machine = Machine::<TASK_MACHINE_MEMORY_SIZE>::new();
 		self.loader.load_elf(&mut machine, elf_bytes)?;
 
-		let ecall_machine = EcallMachine {
-			inner: InterruptHandler::<
+		let inner = InterruptHandler::<
+			TASK_MACHINE_MEMORY_SIZE,
+			Rv32iComputer,
+			EcallDispatcher<
 				TASK_MACHINE_MEMORY_SIZE,
-				Rv32iComputer,
-				EcallDispatcher<
-					TASK_MACHINE_MEMORY_SIZE,
-					ExitSystem<TASK_MACHINE_MEMORY_SIZE>,
-					Option<StdOutputSystem<TASK_MACHINE_MEMORY_SIZE>>,
-					NoopDispatcher<TASK_MACHINE_MEMORY_SIZE>,
-					NoopDispatcher<TASK_MACHINE_MEMORY_SIZE>,
-				>,
-				NoopEbreakDispatcher<TASK_MACHINE_MEMORY_SIZE>,
-			> {
-				inner: Rv32iComputer,
-				ecall_dispatcher: EcallDispatcher {
-					exit_dispatcher: ExitSystem::new(),
-					write_dispatcher: None,
-					open_channel_dispatcher: NoopDispatcher {},
-					check_channel_dispatcher: NoopDispatcher {},
-				},
-				ebreak_dispatcher: NoopEbreakDispatcher {},
+				ExitSystem<TASK_MACHINE_MEMORY_SIZE>,
+				Option<StdOutputSystem<TASK_MACHINE_MEMORY_SIZE>>,
+				NoopDispatcher<TASK_MACHINE_MEMORY_SIZE>,
+				NoopDispatcher<TASK_MACHINE_MEMORY_SIZE>,
+			>,
+			NoopEbreakDispatcher<TASK_MACHINE_MEMORY_SIZE>,
+		> {
+			inner: Rv32iComputer,
+			ecall_dispatcher: EcallDispatcher {
+				exit_dispatcher: ExitSystem::new(),
+				write_dispatcher: Some(StdOutputSystem::<TASK_MACHINE_MEMORY_SIZE>),
+				open_channel_dispatcher: NoopDispatcher {},
+				check_channel_dispatcher: NoopDispatcher {},
 			},
+			ebreak_dispatcher: NoopEbreakDispatcher {},
 		};
+
+		let ecall_machine = EcallMachine { inner };
 
 		let mut lilbug = LilBugSystem {
 			computer: ecall_machine,
