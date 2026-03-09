@@ -7,8 +7,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 /// Transactions are inserted with a receive timestamp (epoch millis) and grouped
 /// by `slot = received_at_ms / slot_width_ms`.
 ///
-/// Pop behavior is intentionally conservative for expected global delivery lag:
-/// only transactions from the previous slot (`t - 1`) are eligible to pop.
+/// Pop behavior excludes the current slot and allows draining any older slot:
+/// transactions from slots `< t` are eligible at slot `t`.
 pub struct Mempool {
 	slot_width_ms: u64,
 	by_slot: BTreeMap<u64, BTreeSet<Message<Transaction>>>,
@@ -52,10 +52,11 @@ impl Mempool {
 		Ok(())
 	}
 
-	/// Pops up to `max_items` transactions from the previous slot (`t - 1`) only.
+	/// Pops up to `max_items` transactions from any eligible slot `< t`.
 	///
-	/// Within that slot, items are popped from the end of the `BTreeSet`, i.e. the
-	/// largest transaction value according to `Ord`.
+	/// Pop priority is:
+	/// 1. Newer eligible slots first (global recency by slot).
+	/// 2. Within each slot, larger `Ord` values first (`BTreeSet::pop_last`).
 	pub fn pop_ready_at(&mut self, now_epoch_ms: u64, max_items: usize) -> Vec<Message<Transaction>> {
 		if max_items == 0 {
 			return Vec::new();
@@ -65,18 +66,26 @@ impl Mempool {
 		if current_slot == 0 {
 			return Vec::new();
 		}
-		let eligible_slot = current_slot - 1;
-
 		let mut popped = Vec::new();
-		if let Some(slot_set) = self.by_slot.get_mut(&eligible_slot) {
-			while popped.len() < max_items {
-				let Some(message) = slot_set.pop_last() else {
-					break;
-				};
-				popped.push(message);
+		let eligible_slots: Vec<u64> = self
+			.by_slot
+			.range(..current_slot)
+			.map(|(slot, _)| *slot)
+			.collect();
+		for slot in eligible_slots.into_iter().rev() {
+			if popped.len() >= max_items {
+				break;
 			}
-			if slot_set.is_empty() {
-				self.by_slot.remove(&eligible_slot);
+			if let Some(slot_set) = self.by_slot.get_mut(&slot) {
+				while popped.len() < max_items {
+					let Some(message) = slot_set.pop_last() else {
+						break;
+					};
+					popped.push(message);
+				}
+				if slot_set.is_empty() {
+					self.by_slot.remove(&slot);
+				}
 			}
 		}
 		popped
@@ -120,20 +129,20 @@ mod tests {
 	}
 
 	#[test]
-	fn pops_only_from_previous_slot_even_if_older_slots_exist() {
+	fn pops_from_any_eligible_slot_less_than_current() {
 		let mut mempool = Mempool::new(100).expect("valid slot width");
 		let older = tx(2, Transaction::Join, b"older");
 		let previous = tx(3, Transaction::Join, b"previous");
 
 		// Slots 8 and 9
-		mempool.insert_at(850, older);
+		mempool.insert_at(850, older.clone());
 		mempool.insert_at(950, previous.clone());
 
-		// Current slot 10: only slot 9 is eligible.
+		// Current slot 10: both slots 8 and 9 are eligible.
 		let popped = mempool.pop_ready_at(1000, 10);
-		assert_eq!(popped, vec![previous]);
+		assert_eq!(popped, vec![previous, older]);
 
-		// Current slot 11: now slot 10 is eligible (empty), slot 8 still not popped.
+		// Everything older than current slot was already drained.
 		assert!(mempool.pop_ready_at(1100, 10).is_empty());
 	}
 
