@@ -19,7 +19,8 @@ flowchart TB
     ABT -- "add aegeri_message::Join to set" --> JS["JoinerSet"]
     BD --> AB["aegeri_message::Block"]
     JS --> AB
-    AB --> Messages
-    Messages --> AMO["Aegeri MessageOut"] 
-    AMO -- "sign aegeri_message::Block, wrap as aegeri_message::UnifiedMessage, and mark for Gossamer" --> Gossamer
+    AB --> Tasks["Tasks"]
+    Tasks --> AMO["Aegeri MessageOut"] 
+    AMO -- "sign aegeri_message::Block, wrap as aegeri_message::UnifiedMessage, and mark for Gossamer" --> Messages
+    Messages --> Gossamer
 ```
