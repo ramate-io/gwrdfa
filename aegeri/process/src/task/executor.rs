@@ -128,9 +128,8 @@ impl AegeriExecutor {
 			}
 		}
 
-		// This executor currently computes execution side-effects but does not yet
-		// derive transaction IDs or signer-backed joiners, so those are emitted as
-		// empty placeholders until MessageIn/Task wiring provides provenance.
+		// TODO: replace placeholder state-root computation with actual post-execution
+		// state commitment once state plumbing is integrated.
 		let state_root = StateRoot::new(Vec::new());
 
 		Ok(Value::new(block_header, state_root, join_set))
@@ -140,14 +139,22 @@ impl AegeriExecutor {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use aegeri_message::{Message, Nonce};
+	use ml_dsa::{MlDsa44, SigningKey, B32};
 
 	#[test]
-	fn execute_block_returns_value_for_join_only_block() {
+	fn test_execute_joins() -> Result<(), anyhow::Error> {
 		let executor = AegeriExecutor::new();
-		let block = Block::new(vec![Message::new(Transaction::Join, Nonce::new(0))]);
-		let value = executor.execute_block(&block).expect("join-only block should execute");
-		assert_eq!(value.block().ids().len(), 0);
-		assert_eq!(value.state_root().as_bytes(), &[]);
-		assert_eq!(value.join_set().members().len(), 0);
+		let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![7; 32]));
+		let tx = Message::<Transaction>::try_new(&signer, Transaction::Join, Nonce::new(b"n0"))?;
+		let block = Block::new(vec![tx.clone()]);
+		let value = executor.execute_block(&block)?;
+		assert_eq!(value.block().ids().len(), 1);
+		assert_eq!(value.block().ids()[0], *tx.id());
+		assert_eq!(value.state_root().as_bytes(), &[0; 0]);
+		assert_eq!(value.join_set().members().len(), 1);
+		assert_eq!(value.join_set().members()[0], *tx.public_key());
+
+		Ok(())
 	}
 }

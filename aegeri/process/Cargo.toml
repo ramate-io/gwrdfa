@@ -10,6 +10,7 @@ publish = { workspace = true }
 rust-version = { workspace = true }
 
 [dependencies]
+anyhow = { workspace = true }
 aegeri-message = { workspace = true }
 parabyzantine = { workspace = true }
 gossamer = { workspace = true }
@@ -23,6 +24,9 @@ fuste-lilbug = { workspace = true }
 fuste-riscv-core = { workspace = true }
 fuste-riscv-elf = { workspace = true }
 fuste-std-output-system = { workspace = true }
+
+[dev-dependencies]
+ml-dsa = { workspace = true }
 
 [lints]
 workspace = true

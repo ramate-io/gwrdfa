@@ -29,6 +29,7 @@ name = "aegeri-process"
 version = "0.0.1"
 dependencies = [
  "aegeri-message",
+ "anyhow",
  "fuste-ecall-dispatcher",
  "fuste-exit",
  "fuste-exit-system",
@@ -39,6 +40,7 @@ dependencies = [
  "fuste-std-output-system",
  "gossamer",
  "gwrdfa-resample",
+ "ml-dsa",
  "parabyzantine",
  "thiserror 1.0.69",
 ]
