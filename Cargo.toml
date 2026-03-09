@@ -9,7 +9,8 @@ members = [
   "gwrdfa/gossamer", 
 
   # aegeri
-  "aegeri/message"
+  "aegeri/message",
+  "aegeri/process"
 ]
 
 [workspace.package]
