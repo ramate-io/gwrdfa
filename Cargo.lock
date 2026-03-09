@@ -29,9 +29,18 @@ name = "aegeri-process"
 version = "0.0.1"
 dependencies = [
  "aegeri-message",
+ "fuste-ecall-dispatcher",
+ "fuste-exit",
+ "fuste-exit-system",
+ "fuste-interrupt-handler",
+ "fuste-lilbug",
+ "fuste-riscv-core",
+ "fuste-riscv-elf",
+ "fuste-std-output-system",
  "gossamer",
  "gwrdfa-resample",
  "parabyzantine",
+ "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -932,6 +941,98 @@ dependencies = [
 ]
 
 [[package]]
+name = "fuste-ecall"
+version = "0.0.1"
+source = "git+https://github.com/ramate-io/fuste?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
+
+[[package]]
+name = "fuste-ecall-dispatcher"
+version = "0.0.1"
+source = "git+https://github.com/ramate-io/fuste?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
+dependencies = [
+ "fuste-ecall",
+ "fuste-interrupt-handler",
+ "fuste-riscv-core",
+]
+
+[[package]]
+name = "fuste-exit"
+version = "0.0.1"
+source = "git+https://github.com/ramate-io/fuste?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
+dependencies = [
+ "fuste-ecall",
+]
+
+[[package]]
+name = "fuste-exit-system"
+version = "0.0.1"
+source = "git+https://github.com/ramate-io/fuste?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
+dependencies = [
+ "fuste-ecall-dispatcher",
+ "fuste-exit",
+ "fuste-riscv-core",
+]
+
+[[package]]
+name = "fuste-interrupt-handler"
+version = "0.0.1"
+source = "git+https://github.com/ramate-io/fuste?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
+dependencies = [
+ "fuste-riscv-core",
+]
+
+[[package]]
+name = "fuste-lilbug"
+version = "0.0.1"
+source = "git+https://github.com/ramate-io/fuste?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
+dependencies = [
+ "fuste-exit",
+ "fuste-exit-system",
+ "fuste-riscv-core",
+]
+
+[[package]]
+name = "fuste-riscv-core"
+version = "0.0.1"
+source = "git+https://github.com/ramate-io/fuste?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
+
+[[package]]
+name = "fuste-riscv-elf"
+version = "0.0.1"
+source = "git+https://github.com/ramate-io/fuste?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
+dependencies = [
+ "fuste-riscv-core",
+ "goblin",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "fuste-std-output"
+version = "0.0.1"
+source = "git+https://github.com/ramate-io/fuste?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
+dependencies = [
+ "fuste-write",
+]
+
+[[package]]
+name = "fuste-std-output-system"
+version = "0.0.1"
+source = "git+https://github.com/ramate-io/fuste?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
+dependencies = [
+ "fuste-ecall-dispatcher",
+ "fuste-riscv-core",
+ "fuste-std-output",
+]
+
+[[package]]
+name = "fuste-write"
+version = "0.0.1"
+source = "git+https://github.com/ramate-io/fuste?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
+dependencies = [
+ "fuste-ecall",
+]
+
+[[package]]
 name = "futures"
 version = "0.3.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1142,6 +1243,17 @@ dependencies = [
  "futures-core",
  "js-sys",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "goblin"
+version = "0.10.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "983a6aafb3b12d4c41ea78d39e189af4298ce747353945ff5105b54a056e5cd9"
+dependencies = [
+ "log",
+ "plain",
+ "scroll",
 ]
 
 [[package]]
@@ -2341,6 +2453,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "plain"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4596b6d070b27117e987119b4dac604f3c58cfb0b191112e24771b2faeac1a6"
+
+[[package]]
 name = "polling"
 version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2830,6 +2948,26 @@ name = "scopeguard"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
+
+[[package]]
+name = "scroll"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c1257cd4248b4132760d6524d6dda4e053bc648c9070b960929bf50cfb1e7add"
+dependencies = [
+ "scroll_derive",
+]
+
+[[package]]
+name = "scroll_derive"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed76efe62313ab6610570951494bdaa81568026e0318eaa55f167de70eeea67d"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "semver"

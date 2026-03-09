@@ -14,6 +14,15 @@ aegeri-message = { workspace = true }
 parabyzantine = { workspace = true }
 gossamer = { workspace = true }
 gwrdfa-resample = { workspace = true }
+thiserror = { workspace = true }
+fuste-ecall-dispatcher = { workspace = true }
+fuste-exit = { workspace = true }
+fuste-exit-system = { workspace = true }
+fuste-interrupt-handler = { workspace = true }
+fuste-lilbug = { workspace = true }
+fuste-riscv-core = { workspace = true }
+fuste-riscv-elf = { workspace = true }
+fuste-std-output-system = { workspace = true }
 
 [lints]
 workspace = true
