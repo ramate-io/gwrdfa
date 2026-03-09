@@ -1,4 +1,4 @@
-use aegeri_message::Transaction;
+use aegeri_message::{Block, BlockHeader, JoinSet, StateRoot, Transaction, Value};
 use fuste_ecall_dispatcher::{EcallDispatcher, NoopDispatcher};
 use fuste_exit::ExitStatus;
 use fuste_exit_system::ExitSystem;
@@ -13,13 +13,6 @@ use fuste_std_output_system::StdOutputSystem;
 use std::ops::ControlFlow;
 
 const TASK_MACHINE_MEMORY_SIZE: usize = 1024 * 1024 * 2;
-
-/// Result of one task-flow pass over a transaction set.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct TaskFlowResult {
-	pub executed_elf_count: usize,
-	pub join_count: usize,
-}
 
 #[derive(Debug, thiserror::Error)]
 pub enum TaskFlowError {
@@ -63,7 +56,7 @@ impl LilBugComputer<TASK_MACHINE_MEMORY_SIZE> for EcallMachine {
 ///
 /// This is the concrete execution core for `AegeriTasks`:
 /// - `Transaction::ElfScript` is loaded from bytes and executed on an ecall-enabled LilBug machine.
-/// - `Transaction::Join` is counted for task-side joiner handling.
+/// - Returns a `Value` for the block execution step.
 pub struct AegeriExecutor {
 	loader: Elf32Loader,
 }
@@ -119,23 +112,28 @@ impl AegeriExecutor {
 		Ok(())
 	}
 
-	pub fn execute<'a>(
-		&self,
-		transactions: impl IntoIterator<Item = &'a Transaction>,
-	) -> Result<TaskFlowResult, TaskFlowError> {
-		let mut result = TaskFlowResult::default();
-		for transaction in transactions {
-			match transaction {
+	pub fn execute_block(&self, block: &Block) -> Result<Value, TaskFlowError> {
+		let mut block_header = BlockHeader::new();
+		let mut join_set = JoinSet::new();
+		for transaction in block.transactions() {
+			block_header.add_id(transaction.id().clone());
+
+			match transaction.payload() {
 				Transaction::ElfScript(elf) => {
 					self.run_elf_script(elf.as_bytes())?;
-					result.executed_elf_count += 1;
 				}
 				Transaction::Join => {
-					result.join_count += 1;
+					join_set.add_member(transaction.public_key().clone());
 				}
 			}
 		}
-		Ok(result)
+
+		// This executor currently computes execution side-effects but does not yet
+		// derive transaction IDs or signer-backed joiners, so those are emitted as
+		// empty placeholders until MessageIn/Task wiring provides provenance.
+		let state_root = StateRoot::new(Vec::new());
+
+		Ok(Value::new(block_header, state_root, join_set))
 	}
 }
 
@@ -144,11 +142,12 @@ mod tests {
 	use super::*;
 
 	#[test]
-	fn task_flow_counts_join_transactions() {
-		let flow = AegeriExecutor::new();
-		let transactions = vec![Transaction::Join, Transaction::Join];
-		let result = flow.execute(transactions.iter()).expect("join counting should not fail");
-		assert_eq!(result.join_count, 2);
-		assert_eq!(result.executed_elf_count, 0);
+	fn execute_block_returns_value_for_join_only_block() {
+		let executor = AegeriExecutor::new();
+		let block = Block::new(vec![Message::new(Transaction::Join, Nonce::new(0))]);
+		let value = executor.execute_block(&block).expect("join-only block should execute");
+		assert_eq!(value.block().ids().len(), 0);
+		assert_eq!(value.state_root().as_bytes(), &[]);
+		assert_eq!(value.join_set().members().len(), 0);
 	}
 }
