@@ -1,0 +1,19 @@
+[package]
+name = "aegeri-process"
+version = { workspace = true }
+edition = "2021"
+license = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+publish = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+aegeri-message = { workspace = true }
+parabyzantine = { workspace = true }
+gossamer = { workspace = true }
+gwrdfa-resample = { workspace = true }
+
+[lints]
+workspace = true

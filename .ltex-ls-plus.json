@@ -183,7 +183,8 @@
         "Tokio",
         "->",
         "entrypoint",
-        "newtype"
+        "newtype",
+        "Dataflow"
       ]
     },
     "bibtex": {

@@ -53,6 +53,8 @@ gwrdfa-container = { path = "gwrdfa/container" }
 gossamer = { path = "gwrdfa/gossamer" }
 gwrdfa-resample = { path = "gwrdfa/resample/core" }
 
+aegeri-message = { path = "aegeri/message" }
+
 [workspace.lints.clippy]
 debug_assert_with_mut_call = "deny"
 inefficient_to_string = "deny"
