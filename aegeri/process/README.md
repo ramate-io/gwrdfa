@@ -29,8 +29,8 @@ flowchart TB
     AMI -- "verify + split certificate messages" --> Certificates["Certificates (resample std containers)"]
     AMI -- "verify + split transaction messages" --> Transactions["Transactions (aegeri containers)"]
 
-    Certificates --> Resample["Resample agreement"]
     Sub["Subcommittee"]-..->Certificates
+    Certificates --> Resample["Resample agreement"]
     Resample -- "agreement inferences" --> Agreements["Agreements (resample std containers)"]
 
     Agreements --> AT["AegeriTasks (ParabyzantineTask)"]
