@@ -3,7 +3,7 @@ The process crate for running Aegeri resample consensus and computing state tran
 
 ## Integration Design
 
-`aegeri-process` is the composition layer between networking (`gossamer`), consensus (`gwrdfa-resample`), and execution (Fuste).
+`aegeri-process` composes `gossamer` broadcast, `gwrdfa-resample` consensus, and `fuste` execution.
 
 Planned actors:
 - `AegeriMessageIn`: implements `ParabyzantineMessageIn`.
