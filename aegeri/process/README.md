@@ -47,4 +47,7 @@ flowchart TB
     Tasks --> AMO["AegeriMessageOut (ParabyzantineMessageOut)"]
     AMO -- "sign + wrap UnifiedMessage + mark for broadcast" --> Messages
     Messages --> Gossamer
+
+    Sub["Subcommittee"]..>Certificates
+    JoinSet..>Sub
 ```
