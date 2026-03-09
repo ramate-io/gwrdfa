@@ -38,6 +38,7 @@ flowchart TB
 
     AT -- "build block from mempool" --> BlockTx["BlockTransactions"]
     BlockTx -- "collect joiners" --> JoinSet["JoinSet"]
+    JoinSet-..->Sub
     BlockTx -- "execute ELF payloads" --> Fuste["Fuste"]
     Fuste -- "compute state deltas" --> BlockDeltas["BlockDeltas"]
 
@@ -48,6 +49,4 @@ flowchart TB
     Tasks --> AMO["AegeriMessageOut (ParabyzantineMessageOut)"]
     AMO -- "sign + wrap UnifiedMessage + mark for broadcast" --> Messages
     Messages --> Gossamer
-
-    JoinSet-..->Sub
 ```
