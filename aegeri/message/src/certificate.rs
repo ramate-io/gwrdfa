@@ -70,6 +70,12 @@ impl TransactionSet {
 	pub fn intersection<'a>(&'a self, other: &'a TransactionSet) -> BTreeSet<&'a Id> {
 		self.0.intersection(&other.0).collect()
 	}
+
+	pub fn intersect_all<'a>(iter: impl Iterator<Item = &'a TransactionSet>) -> BTreeSet<&'a Id> {
+		iter.fold(BTreeSet::new(), |acc, set| {
+			acc.intersection(&set.0.iter().collect::<BTreeSet<&Id>>()).cloned().collect()
+		})
+	}
 }
 
 /// The availability proposal from a given replica.
@@ -83,6 +89,12 @@ impl Availability {
 
 	pub fn intersection<'a>(&'a self, other: &'a Availability) -> BTreeSet<&'a Id> {
 		self.0.intersection(&other.0)
+	}
+
+	pub fn intersect_all<'a>(iter: impl Iterator<Item = &'a Availability>) -> BTreeSet<&'a Id> {
+		iter.fold(BTreeSet::new(), |acc, set| {
+			acc.intersection(&set.0 .0.iter().collect::<BTreeSet<&Id>>()).cloned().collect()
+		})
 	}
 }
 
