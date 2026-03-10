@@ -6,15 +6,25 @@ use std::collections::BTreeSet;
 ///
 /// The system groups transactions into blocks which are indexed.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Index(u64);
+pub enum Index {
+	Availability(u64),
+	Transition(u64),
+}
 
 impl Index {
-	pub fn new(index: u64) -> Self {
-		Self(index)
+	pub fn is_availability(&self) -> bool {
+		matches!(self, Index::Availability(_))
 	}
 
-	pub fn get(&self) -> u64 {
-		self.0
+	pub fn is_transition(&self) -> bool {
+		matches!(self, Index::Transition(_))
+	}
+
+	pub fn value(&self) -> u64 {
+		match self {
+			Index::Availability(index) => *index,
+			Index::Transition(index) => *index,
+		}
 	}
 }
 
@@ -34,19 +44,45 @@ impl Block {
 
 /// The header of the block which references the transactions in the block.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-pub struct BlockHeader(Vec<Id>);
+pub struct TransactionSet(BTreeSet<Id>);
 
-impl BlockHeader {
+impl TransactionSet {
 	pub fn new() -> Self {
-		Self(Vec::new())
+		Self(BTreeSet::new())
 	}
 
-	pub fn ids(&self) -> &[Id] {
+	pub fn ids(&self) -> &BTreeSet<Id> {
 		&self.0
 	}
 
+	pub fn iter_ids(&self) -> impl Iterator<Item = &Id> {
+		self.0.iter()
+	}
+
+	pub fn len(&self) -> usize {
+		self.0.len()
+	}
+
 	pub fn add_id(&mut self, id: Id) {
-		self.0.push(id);
+		self.0.insert(id);
+	}
+
+	pub fn intersection<'a>(&'a self, other: &'a TransactionSet) -> BTreeSet<&'a Id> {
+		self.0.intersection(&other.0).collect()
+	}
+}
+
+/// The availability proposal from a given replica.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Availability(TransactionSet);
+
+impl Availability {
+	pub fn new() -> Self {
+		Self(TransactionSet::new())
+	}
+
+	pub fn intersection<'a>(&'a self, other: &'a Availability) -> BTreeSet<&'a Id> {
+		self.0.intersection(&other.0)
 	}
 }
 
@@ -84,18 +120,18 @@ impl JoinSet {
 
 /// The unified value of a certificate.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Value {
-	block: BlockHeader,
+pub struct Transition {
+	block: TransactionSet,
 	state_root: StateRoot,
 	join_set: JoinSet,
 }
 
-impl Value {
-	pub fn new(block: BlockHeader, state_root: StateRoot, join_set: JoinSet) -> Self {
+impl Transition {
+	pub fn new(block: TransactionSet, state_root: StateRoot, join_set: JoinSet) -> Self {
 		Self { block, state_root, join_set }
 	}
 
-	pub fn block(&self) -> &BlockHeader {
+	pub fn block(&self) -> &TransactionSet {
 		&self.block
 	}
 
@@ -106,6 +142,12 @@ impl Value {
 	pub fn join_set(&self) -> &JoinSet {
 		&self.join_set
 	}
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Value {
+	Availability(Availability),
+	Transition(Transition),
 }
 
 /// The certificate for a block.

@@ -1,4 +1,4 @@
-use aegeri_message::{Block, BlockHeader, JoinSet, StateRoot, Transaction, Value};
+use aegeri_message::{Block, JoinSet, StateRoot, Transaction, TransactionSet, Transition};
 use fuste_ecall_dispatcher::{EcallDispatcher, NoopDispatcher};
 use fuste_exit::ExitStatus;
 use fuste_exit_system::ExitSystem;
@@ -112,11 +112,11 @@ impl AegeriExecutor {
 		Ok(())
 	}
 
-	pub fn execute_block(&self, block: &Block) -> Result<Value, AegeriExecutionError> {
-		let mut block_header = BlockHeader::new();
+	pub fn execute_block(&self, block: &Block) -> Result<Transition, AegeriExecutionError> {
+		let mut transaction_set = TransactionSet::new();
 		let mut join_set = JoinSet::new();
 		for transaction in block.transactions() {
-			block_header.add_id(transaction.id().clone());
+			transaction_set.add_id(transaction.id().clone());
 
 			match transaction.payload() {
 				Transaction::ElfScript(elf) => {
@@ -132,7 +132,7 @@ impl AegeriExecutor {
 		// state commitment once state plumbing is integrated.
 		let state_root = StateRoot::new(Vec::new());
 
-		Ok(Value::new(block_header, state_root, join_set))
+		Ok(Transition::new(transaction_set, state_root, join_set))
 	}
 }
 
@@ -150,7 +150,7 @@ mod tests {
 		let block = Block::new(vec![tx.clone()]);
 		let value = executor.execute_block(&block)?;
 		assert_eq!(value.block().ids().len(), 1);
-		assert_eq!(value.block().ids()[0], *tx.id());
+		assert_eq!(value.block().iter_ids().next(), Some(tx.id()));
 		assert_eq!(value.state_root().as_bytes(), &[0; 0]);
 		assert_eq!(value.join_set().members().len(), 1);
 		assert_eq!(value.join_set().members()[0], *tx.public_key());
