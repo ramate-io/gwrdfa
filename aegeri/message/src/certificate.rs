@@ -156,21 +156,38 @@ impl Transition {
 	}
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Value {
+#[derive(Debug, Clone, Serialize, Deserialize, PartialOrd, Ord)]
+pub enum Proposal {
+	/// The availability proposal for a given replica.
 	Availability(Availability),
+	/// The transition proposal for a given replica.
 	Transition(Transition),
 }
+
+impl PartialEq for Proposal {
+	fn eq(&self, other: &Self) -> bool {
+		match (self, other) {
+			// Availability proposals are always equal.
+			// We only care that sufficient replicas submit a proposal.
+			(Proposal::Availability(_), Proposal::Availability(_)) => true,
+			// Transition proposals are equal if their inner values are equal.
+			(Proposal::Transition(t), Proposal::Transition(u)) => t == u,
+			_ => false,
+		}
+	}
+}
+
+impl Eq for Proposal {}
 
 /// The certificate for a block.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Certificate {
 	index: Index,
-	value: Value,
+	value: Proposal,
 }
 
 impl Certificate {
-	pub fn new(index: Index, value: Value) -> Self {
+	pub fn new(index: Index, value: Proposal) -> Self {
 		Self { index, value }
 	}
 
@@ -178,7 +195,7 @@ impl Certificate {
 		&self.index
 	}
 
-	pub fn value(&self) -> &Value {
+	pub fn value(&self) -> &Proposal {
 		&self.value
 	}
 }
