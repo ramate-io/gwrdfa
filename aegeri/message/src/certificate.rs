@@ -4,13 +4,13 @@
 //! availability -> confirmation -> block proposal -> transition.
 
 mod block;
-mod certificate_type;
+mod certificate;
 mod index;
 mod proposal;
 mod transition;
 
 pub use block::{Block, TransactionSet};
-pub use certificate_type::Certificate;
+pub use certificate::Certificate;
 pub use index::Index;
 pub use proposal::{Availability, BlockProposal, Confirmation, Proposal};
 pub use transition::{JoinSet, StateRoot, Transition};
