@@ -1,4 +1,5 @@
 use super::{Id, Message, PublicKey, Transaction};
+use gwrdfa_resample::agreement::std::NextRound;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
@@ -7,8 +8,25 @@ use std::collections::BTreeSet;
 /// The system groups transactions into blocks which are indexed.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Index {
+	/// An availability proposal at the given index.
 	Availability(u64),
+	/// A confirmation proposal at the given index.
+	Confirmation(u64),
+	/// A block proposal at the given index.
+	Block(u64),
+	/// A transition proposal at the given index.
 	Transition(u64),
+}
+
+impl NextRound for Index {
+	fn next(&self) -> Option<Self> {
+		match self {
+			Index::Availability(index) => Some(Index::Confirmation(*index)),
+			Index::Confirmation(index) => Some(Index::Block(*index)),
+			Index::Block(index) => Some(Index::Transition(*index)),
+			Index::Transition(index) => Some(Index::Availability(index + 1)),
+		}
+	}
 }
 
 impl Index {
@@ -23,6 +41,8 @@ impl Index {
 	pub fn value(&self) -> u64 {
 		match self {
 			Index::Availability(index) => *index,
+			Index::Confirmation(index) => *index,
+			Index::Block(index) => *index,
 			Index::Transition(index) => *index,
 		}
 	}
@@ -87,14 +107,36 @@ impl Availability {
 		Self(TransactionSet::new())
 	}
 
-	pub fn intersection<'a>(&'a self, other: &'a Availability) -> BTreeSet<&'a Id> {
-		self.0.intersection(&other.0)
+	pub fn transactions(&self) -> &TransactionSet {
+		&self.0
+	}
+}
+
+/// The confirmation proposal from a given replica.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Confirmation(TransactionSet);
+
+impl Confirmation {
+	pub fn new() -> Self {
+		Self(TransactionSet::new())
 	}
 
-	pub fn intersect_all<'a>(iter: impl Iterator<Item = &'a Availability>) -> BTreeSet<&'a Id> {
-		iter.fold(BTreeSet::new(), |acc, set| {
-			acc.intersection(&set.0 .0.iter().collect::<BTreeSet<&Id>>()).cloned().collect()
-		})
+	pub fn transactions(&self) -> &TransactionSet {
+		&self.0
+	}
+}
+
+/// The block proposal from a given replica.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+pub struct BlockProposal(TransactionSet);
+
+impl BlockProposal {
+	pub fn new() -> Self {
+		Self(TransactionSet::new())
+	}
+
+	pub fn transactions(&self) -> &TransactionSet {
+		&self.0
 	}
 }
 
@@ -156,28 +198,43 @@ impl Transition {
 	}
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialOrd, Ord)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Proposal {
 	/// The availability proposal for a given replica.
+	///
+	/// Availbility proposals get unioned together
+	/// to form an agreement.
+	///
+	/// The transactions in this agreement are then filtered for those transactions that
+	/// are present in the mempool to form a confirmation proposal.
+	///
+	/// This is the opportunitity for replicas to declare transactions they
+	/// might want to include in the next block.
 	Availability(Availability),
+	/// The confirmation proposal for a given replica.
+	///
+	/// Confirmation proposals agree on a value which
+	/// is the set of all transactions included in at least 2f + 1
+	/// confirmation proposals.
+	///
+	/// This agreement is then directly used to form a block proposal.
+	///
+	/// This is the opportunity for replicas to merge their availability proposals.
+	Confirmation(Confirmation),
+	/// The block proposal for a given replica.
+	///
+	/// Block proposals agree on an exact value of the block.
+	///
+	/// Separating this from transitions
+	/// allows for more healing opportunities.
+	///
+	/// This is the opportunitiy for replicas to finalize their availbility proposals.
+	BlockProposal(BlockProposal),
 	/// The transition proposal for a given replica.
+	///
+	/// Transition proposals agree on an exact state value.
 	Transition(Transition),
 }
-
-impl PartialEq for Proposal {
-	fn eq(&self, other: &Self) -> bool {
-		match (self, other) {
-			// Availability proposals are always equal.
-			// We only care that sufficient replicas submit a proposal.
-			(Proposal::Availability(_), Proposal::Availability(_)) => true,
-			// Transition proposals are equal if their inner values are equal.
-			(Proposal::Transition(t), Proposal::Transition(u)) => t == u,
-			_ => false,
-		}
-	}
-}
-
-impl Eq for Proposal {}
 
 /// The certificate for a block.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]

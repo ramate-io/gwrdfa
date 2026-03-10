@@ -17,6 +17,7 @@ name = "aegeri-message"
 version = "0.0.1"
 dependencies = [
  "anyhow",
+ "gwrdfa-resample",
  "ml-dsa",
  "serde",
  "serde_json",
