@@ -147,13 +147,14 @@ mod tests {
 		let executor = AegeriExecutor::new();
 		let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![7; 32]));
 		let tx = Message::<Transaction>::try_new(&signer, Transaction::Join, Nonce::new(b"n0"))?;
-		let block = Block::new(vec![tx.clone()]);
+		let verified_tx = tx.clone().into_verified()?;
+		let block = Block::new(vec![verified_tx.clone()]);
 		let value = executor.execute_block(&block)?;
 		assert_eq!(value.block().ids().len(), 1);
-		assert_eq!(value.block().iter_ids().next(), Some(tx.id()));
+		assert_eq!(value.block().iter_ids().next(), Some(verified_tx.id()));
 		assert_eq!(value.state_root().as_bytes(), &[0; 0]);
 		assert_eq!(value.join_set().members().len(), 1);
-		assert_eq!(value.join_set().members()[0], *tx.public_key());
+		assert_eq!(value.join_set().members()[0], *verified_tx.public_key());
 
 		Ok(())
 	}

@@ -50,3 +50,28 @@ flowchart TB
     AMO -- "sign + wrap UnifiedMessage + mark for broadcast" --> Messages
     Messages --> Gossamer
 ```
+
+## Consensus Stages
+
+`aegeri-message` models certificate consensus as layered proposal stages for the same round index:
+
+- `Availability`: replicas advertise candidate transaction IDs they have seen.
+- `Confirmation`: replicas narrow to quorum-observed candidates.
+- `BlockHeader`: replicas converge on exact block transaction IDs.
+- `Transition`: replicas converge on exact post-state commitment (`state_root`, `join_set`).
+
+This staging reduces sensitivity to mempool timing skew by deferring exact agreement
+until after candidate-set convergence.
+
+```mermaid
+flowchart LR
+    A["Index::Availability(i)\nProposal::Availability"] --> C["Index::Confirmation(i)\nProposal::Confirmation"]
+    C --> B["Index::Block(i)\nProposal::BlockHeader"]
+    B --> T["Index::Transition(i)\nProposal::Transition"]
+    T --> N["Index::Availability(i+1)\nnext round"]
+
+    A -. "union-like candidate spread" .-> C
+    C -. "quorum filtering" .-> B
+    B -. "deterministic block selection" .-> T
+    T -. "state commitment finalized" .-> N
+```

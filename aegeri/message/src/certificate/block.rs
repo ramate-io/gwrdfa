@@ -1,4 +1,4 @@
-use crate::{Id, Message, Transaction};
+use crate::{Id, Transaction, VerifiedMessage};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
@@ -7,14 +7,14 @@ use std::collections::BTreeSet;
 /// Using a set makes block content order-independent with respect to mempool
 /// insertion timing.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Block(BTreeSet<Message<Transaction>>);
+pub struct Block(BTreeSet<VerifiedMessage<Transaction>>);
 
 impl Block {
-	pub fn new(transactions: impl IntoIterator<Item = Message<Transaction>>) -> Self {
+	pub fn new(transactions: impl IntoIterator<Item = VerifiedMessage<Transaction>>) -> Self {
 		Self(transactions.into_iter().collect())
 	}
 
-	pub fn transactions(&self) -> impl Iterator<Item = &Message<Transaction>> {
+	pub fn transactions(&self) -> impl Iterator<Item = &VerifiedMessage<Transaction>> {
 		self.0.iter()
 	}
 }

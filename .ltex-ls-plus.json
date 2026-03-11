@@ -185,7 +185,8 @@
         "entrypoint",
         "newtype",
         "Dataflow",
-        "Aegeri-specific"
+        "Aegeri-specific",
+        "mempool"
       ]
     },
     "bibtex": {

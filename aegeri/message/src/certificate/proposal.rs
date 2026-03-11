@@ -29,11 +29,11 @@ impl Confirmation {
 	}
 }
 
-/// Exact block-content proposal from one replica.
+/// Exact block-header proposal from one replica.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Default)]
-pub struct BlockProposal(TransactionSet);
+pub struct BlockHeader(TransactionSet);
 
-impl BlockProposal {
+impl BlockHeader {
 	pub fn new() -> Self {
 		Self::default()
 	}
@@ -50,8 +50,8 @@ pub enum Proposal {
 	Availability(Availability),
 	/// Confirmation values narrow candidates toward quorum-observed content.
 	Confirmation(Confirmation),
-	/// Block proposals finalize exact transaction ids before transition agreement.
-	BlockProposal(BlockProposal),
+	/// Block-header proposals finalize exact transaction ids before transition agreement.
+	BlockHeader(BlockHeader),
 	/// Transition proposals finalize post-state commitment.
 	Transition(Transition),
 }

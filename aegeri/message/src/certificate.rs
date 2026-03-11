@@ -1,7 +1,7 @@
 //! Certificate-side consensus model for Aegeri.
 //!
 //! The model intentionally separates agreement into four layers:
-//! availability -> confirmation -> block proposal -> transition.
+//! availability -> confirmation -> block header -> transition.
 
 mod block;
 mod certificate;
@@ -12,5 +12,5 @@ mod transition;
 pub use block::{Block, TransactionSet};
 pub use certificate::Certificate;
 pub use index::Index;
-pub use proposal::{Availability, BlockProposal, Confirmation, Proposal};
+pub use proposal::{Availability, BlockHeader, Confirmation, Proposal};
 pub use transition::{JoinSet, StateRoot, Transition};
