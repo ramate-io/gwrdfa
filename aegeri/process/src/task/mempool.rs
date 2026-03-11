@@ -12,15 +12,20 @@ struct IndexValue(u64);
 
 /// Slot-bucketed mempool for verified Aegeri transactions.
 ///
-/// Storage model (no duplicated transaction payloads):
-/// - `by_id`: `Id -> VerifiedMessage<Transaction>`
-/// - `by_slot`: `Slot -> ordered set of Id`
-/// - `inflight`: `IndexValue -> (Id -> (message, original_timestamp))`
+/// Design notes:
+/// - `by_id` is the backing storage and O(1) lookup index.
+/// - `by_slot` provides a deterministic scheduling order over IDs.
+/// - `inflight` maps transaction IDs to a consensus index.
+///   Internal methods must avoid selecting IDs already mapped in-flight.
+/// - `by_slot` cleanup is lazy: stale IDs are dropped when discovered.
 pub struct Mempool {
 	slot_width_ms: u64,
+	/// Backing storage.
 	by_id: HashMap<Id, VerifiedMessage<Transaction>>,
+	/// Ordered view used to pick candidates by age and deterministic ID order.
 	by_slot: BTreeMap<Slot, BTreeSet<Id>>,
-	inflight: HashMap<IndexValue, HashMap<Id, (VerifiedMessage<Transaction>, u64)>>,
+	/// In-flight ownership by consensus index.
+	inflight: HashMap<Id, IndexValue>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -29,10 +34,8 @@ pub enum MempoolError {
 	InvalidSlotWidth,
 	#[error("system time is before UNIX_EPOCH")]
 	SystemTimeBeforeEpoch,
-	#[error("missing in-flight index {0}")]
-	MissingInflightIndex(u64),
-	#[error("missing in-flight transaction id {0:?}")]
-	MissingInflightTransaction(Id),
+	#[error("missing transaction id {0:?} for block reification")]
+	MissingTransaction(Id),
 }
 
 impl Mempool {
@@ -90,54 +93,12 @@ impl Mempool {
 		Ok(())
 	}
 
-	fn pop_id_from_slot(&mut self, slot: Slot) -> Option<Id> {
-		let ids = self.by_slot.get_mut(&slot)?;
-		let id = ids.pop_last()?;
-		if ids.is_empty() {
-			self.by_slot.remove(&slot);
-		}
-		Some(id)
-	}
-
-	fn remove_by_id_from_slot_index(&mut self, id: &Id) -> Option<Slot> {
-		let containing_slot =
-			self.by_slot.iter().find_map(
-				|(slot, ids)| {
-					if ids.contains(id) {
-						Some(*slot)
-					} else {
-						None
-					}
-				},
-			);
-		if let Some(slot) = containing_slot {
-			if let Some(ids) = self.by_slot.get_mut(&slot) {
-				ids.remove(id);
-				if ids.is_empty() {
-					self.by_slot.remove(&slot);
-				}
-			}
-		}
-		containing_slot
-	}
-
-	fn take_from_pool_by_id(&mut self, id: &Id) -> Option<(VerifiedMessage<Transaction>, u64)> {
-		let message = self.by_id.remove(id)?;
-		let slot = self.remove_by_id_from_slot_index(id)?;
-		let original_timestamp = slot.0.saturating_mul(self.slot_width_ms);
-		Some((message, original_timestamp))
-	}
-
 	/// Pops up to `max_items` transactions from any eligible slot `< t - 1`.
 	///
 	/// Pop priority:
 	/// 1. Newer eligible slots first.
 	/// 2. Within each slot, larger `Id` values first.
-	fn pop_ready_entries_at(
-		&mut self,
-		now_epoch_ms: u64,
-		max_items: usize,
-	) -> Vec<(Id, VerifiedMessage<Transaction>, u64)> {
+	fn pop_ready_ids_at(&mut self, now_epoch_ms: u64, max_items: usize) -> Vec<Id> {
 		if max_items == 0 {
 			return Vec::new();
 		}
@@ -150,25 +111,40 @@ impl Mempool {
 		let eligible_slots =
 			self.by_slot.range(..upper_exclusive).map(|(slot, _)| *slot).collect::<Vec<_>>();
 
-		let mut popped = Vec::new();
+		let mut selected = Vec::new();
+		let mut stale = Vec::new();
 		for slot in eligible_slots.into_iter().rev() {
-			while popped.len() < max_items {
-				let Some(id) = self.pop_id_from_slot(slot) else {
+			let Some(ids) = self.by_slot.get(&slot) else {
+				continue;
+			};
+			for id in ids.iter().rev().copied() {
+				if selected.len() >= max_items {
 					break;
-				};
-				let Some(message) = self.by_id.remove(&id) else {
+				}
+				if !self.by_id.contains_key(&id) {
+					stale.push((slot, id));
 					continue;
-				};
-				// "Original timestamp" is reconstructed from slot start since pool
-				// stores slot index, not per-id arrival millis.
-				let original_timestamp = slot.0.saturating_mul(self.slot_width_ms);
-				popped.push((id, message, original_timestamp));
+				}
+				if self.inflight.contains_key(&id) {
+					continue;
+				}
+				selected.push(id);
 			}
-			if popped.len() >= max_items {
+			if selected.len() >= max_items {
 				break;
 			}
 		}
-		popped
+
+		for (slot, id) in stale {
+			if let Some(ids) = self.by_slot.get_mut(&slot) {
+				ids.remove(&id);
+				if ids.is_empty() {
+					self.by_slot.remove(&slot);
+				}
+			}
+		}
+
+		selected
 	}
 
 	pub fn pop_ready_at(
@@ -176,9 +152,9 @@ impl Mempool {
 		now_epoch_ms: u64,
 		max_items: usize,
 	) -> Vec<VerifiedMessage<Transaction>> {
-		self.pop_ready_entries_at(now_epoch_ms, max_items)
+		self.pop_ready_ids_at(now_epoch_ms, max_items)
 			.into_iter()
-			.map(|(_, message, _)| message)
+			.filter_map(|id| self.by_id.get(&id).cloned())
 			.collect()
 	}
 
@@ -200,12 +176,11 @@ impl Mempool {
 		index: &Index,
 	) -> Result<Availability, MempoolError> {
 		let index_value = Self::index_value(index);
-		let popped = self.pop_ready_entries_at(now_epoch_ms, max_items);
-		let inflight_for_index = self.inflight.entry(index_value).or_default();
+		let selected_ids = self.pop_ready_ids_at(now_epoch_ms, max_items);
 		let mut ids = aegeri_message::TransactionSet::new();
-		for (id, message, original_timestamp) in popped {
+		for id in selected_ids {
 			ids.add_id(id);
-			inflight_for_index.insert(id, (message, original_timestamp));
+			self.inflight.insert(id, index_value);
 		}
 		Ok(Availability::from_transactions(ids))
 	}
@@ -217,26 +192,17 @@ impl Mempool {
 	) -> Result<Confirmation, MempoolError> {
 		let index_value = Self::index_value(index);
 		let mut confirmed = aegeri_message::TransactionSet::new();
-		let mut newly_inflight = Vec::new();
 
 		for id in availability.transactions().iter_ids() {
-			let already_inflight = self
-				.inflight
-				.get(&index_value)
-				.is_some_and(|inflight_for_index| inflight_for_index.contains_key(id));
-			if already_inflight {
-				confirmed.add_id(*id);
+			if !self.by_id.contains_key(id) {
 				continue;
 			}
-			if let Some((message, original_timestamp)) = self.take_from_pool_by_id(id) {
-				newly_inflight.push((*id, (message, original_timestamp)));
-				confirmed.add_id(*id);
-			}
-		}
-		if !newly_inflight.is_empty() {
-			let inflight_for_index = self.inflight.entry(index_value).or_default();
-			for (id, entry) in newly_inflight {
-				inflight_for_index.insert(id, entry);
+			match self.inflight.get(id) {
+				Some(existing) if *existing != index_value => continue,
+				_ => {
+					self.inflight.insert(*id, index_value);
+					confirmed.add_id(*id);
+				}
 			}
 		}
 
@@ -250,22 +216,26 @@ impl Mempool {
 	) -> Result<BlockHeader, MempoolError> {
 		let index_value = Self::index_value(index);
 		let confirmed_ids = confirmation.transactions().ids().clone();
-		let mut return_to_mempool = Vec::new();
-		{
-			let inflight_for_index = self.inflight.entry(index_value).or_default();
-			let inflight_ids = inflight_for_index.keys().copied().collect::<Vec<_>>();
-			for id in inflight_ids {
-				if confirmed_ids.contains(&id) {
-					continue;
-				}
-				if let Some((message, original_timestamp)) = inflight_for_index.remove(&id) {
-					return_to_mempool.push((message, original_timestamp));
-				}
+
+		// Keep only confirmed IDs at this index, and free the rest back to "available".
+		let ids_for_index = self
+			.inflight
+			.iter()
+			.filter_map(|(id, mapped)| if *mapped == index_value { Some(*id) } else { None })
+			.collect::<Vec<_>>();
+		for id in ids_for_index {
+			if !confirmed_ids.contains(&id) {
+				self.inflight.remove(&id);
 			}
 		}
-		for (message, original_timestamp) in return_to_mempool {
-			self.insert_entry(original_timestamp, message);
+
+		// If confirmation includes IDs we still have, map them in-flight to this index.
+		for id in confirmation.transactions().iter_ids() {
+			if self.by_id.contains_key(id) {
+				self.inflight.insert(*id, index_value);
+			}
 		}
+
 		Ok(BlockHeader::from_transactions(confirmation.transactions().clone()))
 	}
 
@@ -275,28 +245,12 @@ impl Mempool {
 		block_header: &BlockHeader,
 	) -> Result<Block, MempoolError> {
 		let index_value = Self::index_value(index);
-		let Some(inflight_for_index) = self.inflight.get(&index_value) else {
-			return Err(MempoolError::MissingInflightIndex(index_value.0));
-		};
-		for id in block_header.transactions().iter_ids() {
-			if !inflight_for_index.contains_key(id) {
-				return Err(MempoolError::MissingInflightTransaction(*id));
-			}
-		}
-
 		let mut block_transactions = Vec::new();
-		let inflight_for_index = self
-			.inflight
-			.get_mut(&index_value)
-			.ok_or(MempoolError::MissingInflightIndex(index_value.0))?;
 		for id in block_header.transactions().iter_ids() {
-			let (message, _) = inflight_for_index
-				.remove(id)
-				.ok_or(MempoolError::MissingInflightTransaction(*id))?;
+			let message =
+				self.by_id.get(id).cloned().ok_or(MempoolError::MissingTransaction(*id))?;
+			self.inflight.insert(*id, index_value);
 			block_transactions.push(message);
-		}
-		if inflight_for_index.is_empty() {
-			self.inflight.remove(&index_value);
 		}
 		Ok(Block::new(block_transactions))
 	}
@@ -334,8 +288,31 @@ mod tests {
 		let previous = tx(3, Transaction::Join, b"previous")?;
 		mempool.insert_at(850, older.clone());
 		mempool.insert_at(950, previous.clone());
-		assert_eq!(mempool.pop_ready_at(1000, 10), vec![older]);
-		assert_eq!(mempool.pop_ready_at(1100, 10), vec![previous]);
+		assert_eq!(mempool.pop_ready_at(1000, 10), vec![older.clone()]);
+		assert_eq!(mempool.pop_ready_at(1100, 10), vec![previous, older]);
+		Ok(())
+	}
+
+	#[test]
+	fn test_inflight_ids_are_not_selected_again() -> Result<()> {
+		let mut mempool = Mempool::new(100)?;
+		let index = Index::Availability(9);
+		let tx_a = tx(9, Transaction::Join, b"a")?;
+		let tx_b = tx(10, Transaction::Join, b"b")?;
+		mempool.insert_at(700, tx_a.clone());
+		mempool.insert_at(700, tx_b.clone());
+
+		let availability = mempool.build_availability_proposal(1000, 1, &index)?;
+		let first_selected = availability.transactions().ids().iter().copied().collect::<Vec<_>>();
+		assert_eq!(first_selected.len(), 1);
+		let selected_id = match first_selected.as_slice() {
+			[selected] => *selected,
+			_ => anyhow::bail!("expected exactly one selected id"),
+		};
+
+		let next = mempool.pop_ready_at(1000, 10);
+		let expected = if *tx_a.id() == selected_id { vec![tx_b] } else { vec![tx_a] };
+		assert_eq!(next, expected);
 		Ok(())
 	}
 
