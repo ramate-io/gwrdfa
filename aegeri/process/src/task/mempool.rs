@@ -78,7 +78,10 @@ impl Mempool {
 		self.insert_entry(received_at_epoch_ms, message);
 	}
 
-	pub fn insert_now(&mut self, message: VerifiedMessage<Transaction>) -> Result<(), MempoolError> {
+	pub fn insert_now(
+		&mut self,
+		message: VerifiedMessage<Transaction>,
+	) -> Result<(), MempoolError> {
 		let now_ms = SystemTime::now()
 			.duration_since(UNIX_EPOCH)
 			.map_err(|_| MempoolError::SystemTimeBeforeEpoch)?
@@ -97,13 +100,16 @@ impl Mempool {
 	}
 
 	fn remove_by_id_from_slot_index(&mut self, id: &Id) -> Option<Slot> {
-		let containing_slot = self.by_slot.iter().find_map(|(slot, ids)| {
-			if ids.contains(id) {
-				Some(*slot)
-			} else {
-				None
-			}
-		});
+		let containing_slot =
+			self.by_slot.iter().find_map(
+				|(slot, ids)| {
+					if ids.contains(id) {
+						Some(*slot)
+					} else {
+						None
+					}
+				},
+			);
 		if let Some(slot) = containing_slot {
 			if let Some(ids) = self.by_slot.get_mut(&slot) {
 				ids.remove(id);
@@ -115,10 +121,7 @@ impl Mempool {
 		containing_slot
 	}
 
-	fn take_from_pool_by_id(
-		&mut self,
-		id: &Id,
-	) -> Option<(VerifiedMessage<Transaction>, u64)> {
+	fn take_from_pool_by_id(&mut self, id: &Id) -> Option<(VerifiedMessage<Transaction>, u64)> {
 		let message = self.by_id.remove(id)?;
 		let slot = self.remove_by_id_from_slot_index(id)?;
 		let original_timestamp = slot.0.saturating_mul(self.slot_width_ms);
@@ -144,11 +147,8 @@ impl Mempool {
 			return Vec::new();
 		}
 		let upper_exclusive = Slot(current_slot.0 - 1);
-		let eligible_slots = self
-			.by_slot
-			.range(..upper_exclusive)
-			.map(|(slot, _)| *slot)
-			.collect::<Vec<_>>();
+		let eligible_slots =
+			self.by_slot.range(..upper_exclusive).map(|(slot, _)| *slot).collect::<Vec<_>>();
 
 		let mut popped = Vec::new();
 		for slot in eligible_slots.into_iter().rev() {
@@ -193,9 +193,14 @@ impl Mempool {
 		Ok(self.pop_ready_at(now_ms, max_items))
 	}
 
-	pub fn build_availability_proposal(&mut self, index: &Index) -> Result<Availability, MempoolError> {
+	pub fn build_availability_proposal(
+		&mut self,
+		now_epoch_ms: u64,
+		max_items: usize,
+		index: &Index,
+	) -> Result<Availability, MempoolError> {
 		let index_value = Self::index_value(index);
-		let popped = self.pop_ready_entries_at(u64::MAX, usize::MAX);
+		let popped = self.pop_ready_entries_at(now_epoch_ms, max_items);
 		let inflight_for_index = self.inflight.entry(index_value).or_default();
 		let mut ids = aegeri_message::TransactionSet::new();
 		for (id, message, original_timestamp) in popped {
@@ -300,17 +305,14 @@ impl Mempool {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use anyhow::Result;
 	use aegeri_message::Message;
-	use ml_dsa::{B32, MlDsa44, SigningKey};
+	use anyhow::Result;
+	use ml_dsa::{MlDsa44, SigningKey, B32};
 
 	fn tx(seed: u8, payload: Transaction, nonce: &[u8]) -> Result<VerifiedMessage<Transaction>> {
 		let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![seed; 32]));
-		let message = Message::<Transaction>::try_new(
-			&signer,
-			payload,
-			aegeri_message::Nonce::new(nonce),
-		)?;
+		let message =
+			Message::<Transaction>::try_new(&signer, payload, aegeri_message::Nonce::new(nonce))?;
 		Ok(message.into_verified()?)
 	}
 
@@ -346,7 +348,7 @@ mod tests {
 		mempool.insert_at(10, tx_a.clone());
 		mempool.insert_at(20, tx_b.clone());
 
-		let availability = mempool.build_availability_proposal(&index)?;
+		let availability = mempool.build_availability_proposal(30, 100, &index)?;
 		assert!(availability.transactions().ids().contains(tx_a.id()));
 		assert!(availability.transactions().ids().contains(tx_b.id()));
 
