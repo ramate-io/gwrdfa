@@ -10,5 +10,5 @@ mod transition;
 
 pub use certificate::Certificate;
 pub use index::Index;
-pub use proposal::{Availability, BlockHeader, Confirmation, Proposal};
+pub use proposal::{Availability, BlockHeader, ByzantineRequirement, Confirmation, Proposal};
 pub use transition::{JoinSet, StateRoot, Transition};
