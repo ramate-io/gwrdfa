@@ -288,9 +288,9 @@ mod tests {
 		let mut mempool = Mempool::new(100)?;
 		let id = tx_id(1, b"a")?;
 		mempool.insert_at(1000, id);
-		assert!(mempool.pop_ready_at(1099, 10).is_empty());
-		assert!(mempool.pop_ready_at(1100, 10).is_empty());
-		assert_eq!(mempool.pop_ready_at(1200, 10), vec![id]);
+		assert!(mempool.pop_ready_at(1099, 10, IndexValue(0)).is_empty());
+		assert!(mempool.pop_ready_at(1100, 10, IndexValue(0)).is_empty());
+		assert_eq!(mempool.pop_ready_at(1200, 10, IndexValue(0)), vec![id]);
 		Ok(())
 	}
 
@@ -301,15 +301,15 @@ mod tests {
 		let previous = tx_id(3, b"previous")?;
 		mempool.insert_at(850, older);
 		mempool.insert_at(950, previous);
-		assert_eq!(mempool.pop_ready_at(1000, 10), vec![older]);
-		assert_eq!(mempool.pop_ready_at(1100, 10), vec![previous]);
+		assert_eq!(mempool.pop_ready_at(1000, 10, IndexValue(0)), vec![older]);
+		assert_eq!(mempool.pop_ready_at(1100, 10, IndexValue(0)), vec![previous]);
 		Ok(())
 	}
 
 	#[test]
 	fn test_inflight_ids_are_not_selected_again() -> Result<()> {
 		let mut mempool = Mempool::new(100)?;
-		let index = Index::Availability(9);
+		let index = Index::Availability(IndexValue(9));
 		let tx_a = tx_id(9, b"a")?;
 		let tx_b = tx_id(10, b"b")?;
 		mempool.insert_at(700, tx_a);
@@ -323,7 +323,7 @@ mod tests {
 			_ => anyhow::bail!("expected exactly one selected id"),
 		};
 
-		let next = mempool.pop_ready_at(1000, 10);
+		let next = mempool.pop_ready_at(1000, 10, IndexValue(0));
 		let expected = if tx_a == selected_id { vec![tx_b] } else { vec![tx_a] };
 		assert_eq!(next, expected);
 		Ok(())
@@ -332,7 +332,7 @@ mod tests {
 	#[test]
 	fn test_build_availability_confirmation_and_block_header() -> Result<()> {
 		let mut mempool = Mempool::new(100)?;
-		let index = Index::Availability(7);
+		let index = Index::Availability(IndexValue(7));
 		let tx_a = tx_id(7, b"a")?;
 		let tx_b = tx_id(8, b"b")?;
 		mempool.insert_at(10, tx_a);
@@ -353,7 +353,7 @@ mod tests {
 	#[test]
 	fn test_build_block_header_returns_unconfirmed_ids_to_original_slot() -> Result<()> {
 		let mut mempool = Mempool::new(100)?;
-		let index = Index::Availability(11);
+		let index = Index::Availability(IndexValue(11));
 		let tx_a = tx_id(11, b"a")?;
 		let tx_b = tx_id(12, b"b")?;
 		mempool.insert_at(700, tx_a);
@@ -365,7 +365,7 @@ mod tests {
 		let confirmation = Confirmation::from_transactions(only_a);
 		let _block_header = mempool.build_block_header_proposal(&index, &confirmation)?;
 
-		let next = mempool.pop_ready_at(1000, 10);
+		let next = mempool.pop_ready_at(1000, 10, IndexValue(0));
 		assert_eq!(next, vec![tx_b]);
 		Ok(())
 	}
