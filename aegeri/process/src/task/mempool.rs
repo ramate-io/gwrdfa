@@ -1,5 +1,5 @@
 use aegeri_message::{
-	Availability, Block, BlockHeader, Confirmation, Id, Index, Message, Transaction, VerifiedMessage,
+	Availability, Block, BlockHeader, Confirmation, Id, Index, Transaction, VerifiedMessage,
 };
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -211,17 +211,27 @@ impl Mempool {
 		availability: &Availability,
 	) -> Result<Confirmation, MempoolError> {
 		let index_value = Self::index_value(index);
-		let inflight_for_index = self.inflight.entry(index_value).or_default();
 		let mut confirmed = aegeri_message::TransactionSet::new();
+		let mut newly_inflight = Vec::new();
 
 		for id in availability.transactions().iter_ids() {
-			if inflight_for_index.contains_key(id) {
+			let already_inflight = self
+				.inflight
+				.get(&index_value)
+				.is_some_and(|inflight_for_index| inflight_for_index.contains_key(id));
+			if already_inflight {
 				confirmed.add_id(*id);
 				continue;
 			}
 			if let Some((message, original_timestamp)) = self.take_from_pool_by_id(id) {
-				inflight_for_index.insert(*id, (message, original_timestamp));
+				newly_inflight.push((*id, (message, original_timestamp)));
 				confirmed.add_id(*id);
+			}
+		}
+		if !newly_inflight.is_empty() {
+			let inflight_for_index = self.inflight.entry(index_value).or_default();
+			for (id, entry) in newly_inflight {
+				inflight_for_index.insert(id, entry);
 			}
 		}
 
@@ -234,16 +244,22 @@ impl Mempool {
 		confirmation: &Confirmation,
 	) -> Result<BlockHeader, MempoolError> {
 		let index_value = Self::index_value(index);
-		let inflight_for_index = self.inflight.entry(index_value).or_default();
 		let confirmed_ids = confirmation.transactions().ids().clone();
-		let inflight_ids = inflight_for_index.keys().copied().collect::<Vec<_>>();
-		for id in inflight_ids {
-			if confirmed_ids.contains(&id) {
-				continue;
+		let mut return_to_mempool = Vec::new();
+		{
+			let inflight_for_index = self.inflight.entry(index_value).or_default();
+			let inflight_ids = inflight_for_index.keys().copied().collect::<Vec<_>>();
+			for id in inflight_ids {
+				if confirmed_ids.contains(&id) {
+					continue;
+				}
+				if let Some((message, original_timestamp)) = inflight_for_index.remove(&id) {
+					return_to_mempool.push((message, original_timestamp));
+				}
 			}
-			if let Some((message, original_timestamp)) = inflight_for_index.remove(&id) {
-				self.insert_entry(original_timestamp, message);
-			}
+		}
+		for (message, original_timestamp) in return_to_mempool {
+			self.insert_entry(original_timestamp, message);
 		}
 		Ok(BlockHeader::from_transactions(confirmation.transactions().clone()))
 	}
@@ -285,6 +301,7 @@ impl Mempool {
 mod tests {
 	use super::*;
 	use anyhow::Result;
+	use aegeri_message::Message;
 	use ml_dsa::{B32, MlDsa44, SigningKey};
 
 	fn tx(seed: u8, payload: Transaction, nonce: &[u8]) -> Result<VerifiedMessage<Transaction>> {
