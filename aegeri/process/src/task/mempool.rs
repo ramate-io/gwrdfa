@@ -142,20 +142,10 @@ impl Mempool {
 			let Some(ids) = self.by_slot.get_mut(&slot) else {
 				continue;
 			};
-			while selected.len() < max_items {
-				let Some(id) = ids.pop_last() else {
-					break;
-				};
 
-				// If the ID is not live, it has been confirmed and should be removed from the pool.
-				//
-				// We have to do this directly on live,
-				// to prove that the borrow is disjoint.
-				//
-				// This is garbage collection on ids.
-				if !self.by_id.contains_key(&id) {
-					ids.remove(&id);
-					continue;
+			for id in ids.iter() {
+				if selected.len() > max_items - 1 {
+					break;
 				}
 
 				// If the ID is already in-flight, it should not be selected again.
@@ -163,7 +153,7 @@ impl Mempool {
 					continue;
 				}
 
-				selected.push(id);
+				selected.push(*id);
 			}
 
 			// If the slot is empty, it should be removed from the pool.
