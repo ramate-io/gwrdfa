@@ -81,7 +81,7 @@ impl Proposal {
 		requirement: ByzantineRequirement,
 	) -> Condition<Proposal> {
 		match index {
-			Index::Availability(_) => Availability::aggregate(
+			Index::Availability(_) => Availability::consensus_condition(
 				proposals.filter_map(|proposal| match proposal {
 					Proposal::Availability(value) => Some(value),
 					_ => None,
@@ -89,7 +89,7 @@ impl Proposal {
 				requirement,
 			)
 			.map(Proposal::Availability),
-			Index::Confirmation(_) => Confirmation::aggregate(
+			Index::Confirmation(_) => Confirmation::consensus_condition(
 				proposals.filter_map(|proposal| match proposal {
 					Proposal::Confirmation(value) => Some(value),
 					_ => None,
@@ -97,7 +97,7 @@ impl Proposal {
 				requirement,
 			)
 			.map(Proposal::Confirmation),
-			Index::Block(_) => BlockHeader::aggregate(
+			Index::Block(_) => BlockHeader::consensus_condition(
 				proposals.filter_map(|proposal| match proposal {
 					Proposal::BlockHeader(value) => Some(value),
 					_ => None,
@@ -105,7 +105,7 @@ impl Proposal {
 				requirement,
 			)
 			.map(Proposal::BlockHeader),
-			Index::Transition(_) => Transition::aggregate(
+			Index::Transition(_) => Transition::consensus_condition(
 				proposals.filter_map(|proposal| match proposal {
 					Proposal::Transition(value) => Some(value),
 					_ => None,
@@ -114,5 +114,27 @@ impl Proposal {
 			)
 			.map(Proposal::Transition),
 		}
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::{JoinSet, StateRoot, TransactionSet};
+
+	#[test]
+	fn test_aggregate_for_index_filters_to_matching_stage() {
+		let availability = Proposal::Availability(Availability::new());
+		let transition = Proposal::Transition(Transition::new(
+			TransactionSet::new(),
+			StateRoot::new(Vec::new()),
+			JoinSet::new(),
+		));
+		let condition = Proposal::aggregate_for_index(
+			&Index::Transition(0),
+			[&availability, &transition].into_iter(),
+			ByzantineRequirement { total_voters: 2, quorum: 1 },
+		);
+		assert!(matches!(condition, Condition::Consensus(Proposal::Transition(_))));
 	}
 }

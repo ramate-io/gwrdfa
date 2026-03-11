@@ -946,12 +946,12 @@ dependencies = [
 [[package]]
 name = "fuste-ecall"
 version = "0.0.1"
-source = "git+https://github.com/ramate-io/fuste?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
+source = "git+https://github.com/ramate-io/fuste.git?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
 
 [[package]]
 name = "fuste-ecall-dispatcher"
 version = "0.0.1"
-source = "git+https://github.com/ramate-io/fuste?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
+source = "git+https://github.com/ramate-io/fuste.git?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
 dependencies = [
  "fuste-ecall",
  "fuste-interrupt-handler",
@@ -961,7 +961,7 @@ dependencies = [
 [[package]]
 name = "fuste-exit"
 version = "0.0.1"
-source = "git+https://github.com/ramate-io/fuste?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
+source = "git+https://github.com/ramate-io/fuste.git?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
 dependencies = [
  "fuste-ecall",
 ]
@@ -969,7 +969,7 @@ dependencies = [
 [[package]]
 name = "fuste-exit-system"
 version = "0.0.1"
-source = "git+https://github.com/ramate-io/fuste?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
+source = "git+https://github.com/ramate-io/fuste.git?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
 dependencies = [
  "fuste-ecall-dispatcher",
  "fuste-exit",
@@ -979,7 +979,7 @@ dependencies = [
 [[package]]
 name = "fuste-interrupt-handler"
 version = "0.0.1"
-source = "git+https://github.com/ramate-io/fuste?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
+source = "git+https://github.com/ramate-io/fuste.git?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
 dependencies = [
  "fuste-riscv-core",
 ]
@@ -987,7 +987,7 @@ dependencies = [
 [[package]]
 name = "fuste-lilbug"
 version = "0.0.1"
-source = "git+https://github.com/ramate-io/fuste?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
+source = "git+https://github.com/ramate-io/fuste.git?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
 dependencies = [
  "fuste-exit",
  "fuste-exit-system",
@@ -997,12 +997,12 @@ dependencies = [
 [[package]]
 name = "fuste-riscv-core"
 version = "0.0.1"
-source = "git+https://github.com/ramate-io/fuste?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
+source = "git+https://github.com/ramate-io/fuste.git?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
 
 [[package]]
 name = "fuste-riscv-elf"
 version = "0.0.1"
-source = "git+https://github.com/ramate-io/fuste?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
+source = "git+https://github.com/ramate-io/fuste.git?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
 dependencies = [
  "fuste-riscv-core",
  "goblin",
@@ -1012,7 +1012,7 @@ dependencies = [
 [[package]]
 name = "fuste-std-output"
 version = "0.0.1"
-source = "git+https://github.com/ramate-io/fuste?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
+source = "git+https://github.com/ramate-io/fuste.git?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
 dependencies = [
  "fuste-write",
 ]
@@ -1020,7 +1020,7 @@ dependencies = [
 [[package]]
 name = "fuste-std-output-system"
 version = "0.0.1"
-source = "git+https://github.com/ramate-io/fuste?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
+source = "git+https://github.com/ramate-io/fuste.git?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
 dependencies = [
  "fuste-ecall-dispatcher",
  "fuste-riscv-core",
@@ -1030,7 +1030,7 @@ dependencies = [
 [[package]]
 name = "fuste-write"
 version = "0.0.1"
-source = "git+https://github.com/ramate-io/fuste?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
+source = "git+https://github.com/ramate-io/fuste.git?rev=07b6e5e79e79449eca05ad5f0acac09f8f41e125#07b6e5e79e79449eca05ad5f0acac09f8f41e125"
 dependencies = [
  "fuste-ecall",
 ]

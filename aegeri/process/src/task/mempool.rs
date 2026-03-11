@@ -104,18 +104,22 @@ impl Mempool {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use anyhow::Result;
 	use ml_dsa::{B32, MlDsa44, SigningKey};
 
-	fn tx(seed: u8, payload: Transaction, nonce: &[u8]) -> Message<Transaction> {
+	fn tx(seed: u8, payload: Transaction, nonce: &[u8]) -> Result<Message<Transaction>> {
 		let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![seed; 32]));
-		Message::<Transaction>::try_new(&signer, payload, aegeri_message::Nonce::new(nonce))
-			.expect("message should sign")
+		Ok(Message::<Transaction>::try_new(
+			&signer,
+			payload,
+			aegeri_message::Nonce::new(nonce),
+		)?)
 	}
 
 	#[test]
-	fn does_not_pop_transactions_from_current_slot() {
-		let mut mempool = Mempool::new(100).expect("valid slot width");
-		let message = tx(1, Transaction::Join, b"a");
+	fn test_does_not_pop_transactions_from_current_slot() -> Result<()> {
+		let mut mempool = Mempool::new(100)?;
+		let message = tx(1, Transaction::Join, b"a")?;
 
 		// Slot 10
 		mempool.insert_at(1000, message.clone());
@@ -130,13 +134,14 @@ mod tests {
 		let popped = mempool.pop_ready_at(1200, 10);
 		assert_eq!(popped.len(), 1);
 		assert_eq!(popped[0], message);
+		Ok(())
 	}
 
 	#[test]
-	fn pops_from_any_eligible_slot_less_than_current_minus_one() {
-		let mut mempool = Mempool::new(100).expect("valid slot width");
-		let older = tx(2, Transaction::Join, b"older");
-		let previous = tx(3, Transaction::Join, b"previous");
+	fn test_pops_from_any_eligible_slot_less_than_current_minus_one() -> Result<()> {
+		let mut mempool = Mempool::new(100)?;
+		let older = tx(2, Transaction::Join, b"older")?;
+		let previous = tx(3, Transaction::Join, b"previous")?;
 
 		// Slots 8 and 9
 		mempool.insert_at(850, older.clone());
@@ -148,14 +153,15 @@ mod tests {
 
 		// Current slot 11: slots < 10 are eligible, so slot 9 pops.
 		assert_eq!(mempool.pop_ready_at(1100, 10), vec![previous]);
+		Ok(())
 	}
 
 	#[test]
-	fn pops_highest_ordered_transactions_first_within_slot() {
-		let mut mempool = Mempool::new(100).expect("valid slot width");
-		let a = tx(4, Transaction::Join, b"a");
-		let b = tx(5, Transaction::Join, b"b");
-		let c = tx(6, Transaction::Join, b"c");
+	fn test_pops_highest_ordered_transactions_first_within_slot() -> Result<()> {
+		let mut mempool = Mempool::new(100)?;
+		let a = tx(4, Transaction::Join, b"a")?;
+		let b = tx(5, Transaction::Join, b"b")?;
+		let c = tx(6, Transaction::Join, b"c")?;
 
 		// Insert all into slot 3.
 		mempool.insert_at(300, a.clone());
@@ -172,5 +178,6 @@ mod tests {
 		// Now in slot 5: eligible slots are < 4, so slot 3 is eligible.
 		let popped = mempool.pop_ready_at(500, 3);
 		assert_eq!(popped, expected);
+		Ok(())
 	}
 }
