@@ -27,7 +27,7 @@ impl Confirmation {
 		requirement: ByzantineRequirement,
 	) -> Condition<Confirmation> {
 		let collected = proposals.collect::<Vec<_>>();
-		if collected.len() < requirement.quorum {
+		if !requirement.reaches_quorum(collected.len()) {
 			return Condition::InProgress;
 		}
 
@@ -40,7 +40,7 @@ impl Confirmation {
 
 		let mut merged = TransactionSet::new();
 		for (id, count) in counts {
-			if count >= requirement.quorum {
+			if requirement.reaches_quorum(count) {
 				merged.add_id(id);
 			}
 		}

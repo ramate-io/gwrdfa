@@ -10,6 +10,7 @@ pub use confirmation::Confirmation;
 use super::{Index, Transition};
 use gwrdfa_resample::agreement::Condition;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 /// Stage-level quorum requirement for proposal aggregation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -22,6 +23,38 @@ impl ByzantineRequirement {
 	pub fn byzantine_quorum(total_voters: usize) -> Self {
 		let quorum = (total_voters * 2).div_ceil(3) + 1;
 		Self { total_voters, quorum }
+	}
+
+	pub fn reaches_quorum(&self, votes: usize) -> bool {
+		votes >= self.quorum
+	}
+
+	/// Majority-style condition evaluator shared by exact-value stages.
+	pub fn aggregate_majority<'a, T: Clone + Ord + 'a>(
+		&self,
+		proposals: impl Iterator<Item = &'a T>,
+	) -> Condition<T> {
+		let mut votes = BTreeMap::new();
+		let mut observed_votes = 0usize;
+		for proposal in proposals {
+			observed_votes += 1;
+			*votes.entry(proposal.clone()).or_insert(0usize) += 1;
+		}
+
+		let mut max_votes = 0usize;
+		for (proposal, count) in votes {
+			max_votes = max_votes.max(count);
+			if self.reaches_quorum(count) {
+				return Condition::Consensus(proposal);
+			}
+		}
+
+		let remaining = self.total_voters.saturating_sub(observed_votes);
+		if remaining < self.quorum.saturating_sub(max_votes) {
+			Condition::Hung
+		} else {
+			Condition::InProgress
+		}
 	}
 }
 
