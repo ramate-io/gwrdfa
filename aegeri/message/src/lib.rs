@@ -7,6 +7,9 @@ pub use transaction::*;
 pub mod block;
 pub use block::*;
 
+pub mod subcommittee;
+pub use subcommittee::*;
+
 use ml_dsa::{
 	signature::{SignatureEncoding, Signer, Verifier},
 	EncodedSignature, EncodedVerifyingKey, MlDsa44, Signature as MlDsaSignature, SigningKey,

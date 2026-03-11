@@ -2,7 +2,7 @@ use gwrdfa_resample::agreement::std::NextRound;
 use serde::{Deserialize, Serialize};
 
 /// Index of a certificate round in the layered consensus pipeline.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Index {
 	Availability(u64),
 	Confirmation(u64),

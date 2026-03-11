@@ -75,7 +75,7 @@ impl Proposal {
 	/// Aggregates proposals for the given stage index.
 	///
 	/// Proposals that do not match the index stage are ignored.
-	pub fn aggregate_for_index<'a>(
+	pub fn consensus_condition_for_index<'a>(
 		index: &Index,
 		proposals: impl Iterator<Item = &'a Proposal>,
 		requirement: ByzantineRequirement,
@@ -130,7 +130,7 @@ mod tests {
 			StateRoot::new(Vec::new()),
 			JoinSet::new(),
 		));
-		let condition = Proposal::aggregate_for_index(
+		let condition = Proposal::consensus_condition_for_index(
 			&Index::Transition(0),
 			[&availability, &transition].into_iter(),
 			ByzantineRequirement { total_voters: 2, quorum: 1 },
