@@ -1,4 +1,6 @@
-use aegeri_message::{Availability, BlockHeader, Confirmation, Id, Index, IndexValue};
+use aegeri_message::{
+	Availability, BlockHeader, Confirmation, Id, Index, IndexValue, TransactionSet,
+};
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -94,6 +96,12 @@ impl Mempool {
 		self.inflight_by_index.entry(index_value).or_default().insert(id);
 	}
 
+	/// Unmarks an id as inflight at a given index value.
+	pub fn unmark_inflight(&mut self, id: Id, index_value: IndexValue) {
+		self.inflight_by_id.remove(&id);
+		self.inflight_by_index.entry(index_value).or_default().remove(&id);
+	}
+
 	/// Pops up to `max_items` transactions from any eligible slot `< t - 1`.
 	///
 	/// Pop priority:
@@ -171,7 +179,7 @@ impl Mempool {
 		max_items: usize,
 		index: &Index,
 	) -> Result<Availability, MempoolError> {
-		let index_value = Self::index_value(index);
+		let index_value = index.value();
 		let selected_ids = self.pop_ready_at(now_epoch_ms, max_items, index_value);
 		let mut ids = aegeri_message::TransactionSet::new();
 		for id in selected_ids {
@@ -180,29 +188,43 @@ impl Mempool {
 		Ok(Availability::from_transactions(ids))
 	}
 
+	pub fn reconcile_transactions(
+		&mut self,
+		index_value: IndexValue,
+		transactions: &TransactionSet,
+	) -> TransactionSet {
+		let mut reconciled = TransactionSet::new();
+
+		// Mark all the ids as inflight at the given index value.
+		for id in transactions.iter_ids() {
+			reconciled.add_id(*id);
+		}
+
+		// This should rarely happen, but
+		// if somehow our proposal wasn't unioned into the agreement
+		// availability proposal,
+		// we'll want to heal and remove the ids from inflight.
+		let mut to_unmark = Vec::new();
+		for id in self.inflight_by_index.get(&index_value).into_iter().flatten() {
+			if !reconciled.contains(id) {
+				to_unmark.push(*id);
+			}
+		}
+		for id in to_unmark {
+			self.unmark_inflight(id, index_value);
+		}
+
+		reconciled
+	}
+
 	pub fn build_confirmation_proposal(
 		&mut self,
 		index: &Index,
 		availability: &Availability,
 	) -> Result<Confirmation, MempoolError> {
-		let index_value = Self::index_value(index);
-		let mut confirmed = aegeri_message::TransactionSet::new();
-
-		for id in availability.transactions().iter_ids() {
-			// If the id is not live, skip it.
-			//
-			// Even if we know others have this ID,
-			// we don not confirm its availability ourselves.
-			if let Some(_slot) = self.by_id.get(id) {
-				confirmed.add_id(*id);
-				// Update the index value for the id.
-				self.mark_inflight(*id, index_value);
-			} else {
-				continue;
-			}
-		}
-
-		Ok(Confirmation::from_transactions(confirmed))
+		let index_value = index.value();
+		let reconciled = self.reconcile_transactions(index_value, availability.transactions());
+		Ok(Confirmation::from_transactions(reconciled))
 	}
 
 	pub fn build_block_header_proposal(
@@ -210,11 +232,9 @@ impl Mempool {
 		index: &Index,
 		confirmation: &Confirmation,
 	) -> Result<BlockHeader, MempoolError> {
-		let index_value = Self::index_value(index);
-
-		// All we do is fix the indexes
-
-		Ok(BlockHeader::from_transactions(confirmation.transactions().clone()))
+		let index_value = index.value();
+		let reconciled = self.reconcile_transactions(index_value, confirmation.transactions());
+		Ok(BlockHeader::from_transactions(reconciled))
 	}
 }
 
