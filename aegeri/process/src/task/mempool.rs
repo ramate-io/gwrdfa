@@ -57,12 +57,8 @@ impl Mempool {
 		Slot(epoch_ms / self.slot_width_ms)
 	}
 
-	pub fn has_live_id(&self, id: &Id) -> bool {
-		self.by_id.contains_key(id)
-	}
-
 	fn insert_entry(&mut self, received_at_epoch_ms: u64, id: Id) {
-		if self.has_live_id(&id) {
+		if self.by_id.contains_key(&id) {
 			return;
 		}
 		let slot = self.slot_for_epoch_ms(received_at_epoch_ms);
@@ -97,9 +93,25 @@ impl Mempool {
 	}
 
 	/// Unmarks an id as inflight at a given index value.
-	pub fn unmark_inflight(&mut self, id: Id, index_value: IndexValue) {
+	pub fn unmark_inflight_at(&mut self, id: Id, index_value: IndexValue) {
 		self.inflight_by_id.remove(&id);
 		self.inflight_by_index.entry(index_value).or_default().remove(&id);
+	}
+
+	/// Removes an id from inflight
+	pub fn unmark_inflight(&mut self, id: Id) {
+		if let Some(index_value) = self.inflight_by_id.get(&id) {
+			self.unmark_inflight_at(id, *index_value);
+		}
+	}
+
+	/// Removes an id from the mempool entirely.
+	pub fn remove(&mut self, id: Id) {
+		self.unmark_inflight(id);
+
+		if let Some(slot) = self.by_id.get(&id) {
+			self.by_slot.entry(*slot).or_default().remove(&id);
+		}
 	}
 
 	/// Pops up to `max_items` transactions from any eligible slot `< t - 1`.
@@ -173,6 +185,9 @@ impl Mempool {
 		selected
 	}
 
+	/// Builds an availability proposal from the mempool.
+	///
+	/// This is done without any reference to an agreed transaction set.
 	pub fn build_availability_proposal(
 		&mut self,
 		now_epoch_ms: u64,
@@ -188,6 +203,7 @@ impl Mempool {
 		Ok(Availability::from_transactions(ids))
 	}
 
+	/// Reconciles the mempool with a given transaction set.
 	pub fn reconcile_transactions(
 		&mut self,
 		index_value: IndexValue,
@@ -197,13 +213,16 @@ impl Mempool {
 
 		// Mark all the ids as inflight at the given index value.
 		for id in transactions.iter_ids() {
-			reconciled.add_id(*id);
+			if self.by_id.contains_key(id) {
+				reconciled.add_id(*id);
+				self.mark_inflight(*id, index_value);
+			}
 		}
 
-		// This should rarely happen, but
-		// if somehow our proposal wasn't unioned into the agreement
-		// availability proposal,
-		// we'll want to heal and remove the ids from inflight.
+		// We have an agreement that doesn't include some of our transactions.
+		// We can try to repropose them later
+		// but for we aren't going to at this index given the agreement
+		// we were handed down in the [TransactionSet].
 		let mut to_unmark = Vec::new();
 		for id in self.inflight_by_index.get(&index_value).into_iter().flatten() {
 			if !reconciled.contains(id) {
@@ -211,12 +230,15 @@ impl Mempool {
 			}
 		}
 		for id in to_unmark {
-			self.unmark_inflight(id, index_value);
+			self.unmark_inflight(id);
 		}
 
 		reconciled
 	}
 
+	/// Builds a confirmation proposal from the mempool.
+	///
+	/// This is done with a reference to an availability proposal agreement.
 	pub fn build_confirmation_proposal(
 		&mut self,
 		index: &Index,
@@ -227,11 +249,16 @@ impl Mempool {
 		Ok(Confirmation::from_transactions(reconciled))
 	}
 
+	/// Builds a block header proposal from the mempool.
+	///
+	/// This is done with a reference to a confirmation proposal agreement.
 	pub fn build_block_header_proposal(
 		&mut self,
 		index: &Index,
 		confirmation: &Confirmation,
 	) -> Result<BlockHeader, MempoolError> {
+		// This does the same thing as build_confirmation_proposal,
+		// the difference between the two is at the consensus condition level.
 		let index_value = index.value();
 		let reconciled = self.reconcile_transactions(index_value, confirmation.transactions());
 		Ok(BlockHeader::from_transactions(reconciled))
