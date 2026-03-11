@@ -186,7 +186,7 @@ impl Mempool {
 	) -> Result<Availability, MempoolError> {
 		let index_value = index.value();
 		let selected_ids = self.pop_ready_at(now_epoch_ms, max_items, index_value);
-		let mut ids = aegeri_message::TransactionSet::new();
+		let mut ids = TransactionSet::new();
 		for id in selected_ids {
 			ids.add_id(id);
 		}
@@ -357,6 +357,141 @@ mod tests {
 
 		let next = mempool.pop_ready_at(1000, 10, IndexValue(0));
 		assert_eq!(next, vec![tx_b]);
+		Ok(())
+	}
+
+	#[test]
+	fn test_mark_inflight_tracks_id_in_both_maps() -> Result<()> {
+		let mut mempool = Mempool::new(100)?;
+		let id = tx_id(13, b"a")?;
+		let index_value = IndexValue(2);
+
+		mempool.mark_inflight(id, index_value);
+
+		assert_eq!(mempool.inflight_by_id.get(&id), Some(&index_value));
+		assert!(
+			mempool
+				.inflight_by_index
+				.get(&index_value)
+				.is_some_and(|ids| ids.contains(&id))
+		);
+		Ok(())
+	}
+
+	#[test]
+	fn test_mark_inflight_reassigns_index_membership() -> Result<()> {
+		let mut mempool = Mempool::new(100)?;
+		let id = tx_id(14, b"a")?;
+		let first = IndexValue(3);
+		let second = IndexValue(4);
+
+		mempool.mark_inflight(id, first);
+		mempool.mark_inflight(id, second);
+
+		assert_eq!(mempool.inflight_by_id.get(&id), Some(&second));
+		assert!(mempool.inflight_by_index.get(&first).is_none_or(|ids| !ids.contains(&id)));
+		assert!(
+			mempool
+				.inflight_by_index
+				.get(&second)
+				.is_some_and(|ids| ids.contains(&id))
+		);
+		Ok(())
+	}
+
+	#[test]
+	fn test_unmark_inflight_removes_id_from_tracking() -> Result<()> {
+		let mut mempool = Mempool::new(100)?;
+		let id = tx_id(15, b"a")?;
+		let index_value = IndexValue(5);
+		mempool.mark_inflight(id, index_value);
+
+		mempool.unmark_inflight(id);
+
+		assert!(!mempool.inflight_by_id.contains_key(&id));
+		assert!(
+			mempool
+				.inflight_by_index
+				.get(&index_value)
+				.is_none_or(|ids| !ids.contains(&id))
+		);
+		Ok(())
+	}
+
+	#[test]
+	fn test_remove_clears_slot_and_inflight_membership() -> Result<()> {
+		let mut mempool = Mempool::new(100)?;
+		let id = tx_id(16, b"a")?;
+		let index_value = IndexValue(6);
+		mempool.insert_at(700, id);
+		mempool.mark_inflight(id, index_value);
+
+		mempool.remove(id);
+
+		assert!(mempool.by_slot.values().all(|ids| !ids.contains(&id)));
+		assert!(!mempool.inflight_by_id.contains_key(&id));
+		assert!(
+			mempool
+				.inflight_by_index
+				.get(&index_value)
+				.is_none_or(|ids| !ids.contains(&id))
+		);
+		Ok(())
+	}
+
+	#[test]
+	fn test_reconcile_transactions_filters_to_known_ids() -> Result<()> {
+		let mut mempool = Mempool::new(100)?;
+		let known = tx_id(17, b"known")?;
+		let unknown = tx_id(18, b"unknown")?;
+		let index_value = IndexValue(7);
+		mempool.insert_at(700, known);
+
+		let mut transactions = TransactionSet::new();
+		transactions.add_id(known);
+		transactions.add_id(unknown);
+
+		let reconciled = mempool.reconcile_transactions(index_value, &transactions);
+
+		assert_eq!(reconciled.ids(), &BTreeSet::from([known]));
+		assert_eq!(mempool.inflight_by_id.get(&known), Some(&index_value));
+		assert!(!mempool.inflight_by_id.contains_key(&unknown));
+		Ok(())
+	}
+
+	#[test]
+	fn test_reconcile_transactions_unmarks_stale_ids_only_for_target_index() -> Result<()> {
+		let mut mempool = Mempool::new(100)?;
+		let index_value = IndexValue(8);
+		let other_index = IndexValue(9);
+		let keep = tx_id(19, b"keep")?;
+		let drop = tx_id(20, b"drop")?;
+		let untouched = tx_id(21, b"untouched")?;
+
+		mempool.insert_at(700, keep);
+		mempool.insert_at(700, drop);
+		mempool.insert_at(700, untouched);
+		mempool.mark_inflight(keep, index_value);
+		mempool.mark_inflight(drop, index_value);
+		mempool.mark_inflight(untouched, other_index);
+
+		let mut agreed = TransactionSet::new();
+		agreed.add_id(keep);
+
+		let reconciled = mempool.reconcile_transactions(index_value, &agreed);
+
+		assert_eq!(reconciled.ids(), &BTreeSet::from([keep]));
+		assert_eq!(mempool.inflight_by_id.get(&keep), Some(&index_value));
+		assert!(!mempool.inflight_by_id.contains_key(&drop));
+		assert_eq!(mempool.inflight_by_id.get(&untouched), Some(&other_index));
+		assert_eq!(
+			mempool.inflight_by_index.get(&index_value).cloned().unwrap_or_default(),
+			HashSet::from([keep])
+		);
+		assert_eq!(
+			mempool.inflight_by_index.get(&other_index).cloned().unwrap_or_default(),
+			HashSet::from([untouched])
+		);
 		Ok(())
 	}
 }
