@@ -77,11 +77,12 @@ impl<Sender: PartialEq + Eq + PartialOrd + Ord + Hash + Clone> Subcommittee<Prop
 
 #[cfg(test)]
 mod tests {
+	use super::super::IndexValue;
 	use super::*;
 
 	#[test]
 	fn test_aegeri_subcommittee_reaches_consensus() {
-		let committee = AegeriSubcommittee::<u32>::new(Index::Availability(0))
+		let committee = AegeriSubcommittee::<u32>::new(Index::Availability(IndexValue(0)))
 			.with_members(vec![1, 2, 3].into_iter());
 		let proposal = Proposal::Availability(crate::Availability::new());
 		let condition = committee.condition(vec![(&committee, &proposal)].into_iter());
@@ -90,17 +91,16 @@ mod tests {
 
 	#[test]
 	fn test_aegeri_subcommittee_hung_on_sender_conflict() {
-		let committee = AegeriSubcommittee::<u32>::new(Index::Availability(0))
+		let committee = AegeriSubcommittee::<u32>::new(Index::Availability(IndexValue(0)))
 			.with_members(vec![1, 2, 3].into_iter());
-		let left = AegeriSubcommittee::<u32>::new(Index::Availability(0))
+		let left = AegeriSubcommittee::<u32>::new(Index::Availability(IndexValue(0)))
 			.with_members(vec![1, 2].into_iter());
-		let right = AegeriSubcommittee::<u32>::new(Index::Availability(0))
+		let right = AegeriSubcommittee::<u32>::new(Index::Availability(IndexValue(0)))
 			.with_members(vec![2, 3].into_iter());
 		let availability = Proposal::Availability(crate::Availability::new());
 		let confirmation = Proposal::Confirmation(crate::Confirmation::new());
-		let condition = committee.condition(
-			vec![(&left, &availability), (&right, &confirmation)].into_iter(),
-		);
+		let condition =
+			committee.condition(vec![(&left, &availability), (&right, &confirmation)].into_iter());
 		assert_eq!(condition, Condition::Hung);
 	}
 }

@@ -119,6 +119,7 @@ impl Proposal {
 
 #[cfg(test)]
 mod tests {
+	use super::super::IndexValue;
 	use super::*;
 	use crate::{JoinSet, StateRoot, TransactionSet};
 
@@ -131,7 +132,7 @@ mod tests {
 			JoinSet::new(),
 		));
 		let condition = Proposal::consensus_condition_for_index(
-			&Index::Transition(0),
+			&Index::Transition(IndexValue(0)),
 			[&availability, &transition].into_iter(),
 			ByzantineRequirement { total_voters: 2, quorum: 1 },
 		);

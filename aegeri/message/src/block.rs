@@ -44,6 +44,10 @@ impl TransactionSet {
 		self.0.insert(id);
 	}
 
+	pub fn contains(&self, id: &Id) -> bool {
+		self.0.contains(id)
+	}
+
 	pub fn intersection<'a>(&'a self, other: &'a TransactionSet) -> BTreeSet<&'a Id> {
 		self.0.intersection(&other.0).collect()
 	}
