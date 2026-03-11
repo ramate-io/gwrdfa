@@ -4,6 +4,9 @@ pub use certificate::*;
 pub mod transaction;
 pub use transaction::*;
 
+pub mod block;
+pub use block::*;
+
 use ml_dsa::{
 	signature::{SignatureEncoding, Signer, Verifier},
 	EncodedSignature, EncodedVerifyingKey, MlDsa44, Signature as MlDsaSignature, SigningKey,

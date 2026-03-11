@@ -1,5 +1,4 @@
-use super::TransactionSet;
-use crate::PublicKey;
+use crate::{PublicKey, TransactionSet};
 use serde::{Deserialize, Serialize};
 
 /// State root produced by execution.

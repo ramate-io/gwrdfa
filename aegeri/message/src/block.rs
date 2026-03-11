@@ -48,7 +48,9 @@ impl TransactionSet {
 		self.0.intersection(&other.0).collect()
 	}
 
-	pub fn intersect_all<'a>(mut iter: impl Iterator<Item = &'a TransactionSet>) -> BTreeSet<&'a Id> {
+	pub fn intersect_all<'a>(
+		mut iter: impl Iterator<Item = &'a TransactionSet>,
+	) -> BTreeSet<&'a Id> {
 		let Some(first) = iter.next() else {
 			return BTreeSet::new();
 		};

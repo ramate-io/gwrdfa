@@ -1,4 +1,5 @@
-use super::{TransactionSet, Transition};
+use super::Transition;
+use crate::TransactionSet;
 use serde::{Deserialize, Serialize};
 
 /// Availability proposal from one replica.
