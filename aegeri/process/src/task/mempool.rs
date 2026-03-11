@@ -338,7 +338,7 @@ mod tests {
 		mempool.insert_at(10, tx_a);
 		mempool.insert_at(20, tx_b);
 
-		let availability = mempool.build_availability_proposal(40, 100, &index)?;
+		let availability = mempool.build_availability_proposal(210, 100, &index)?;
 		assert!(availability.transactions().ids().contains(&tx_a));
 		assert!(availability.transactions().ids().contains(&tx_b));
 
