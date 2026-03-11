@@ -24,12 +24,12 @@ mod tests {
 			[&t, &t].into_iter(),
 			ByzantineRequirement { total_voters: 3, quorum: 2 },
 		);
-		assert!(matches!(consensus, Condition::Consensus(_)));
+		assert_eq!(consensus, Condition::Consensus(t.clone()));
 
 		let in_progress = Transition::consensus_condition(
 			[&t].into_iter(),
 			ByzantineRequirement { total_voters: 3, quorum: 2 },
 		);
-		assert!(matches!(in_progress, Condition::InProgress));
+		assert_eq!(in_progress, Condition::InProgress);
 	}
 }

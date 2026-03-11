@@ -53,7 +53,7 @@ mod tests {
 			[&a, &a].into_iter(),
 			ByzantineRequirement { total_voters: 3, quorum: 2 },
 		);
-		assert!(matches!(condition, Condition::Consensus(_)));
+		assert_eq!(condition, Condition::Consensus(a));
 	}
 
 	#[test]
@@ -66,7 +66,7 @@ mod tests {
 			[&a, &b].into_iter(),
 			ByzantineRequirement { total_voters: 2, quorum: 2 },
 		);
-		assert!(matches!(condition, Condition::Hung));
+		assert_eq!(condition, Condition::Hung);
 		Ok(())
 	}
 }

@@ -45,6 +45,7 @@ mod tests {
 	use anyhow::{bail, Result};
 	use crate::{Message, Nonce, Transaction};
 	use ml_dsa::{B32, MlDsa44, SigningKey};
+	use std::collections::BTreeSet;
 
 	fn tx_id(seed: u8) -> Result<crate::Id> {
 		let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![seed; 32]));
@@ -66,14 +67,20 @@ mod tests {
 
 	#[test]
 	fn test_consensus_condition_unions_on_quorum() -> Result<()> {
-		let a = Availability::from_transactions(set([tx_id(1)?, tx_id(2)?]));
-		let b = Availability::from_transactions(set([tx_id(2)?, tx_id(3)?]));
+		let id1 = tx_id(1)?;
+		let id2 = tx_id(2)?;
+		let id3 = tx_id(3)?;
+		let a = Availability::from_transactions(set([id1.clone(), id2.clone()]));
+		let b = Availability::from_transactions(set([id2.clone(), id3.clone()]));
 		let condition = Availability::consensus_condition(
 			[&a, &b].into_iter(),
 			ByzantineRequirement { total_voters: 3, quorum: 2 },
 		);
 		match condition {
-			Condition::Consensus(availability) => assert_eq!(availability.transactions().len(), 3),
+			Condition::Consensus(availability) => {
+				let expected = BTreeSet::from([id1, id2, id3]);
+				assert_eq!(availability.transactions().ids(), &expected);
+			}
 			other => bail!("unexpected condition: {other:?}"),
 		}
 		Ok(())
@@ -86,7 +93,7 @@ mod tests {
 			[&a].into_iter(),
 			ByzantineRequirement { total_voters: 3, quorum: 2 },
 		);
-		assert!(matches!(condition, Condition::InProgress));
+		assert_eq!(condition, Condition::InProgress);
 		Ok(())
 	}
 }

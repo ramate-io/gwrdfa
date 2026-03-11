@@ -141,6 +141,7 @@ mod tests {
 	use super::*;
 	use aegeri_message::{Message, Nonce};
 	use ml_dsa::{MlDsa44, SigningKey, B32};
+	use std::collections::BTreeSet;
 
 	#[test]
 	fn test_execute_joins() -> Result<(), anyhow::Error> {
@@ -150,11 +151,9 @@ mod tests {
 		let verified_tx = tx.clone().into_verified()?;
 		let block = Block::new(vec![verified_tx.clone()]);
 		let value = executor.execute_block(&block)?;
-		assert_eq!(value.block().ids().len(), 1);
-		assert_eq!(value.block().iter_ids().next(), Some(verified_tx.id()));
+		assert_eq!(value.block().ids(), &BTreeSet::from([verified_tx.id().clone()]));
 		assert_eq!(value.state_root().as_bytes(), &[0; 0]);
-		assert_eq!(value.join_set().members().len(), 1);
-		assert_eq!(value.join_set().members()[0], *verified_tx.public_key());
+		assert_eq!(value.join_set().members(), &[verified_tx.public_key().clone()]);
 
 		Ok(())
 	}

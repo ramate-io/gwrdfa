@@ -132,8 +132,7 @@ mod tests {
 
 		// Slot 12 -> eligible slots are < 11, so slot 10 pops now.
 		let popped = mempool.pop_ready_at(1200, 10);
-		assert_eq!(popped.len(), 1);
-		assert_eq!(popped[0], message);
+		assert_eq!(popped, vec![message]);
 		Ok(())
 	}
 

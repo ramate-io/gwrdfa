@@ -135,6 +135,6 @@ mod tests {
 			[&availability, &transition].into_iter(),
 			ByzantineRequirement { total_voters: 2, quorum: 1 },
 		);
-		assert!(matches!(condition, Condition::Consensus(Proposal::Transition(_))));
+		assert_eq!(condition, Condition::Consensus(transition));
 	}
 }

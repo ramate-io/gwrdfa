@@ -54,6 +54,7 @@ mod tests {
 	use anyhow::{bail, Result};
 	use crate::{Message, Nonce, Transaction};
 	use ml_dsa::{B32, MlDsa44, SigningKey};
+	use std::collections::BTreeSet;
 
 	fn tx_id(seed: u8) -> Result<crate::Id> {
 		let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![seed; 32]));
@@ -89,8 +90,8 @@ mod tests {
 
 		match condition {
 			Condition::Consensus(merged) => {
-				assert_eq!(merged.transactions().len(), 1);
-				assert_eq!(merged.transactions().iter_ids().next(), Some(&id1));
+				let expected = BTreeSet::from([id1]);
+				assert_eq!(merged.transactions().ids(), &expected);
 			}
 			other => bail!("unexpected condition: {other:?}"),
 		}
@@ -104,7 +105,7 @@ mod tests {
 			[&a].into_iter(),
 			ByzantineRequirement { total_voters: 3, quorum: 2 },
 		);
-		assert!(matches!(condition, Condition::InProgress));
+		assert_eq!(condition, Condition::InProgress);
 		Ok(())
 	}
 }
