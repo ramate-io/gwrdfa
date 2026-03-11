@@ -21,7 +21,7 @@ use sha3::Digest;
 /// The ID of a message
 ///
 /// This will be a hash of the payload.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Id([u8; 32]);
 
 impl Id {
