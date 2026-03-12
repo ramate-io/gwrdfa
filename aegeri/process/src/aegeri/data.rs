@@ -1,4 +1,5 @@
-use aegeri_message::{AegeriSubcommittee, Index, Proposal};
+use aegeri_message::{AegeriSubcommittee, Index, Proposal, UnifiedMessage};
+use gossamer::container::{GossamerContainer, GossamerDeltasContainer};
 use gwrdfa_container::{ContainerEntity, ContainerEntityBuffer, ContainerEntityDraftBuffer};
 use gwrdfa_resample::agreement::std::container::{
 	AgreementContainer, AgreementDelta, CertificateContainer, CertificateDelta,
@@ -6,6 +7,7 @@ use gwrdfa_resample::agreement::std::container::{
 use parabyzantine::{NoOp, NoOpData, ParabyzantineData};
 
 pub struct AegeriData {
+	pub messages: ContainerEntityBuffer<GossamerContainer<UnifiedMessage>>,
 	pub certificates:
 		ContainerEntityBuffer<CertificateContainer<Index, Proposal, AegeriSubcommittee>>,
 	pub agreements: ContainerEntityBuffer<AgreementContainer<Index, Proposal, AegeriSubcommittee>>,
@@ -14,9 +16,9 @@ pub struct AegeriData {
 
 impl ParabyzantineData for AegeriData {
 	// Message is not used in Aegeri.
-	type MessageEntity = NoOp;
-	type MessageBuffer = NoOp;
-	type MessageDraftBuffer = NoOp;
+	type MessageEntity = ContainerEntity;
+	type MessageBuffer = ContainerEntityBuffer<GossamerContainer<UnifiedMessage>>;
+	type MessageDraftBuffer = ContainerEntityDraftBuffer<GossamerDeltasContainer<UnifiedMessage>>;
 
 	// Certificates and agreements are stored in the same container.
 	type CertificateEntity = ContainerEntity;
@@ -41,6 +43,18 @@ impl ParabyzantineData for AegeriData {
 	type TaskEntity = NoOp;
 	type TaskBuffer = NoOp;
 	type TaskDraftBuffer = NoOp;
+
+	fn parabyzantine_message_buffer(&self) -> &Self::MessageBuffer {
+		&self.messages
+	}
+
+	fn parabyzantine_message_buffer_mut(&mut self) -> &mut Self::MessageBuffer {
+		&mut self.messages
+	}
+
+	fn parabyzantine_message_draft_buffer(&self) -> Self::MessageDraftBuffer {
+		Self::MessageDraftBuffer::new()
+	}
 
 	fn parabyzantine_certificate_buffer(&self) -> &Self::CertificateBuffer {
 		&self.certificates
@@ -88,17 +102,5 @@ impl ParabyzantineData for AegeriData {
 
 	fn parabyzantine_task_draft_buffer(&self) -> Self::TaskDraftBuffer {
 		Self::TaskDraftBuffer::default()
-	}
-
-	fn parabyzantine_message_buffer(&self) -> &Self::MessageBuffer {
-		&self.noop.no_op
-	}
-
-	fn parabyzantine_message_buffer_mut(&mut self) -> &mut Self::MessageBuffer {
-		&mut self.noop.no_op
-	}
-
-	fn parabyzantine_message_draft_buffer(&self) -> Self::MessageDraftBuffer {
-		Self::MessageDraftBuffer::default()
 	}
 }

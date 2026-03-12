@@ -10,6 +10,8 @@ pub use block::*;
 pub mod subcommittee;
 pub use subcommittee::*;
 
+pub use gossamer::{GossamerMessage, GossamerMessageError};
+
 #[cfg(test)]
 use ml_dsa::B32;
 use ml_dsa::{
@@ -283,6 +285,20 @@ impl Message<Certificate> {
 pub enum UnifiedMessage {
 	Transaction(Message<Transaction>),
 	Certificate(Message<Certificate>),
+}
+
+impl GossamerMessage for UnifiedMessage {
+	fn to_gossamer_bytes(&self) -> Result<Vec<u8>, GossamerMessageError> {
+		let bytes = serde_json::to_vec(self)
+			.map_err(|e| GossamerMessageError::SerializeError((e.to_string(), vec![])))?;
+		Ok(bytes)
+	}
+
+	fn from_gossamer_bytes(bytes: Vec<u8>) -> Result<Self, GossamerMessageError> {
+		let message = serde_json::from_slice(&bytes)
+			.map_err(|e| GossamerMessageError::DeserializeError((e.to_string(), bytes)))?;
+		Ok(message)
+	}
 }
 
 impl From<Message<Transaction>> for UnifiedMessage {
