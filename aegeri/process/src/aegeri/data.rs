@@ -15,7 +15,7 @@ pub struct AegeriData {
 }
 
 impl ParabyzantineData for AegeriData {
-	// Message is not used in Aegeri.
+	// Message is just gossamer messages over [UnifiedMessage].
 	type MessageEntity = ContainerEntity;
 	type MessageBuffer = ContainerEntityBuffer<GossamerContainer<UnifiedMessage>>;
 	type MessageDraftBuffer = ContainerEntityDraftBuffer<GossamerDeltasContainer<UnifiedMessage>>;
