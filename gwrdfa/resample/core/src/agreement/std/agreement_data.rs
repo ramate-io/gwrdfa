@@ -6,6 +6,7 @@ use crate::agreement::std::{
 use crate::agreement::{ResampleAgreementData, Sampler, Subcommittee};
 use crate::ForResample;
 use gwrdfa_container::query::matching_tuple::{MatchingTuple, MatchingTupleQuery};
+use parabyzantine::agreement::ParabyzantineAgreementData;
 use std::hash::Hash;
 
 /// In-memory `ResampleAgreementData` implementation backed by container buffers.
