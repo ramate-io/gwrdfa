@@ -90,11 +90,12 @@ impl AegeriHart {
 		))
 	}
 
-	pub fn tick(mut self) -> Self {
-		self.message.act(Hart, &mut self.data);
-		self.agreement.act(Agreement, &mut self.data);
-		self.task.act(Task, &mut self.data);
-		self
+	pub fn tick(self) -> Self {
+		let Self { mut data, mut message, mut agreement, mut task } = self;
+		message.act(Hart, &mut data);
+		agreement.act(Agreement, &mut data);
+		task.act(Task, &mut data);
+		Self { data, message, agreement, task }
 	}
 
 	pub fn run(mut self) {

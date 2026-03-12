@@ -12,6 +12,7 @@
 pub mod agreement_data;
 pub mod constant_committee;
 pub mod container;
+pub mod join_set_committee;
 pub mod memory_certificate_set;
 pub mod voter_set;
 
