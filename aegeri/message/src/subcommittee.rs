@@ -40,6 +40,10 @@ impl AegeriSubcommittee {
 		self.members.insert(member);
 	}
 
+	pub fn remove_member(&mut self, member: PublicKey) {
+		self.members.remove(&member);
+	}
+
 	pub fn size(&self) -> usize {
 		self.members.len()
 	}
@@ -73,6 +77,25 @@ impl Subcommittee<Proposal> for AegeriSubcommittee {
 			sender_to_proposal.into_values(),
 			requirement,
 		)
+	}
+}
+
+impl TakesJoinSet<Proposal> for AegeriSubcommittee {
+	fn update_with_join_set(
+		&mut self,
+		joiners: impl Iterator<Item = Self>,
+		leavers: impl Iterator<Item = Self>,
+	) {
+		for joiner in joiners {
+			for member in joiner.members {
+				self.add_member(member);
+			}
+		}
+		for leaver in leavers {
+			for member in leaver.members {
+				self.remove_member(member);
+			}
+		}
 	}
 }
 
