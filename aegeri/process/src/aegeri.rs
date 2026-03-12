@@ -1,6 +1,8 @@
 pub mod parabyzantine_data;
 pub use parabyzantine_data::AegeriParabyzantineData;
 
+use crate::message_in::AegeriMessageIn;
+use crate::message_out::AegeriMessageOut;
 use crate::task::{AegeriTask, AegeriTaskError};
 use aegeri_message::{
 	AegeriSubcommittee, Index as AegeriIndex, Proposal as AegeriProposal, UnifiedMessage,
@@ -18,6 +20,7 @@ use gwrdfa_resample::agreement::{
 	ResampleAgreement,
 };
 use parabyzantine::{act::Act, agreement::Agreement, hart::Hart, task::Task};
+use parabyzantine::{message_in::MessageIn, message_out::MessageOut};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 /// A [AegeriHart] is a [Hart] that implements the Aegeri protocol.
@@ -36,6 +39,12 @@ pub struct AegeriHart {
 
 	/// Task protocol is aegeri task.
 	task: AegeriTask,
+
+	/// Message input protocol is aegeri message in.
+	message_in: AegeriMessageIn,
+
+	/// Message output protocol is aegeri message out.
+	message_out: AegeriMessageOut,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -69,6 +78,8 @@ impl AegeriHart {
 				message: GossamerHart::new(gossamer, AegeriGossamerMessages),
 				agreement: ResampleAgreement::new(MemoryAgreementData::new()),
 				task: AegeriTask::new(100)?,
+				message_in: AegeriMessageIn,
+				message_out: AegeriMessageOut::default(),
 			},
 			message_into_gossamer_sender,
 			entity_message_from_gossamer_receiver,
@@ -85,17 +96,29 @@ impl AegeriHart {
 				message: GossamerHart::new(gossamer, AegeriGossamerMessages),
 				agreement: ResampleAgreement::new(MemoryAgreementData::new()),
 				task: AegeriTask::new(100)?,
+				message_in: AegeriMessageIn,
+				message_out: AegeriMessageOut::default(),
 			},
 			listen_addr,
 		))
 	}
 
 	pub fn tick(self) -> Self {
-		let Self { mut data, mut message, mut agreement, mut task } = self;
+		let Self {
+			mut data,
+			mut message,
+			mut agreement,
+			mut task,
+			mut message_in,
+			mut message_out,
+		} = self;
+
+		message_in.act(MessageIn, &mut data);
 		message.act(Hart, &mut data);
 		agreement.act(Agreement, &mut data);
 		task.act(Task, &mut data);
-		Self { data, message, agreement, task }
+		message_out.act(MessageOut, &mut data);
+		Self { data, message, agreement, task, message_in, message_out }
 	}
 
 	pub fn run(mut self) {

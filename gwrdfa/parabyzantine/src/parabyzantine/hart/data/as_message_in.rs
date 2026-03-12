@@ -1,5 +1,5 @@
-use crate::message_in::ParabyzantineMessageInData;
 use crate::hart::ParabyzantineData;
+use crate::message_in::ParabyzantineMessageInData;
 
 /// Blanket implementation for the message in data.
 impl<Data: ParabyzantineData> ParabyzantineMessageInData for Data {
@@ -16,17 +16,26 @@ impl<Data: ParabyzantineData> ParabyzantineMessageInData for Data {
 	fn parabyzantine_message_in_message_buffer(&self) -> &Data::MessageBuffer {
 		self.parabyzantine_message_buffer()
 	}
+	fn parabyzantine_message_in_message_buffer_mut(&mut self) -> &mut Data::MessageBuffer {
+		self.parabyzantine_message_buffer_mut()
+	}
 	fn parabyzantine_message_in_message_draft_buffer(&self) -> Data::MessageDraftBuffer {
 		self.parabyzantine_message_draft_buffer()
 	}
 	fn parabyzantine_message_in_transaction_buffer(&self) -> &Data::TransactionBuffer {
 		self.parabyzantine_transaction_buffer()
 	}
+	fn parabyzantine_message_in_transaction_buffer_mut(&mut self) -> &mut Data::TransactionBuffer {
+		self.parabyzantine_transaction_buffer_mut()
+	}
 	fn parabyzantine_message_in_transaction_draft_buffer(&self) -> Data::TransactionDraftBuffer {
 		self.parabyzantine_transaction_draft_buffer()
 	}
 	fn parabyzantine_message_in_certificate_buffer(&self) -> &Data::CertificateBuffer {
 		self.parabyzantine_certificate_buffer()
+	}
+	fn parabyzantine_message_in_certificate_buffer_mut(&mut self) -> &mut Data::CertificateBuffer {
+		self.parabyzantine_certificate_buffer_mut()
 	}
 	fn parabyzantine_message_in_certificate_draft_buffer(&self) -> Data::CertificateDraftBuffer {
 		self.parabyzantine_certificate_draft_buffer()
