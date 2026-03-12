@@ -1,5 +1,5 @@
-pub mod data;
-pub use data::AegeriData;
+pub mod parabyzantine_data;
+pub use parabyzantine_data::AegeriParabyzantineData;
 
 use aegeri_message::{
 	AegeriSubcommittee, Index as AegeriIndex, Proposal as AegeriProposal, UnifiedMessage,
@@ -22,14 +22,14 @@ use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 /// A [AegeriHart] is a [Hart] that implements the Aegeri protocol.
 pub struct AegeriHart {
 	/// This is where the parbyzantine data will go.
-	data: AegeriData,
+	data: AegeriParabyzantineData,
 
 	/// Message protocol is gossamer messages over [UnifiedMessage].
-	message: GossamerHart<AegeriData, AegeriGossamerMessages>,
+	message: GossamerHart<AegeriParabyzantineData, AegeriGossamerMessages>,
 
 	/// Agreement protocol is resample agreement.
 	agreement: ResampleAgreement<
-		AegeriData,
+		AegeriParabyzantineData,
 		MemoryAgreementData<AegeriIndex, AegeriProposal, AegeriSubcommittee, ConstantCommittee>,
 	>,
 }
@@ -50,7 +50,7 @@ impl AegeriHart {
 
 		(
 			Self {
-				data: AegeriData::new(),
+				data: AegeriParabyzantineData::new(),
 				message: GossamerHart::new(gossamer, AegeriGossamerMessages),
 				agreement: ResampleAgreement::new(MemoryAgreementData::new()),
 			},
@@ -67,7 +67,7 @@ impl AegeriHart {
 
 		Ok((
 			Self {
-				data: AegeriData::new(),
+				data: AegeriParabyzantineData::new(),
 				message: GossamerHart::new(gossamer, AegeriGossamerMessages),
 				agreement: ResampleAgreement::new(MemoryAgreementData::new()),
 			},
@@ -89,7 +89,7 @@ impl AegeriHart {
 
 pub struct AegeriGossamerMessages;
 
-impl GossamerMessages<AegeriData> for AegeriGossamerMessages {
+impl GossamerMessages<AegeriParabyzantineData> for AegeriGossamerMessages {
 	type Message = UnifiedMessage;
 	type OutQuery<'a> =
 		MatchingTupleQuery<'a, GossamerContainer<UnifiedMessage>, (Out, UnifiedMessage)>;

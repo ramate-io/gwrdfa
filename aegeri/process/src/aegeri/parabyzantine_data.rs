@@ -6,7 +6,7 @@ use gwrdfa_resample::agreement::std::container::{
 };
 use parabyzantine::{NoOp, NoOpData, ParabyzantineData};
 
-pub struct AegeriData {
+pub struct AegeriParabyzantineData {
 	pub messages: ContainerEntityBuffer<GossamerContainer<UnifiedMessage>>,
 	pub certificates:
 		ContainerEntityBuffer<CertificateContainer<Index, Proposal, AegeriSubcommittee>>,
@@ -14,7 +14,7 @@ pub struct AegeriData {
 	pub noop: NoOpData,
 }
 
-impl AegeriData {
+impl AegeriParabyzantineData {
 	pub fn new() -> Self {
 		Self {
 			messages: ContainerEntityBuffer::new(),
@@ -25,7 +25,7 @@ impl AegeriData {
 	}
 }
 
-impl ParabyzantineData for AegeriData {
+impl ParabyzantineData for AegeriParabyzantineData {
 	// Message is just gossamer messages over [UnifiedMessage].
 	type MessageEntity = ContainerEntity;
 	type MessageBuffer = ContainerEntityBuffer<GossamerContainer<UnifiedMessage>>;
