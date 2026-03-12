@@ -1,0 +1,1 @@
+Verifies `UnifiedMessages`. Pushes the `Transactions` as `VerifiedMessage<Transaction>` into the transactions buffer. Pushes the certificates as `into_consensus` parts with `ForResample`. 
