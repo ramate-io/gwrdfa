@@ -2,7 +2,7 @@ use crate::{PublicKey, TransactionSet};
 use serde::{Deserialize, Serialize};
 
 /// State root produced by execution.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct StateRoot(Vec<u8>);
 
 impl StateRoot {
@@ -16,7 +16,7 @@ impl StateRoot {
 }
 
 /// Joiners included in a transition.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
 pub struct JoinSet(Vec<PublicKey>);
 
 impl JoinSet {
@@ -34,7 +34,7 @@ impl JoinSet {
 }
 
 /// Transition proposal: exact post-state commitment.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Transition {
 	block: TransactionSet,
 	state_root: StateRoot,

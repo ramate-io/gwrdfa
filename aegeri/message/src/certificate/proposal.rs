@@ -59,7 +59,7 @@ impl ByzantineRequirement {
 }
 
 /// Layered proposal family for certificates.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Proposal {
 	/// Availability values are merged to maximize candidate visibility.
 	Availability(Availability),

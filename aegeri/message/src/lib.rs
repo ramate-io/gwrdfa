@@ -10,6 +10,8 @@ pub use block::*;
 pub mod subcommittee;
 pub use subcommittee::*;
 
+#[cfg(test)]
+use ml_dsa::B32;
 use ml_dsa::{
 	signature::{SignatureEncoding, Signer, Verifier},
 	EncodedSignature, EncodedVerifyingKey, MlDsa44, Signature as MlDsaSignature, SigningKey,
@@ -42,10 +44,16 @@ impl Id {
 }
 
 /// The signer of a message.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PublicKey(Vec<u8>);
 
 impl PublicKey {
+	#[cfg(test)]
+	pub fn new_for_test(seed: u8) -> Self {
+		let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![seed; 32]));
+		Self::new(&signer)
+	}
+
 	/// Builds a signer from the given bytes.
 	pub fn new(signer: &SigningKey<MlDsa44>) -> Self {
 		let encoded_verifying_key = signer.verifying_key().encode();
