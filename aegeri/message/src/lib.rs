@@ -194,6 +194,18 @@ impl<P> VerifiedMessage<P> {
 	}
 }
 
+impl VerifiedMessage<Certificate> {
+	/// When inserting into the buffer, we will often need to extract the index, subcommittee, and proposal.
+	/// We don't typically have to do anything similar for Transactions since the
+	/// entire enveloped is what we're coming to consensus on.
+	pub fn into_consensus_parts(self) -> (Index, AegeriSubcommittee, Proposal) {
+		let Message { id: _, public_key, signature: _, payload, nonce: _ } = self.0;
+		let Certificate { index, value: proposal } = payload;
+		let subcommittee = AegeriSubcommittee::new(index).with_members(std::iter::once(public_key));
+		(index, subcommittee, proposal)
+	}
+}
+
 impl<P: Serialize + for<'a> Deserialize<'a>> Message<P> {
 	pub fn verify(&self) -> Result<(), VerificationError> {
 		// Convert the public key to an encoded verifying key.
