@@ -1,8 +1,6 @@
 use crate::agreement::std::NextRound;
 use crate::agreement::{Condition, Sampler, Subcommittee};
-use std::collections::HashSet;
 use std::hash::Hash;
-use std::marker::PhantomData;
 
 pub trait TakesJoinSet<V: Eq + Hash + Clone + 'static>: Subcommittee<V> + Clone {
 	fn update_with_join_set(
@@ -17,18 +15,16 @@ pub trait GivesJoinSet<S: Subcommittee<Self> + Clone>: Eq + Hash + Clone + 'stat
 }
 
 #[derive(Debug)]
-pub struct JoinSetCommittee<V: Eq + Hash + Clone + 'static, S: Subcommittee<V> + Clone> {
-	__marker: PhantomData<(V, S)>,
-}
+pub struct JoinSetCommittee;
 
-impl<V: Eq + Hash + Clone + 'static, S: Subcommittee<V> + Clone> JoinSetCommittee<V, S> {
+impl JoinSetCommittee {
 	pub fn new() -> Self {
-		Self { __marker: PhantomData }
+		Self
 	}
 }
 
 impl<Index: Eq + NextRound, Value: GivesJoinSet<Sub>, Sub: TakesJoinSet<Value>>
-	Sampler<Index, Value, Sub> for JoinSetCommittee<Value, Sub>
+	Sampler<Index, Value, Sub> for JoinSetCommittee
 {
 	fn elect_subcommittee_from_condition(
 		&mut self,
@@ -43,7 +39,7 @@ impl<Index: Eq + NextRound, Value: GivesJoinSet<Sub>, Sub: TakesJoinSet<Value>>
 				let (joiners, leavers) = value.joiners_and_leavers();
 				new_subcommittee.update_with_join_set(joiners, leavers);
 
-				index.next().map(|index| (index, subcommittee.clone()))
+				index.next().map(|index| (index, new_subcommittee))
 			}
 			Condition::Hung | Condition::InProgress => None,
 		}
@@ -53,30 +49,129 @@ impl<Index: Eq + NextRound, Value: GivesJoinSet<Sub>, Sub: TakesJoinSet<Value>>
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::agreement::std::VoterSet;
+	use anyhow::Result;
+	use std::collections::BTreeSet;
+
+	#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+	struct TestValue {
+		joiners: Vec<TestCommittee>,
+		leavers: Vec<TestCommittee>,
+	}
+
+	impl GivesJoinSet<TestCommittee> for TestValue {
+		fn joiners_and_leavers(
+			&self,
+		) -> (impl Iterator<Item = TestCommittee>, impl Iterator<Item = TestCommittee>) {
+			(self.joiners.clone().into_iter(), self.leavers.clone().into_iter())
+		}
+	}
+
+	#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+	struct TestCommittee {
+		members: BTreeSet<u32>,
+	}
+
+	impl TestCommittee {
+		fn from_members(members: impl IntoIterator<Item = u32>) -> Self {
+			Self { members: members.into_iter().collect() }
+		}
+	}
+
+	impl Subcommittee<TestValue> for TestCommittee {
+		fn condition<'a>(
+			&'a self,
+			_partials: impl Iterator<Item = (&'a Self, &'a TestValue)> + 'a,
+		) -> Condition<TestValue> {
+			Condition::InProgress
+		}
+	}
+
+	impl TakesJoinSet<TestValue> for TestCommittee {
+		fn update_with_join_set(
+			&mut self,
+			joiners: impl Iterator<Item = Self>,
+			leavers: impl Iterator<Item = Self>,
+		) {
+			for join in joiners {
+				for member in join.members {
+					self.members.insert(member);
+				}
+			}
+			for leave in leavers {
+				for member in leave.members {
+					self.members.remove(&member);
+				}
+			}
+		}
+	}
+
+	#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+	struct TerminalIndex;
+
+	impl NextRound for TerminalIndex {
+		fn next(&self) -> Option<Self> {
+			None
+		}
+	}
 
 	#[test]
-	fn constant_committee_advances_on_consensus_only() {
-		let mut sampler = ConstantCommittee;
-		let index = 0;
-		let mut voters = VoterSet::new();
-		voters.add_member(1);
-		voters.add_member(2);
-		voters.add_member(3);
+	fn test_join_set_committee_advances_and_updates_subcommittee() -> Result<()> {
+		let mut sampler = JoinSetCommittee::new();
+		let index = 4u32;
+		let subcommittee = TestCommittee::from_members([1, 2, 4]);
+		let value = TestValue {
+			joiners: vec![TestCommittee::from_members([3])],
+			leavers: vec![TestCommittee::from_members([2])],
+		};
 
-		assert_eq!(
-			sampler.elect_subcommittee_from_condition(&index, &voters, &Condition::Consensus(0)),
-			Some((1, voters.clone()))
+		let result = sampler.elect_subcommittee_from_condition(
+			&index,
+			&subcommittee,
+			&Condition::Consensus(value),
 		);
+		let (next_index, next_subcommittee) = match result {
+			Some(value) => value,
+			None => anyhow::bail!("expected next subcommittee on consensus"),
+		};
+		assert_eq!(next_index, 5);
+		assert_eq!(next_subcommittee, TestCommittee::from_members([1, 3, 4]));
+		Ok(())
+	}
+
+	#[test]
+	fn test_join_set_committee_returns_none_on_hung_or_in_progress() {
+		let mut sampler = JoinSetCommittee::new();
+		let index = 9u32;
+		let subcommittee = TestCommittee::from_members([7, 8]);
 		assert_eq!(
-			sampler.elect_subcommittee_from_condition(&index, &voters, &Condition::<u32>::Hung),
+			sampler.elect_subcommittee_from_condition(
+				&index,
+				&subcommittee,
+				&Condition::<TestValue>::Hung
+			),
 			None
 		);
 		assert_eq!(
 			sampler.elect_subcommittee_from_condition(
 				&index,
-				&voters,
-				&Condition::<u32>::InProgress
+				&subcommittee,
+				&Condition::<TestValue>::InProgress
+			),
+			None
+		);
+	}
+
+	#[test]
+	fn test_join_set_committee_returns_none_when_no_next_index() {
+		let mut sampler = JoinSetCommittee::new();
+		let index = TerminalIndex;
+		let subcommittee = TestCommittee::from_members([1]);
+		let value = TestValue { joiners: vec![TestCommittee::from_members([2])], leavers: vec![] };
+		assert_eq!(
+			sampler.elect_subcommittee_from_condition(
+				&index,
+				&subcommittee,
+				&Condition::Consensus(value)
 			),
 			None
 		);
