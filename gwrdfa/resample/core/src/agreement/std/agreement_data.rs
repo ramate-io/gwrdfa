@@ -1,4 +1,4 @@
-use crate::agreement::certificate::test::MemoryCertificateSet;
+use crate::agreement::std::MemoryCertificateSet;
 use crate::agreement::std::{
 	AgreementContainer, AgreementParabyzantineData, CertificateContainer, ConstantCommittee, Index,
 	NextRound, Subcom, Value,

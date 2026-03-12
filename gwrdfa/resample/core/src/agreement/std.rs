@@ -9,10 +9,20 @@
 //!
 //! All items here are gated behind `cfg(any(test, feature = "std"))`.
 
-pub mod container;
 pub mod agreement_data;
 pub mod constant_committee;
+pub mod container;
+pub mod memory_certificate_set;
 pub mod voter_set;
+
+pub use agreement_data::MemoryAgreementData;
+pub use constant_committee::ConstantCommittee;
+pub use container::{
+	AgreementContainer, AgreementDelta, AgreementParabyzantineData, CertificateContainer,
+	CertificateDelta,
+};
+pub use memory_certificate_set::MemoryCertificateSet;
+pub use voter_set::VoterSet;
 
 use crate::agreement::{Condition, Subcommittee};
 
@@ -72,11 +82,3 @@ impl<T: Eq + 'static + NextRound> NextRound for Index<T> {
 		self.0.next().map(Index)
 	}
 }
-
-pub use agreement_data::MemoryAgreementData;
-pub use constant_committee::ConstantCommittee;
-pub use voter_set::VoterSet;
-pub use container::{
-	AgreementContainer, AgreementDelta, AgreementParabyzantineData, CertificateContainer,
-	CertificateDelta,
-};
