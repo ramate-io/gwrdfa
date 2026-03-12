@@ -12,6 +12,10 @@ use gwrdfa_resample::agreement::Condition;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
+use crate::AegeriSubcommittee;
+
+use gwrdfa_resample::agreement::std::join_set_committee::GivesJoinSet;
+
 /// Stage-level quorum requirement for proposal aggregation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ByzantineRequirement {
@@ -71,6 +75,28 @@ pub enum Proposal {
 	Transition(Transition),
 }
 
+impl GivesJoinSet<AegeriSubcommittee> for Proposal {
+	fn joiners_and_leavers(
+		&self,
+	) -> Option<(impl Iterator<Item = AegeriSubcommittee>, impl Iterator<Item = AegeriSubcommittee>)>
+	{
+		match self {
+			Proposal::Transition(value) => {
+				let joiners = value.join_set().joiners().iter().map(|public_key| {
+					AegeriSubcommittee::new(Index::Unassigned)
+						.with_members(std::iter::once(public_key.clone()))
+				});
+				let leavers = value.join_set().leavers().iter().map(|public_key| {
+					AegeriSubcommittee::new(Index::Unassigned)
+						.with_members(std::iter::once(public_key.clone()))
+				});
+				Some((joiners, leavers))
+			}
+			_ => None,
+		}
+	}
+}
+
 impl Proposal {
 	/// Aggregates proposals for the given stage index.
 	///
@@ -113,6 +139,7 @@ impl Proposal {
 				requirement,
 			)
 			.map(Proposal::Transition),
+			Index::Unassigned => Condition::InProgress,
 		}
 	}
 }

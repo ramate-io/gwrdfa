@@ -17,19 +17,30 @@ impl StateRoot {
 
 /// Joiners included in a transition.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
-pub struct JoinSet(Vec<PublicKey>);
+pub struct JoinSet {
+	joiners: Vec<PublicKey>,
+	leavers: Vec<PublicKey>,
+}
 
 impl JoinSet {
 	pub fn new() -> Self {
 		Self::default()
 	}
 
-	pub fn members(&self) -> &[PublicKey] {
-		&self.0
+	pub fn add_joiner(&mut self, joiner: PublicKey) {
+		self.joiners.push(joiner);
 	}
 
-	pub fn add_member(&mut self, member: PublicKey) {
-		self.0.push(member);
+	pub fn add_leaver(&mut self, leaver: PublicKey) {
+		self.leavers.push(leaver);
+	}
+
+	pub fn joiners(&self) -> &Vec<PublicKey> {
+		&self.joiners
+	}
+
+	pub fn leavers(&self) -> &Vec<PublicKey> {
+		&self.leavers
 	}
 }
 

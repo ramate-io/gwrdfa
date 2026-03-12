@@ -12,6 +12,7 @@ pub enum Index {
 	Confirmation(IndexValue),
 	Block(IndexValue),
 	Transition(IndexValue),
+	Unassigned,
 }
 
 impl NextRound for Index {
@@ -21,6 +22,7 @@ impl NextRound for Index {
 			Index::Confirmation(index) => Some(Index::Block(*index)),
 			Index::Block(index) => Some(Index::Transition(*index)),
 			Index::Transition(index) => Some(Index::Availability(IndexValue(index.0 + 1))),
+			Index::Unassigned => None,
 		}
 	}
 }
@@ -40,6 +42,7 @@ impl Index {
 			| Index::Confirmation(index)
 			| Index::Block(index)
 			| Index::Transition(index) => *index,
+			Index::Unassigned => IndexValue(0),
 		}
 	}
 }

@@ -11,7 +11,7 @@ pub trait TakesJoinSet<V: Eq + Hash + Clone + 'static>: Subcommittee<V> + Clone 
 }
 
 pub trait GivesJoinSet<S: Subcommittee<Self> + Clone>: Eq + Hash + Clone + 'static {
-	fn joiners_and_leavers(&self) -> (impl Iterator<Item = S>, impl Iterator<Item = S>);
+	fn joiners_and_leavers(&self) -> Option<(impl Iterator<Item = S>, impl Iterator<Item = S>)>;
 }
 
 #[derive(Debug)]
@@ -36,9 +36,9 @@ impl<Index: Eq + NextRound, Value: GivesJoinSet<Sub>, Sub: TakesJoinSet<Value>>
 			Condition::Consensus(value) => {
 				let mut new_subcommittee = subcommittee.clone();
 
-				let (joiners, leavers) = value.joiners_and_leavers();
-				new_subcommittee.update_with_join_set(joiners, leavers);
-
+				if let Some((joiners, leavers)) = value.joiners_and_leavers() {
+					new_subcommittee.update_with_join_set(joiners, leavers);
+				}
 				index.next().map(|index| (index, new_subcommittee))
 			}
 			Condition::Hung | Condition::InProgress => None,
@@ -61,8 +61,8 @@ mod tests {
 	impl GivesJoinSet<TestCommittee> for TestValue {
 		fn joiners_and_leavers(
 			&self,
-		) -> (impl Iterator<Item = TestCommittee>, impl Iterator<Item = TestCommittee>) {
-			(self.joiners.clone().into_iter(), self.leavers.clone().into_iter())
+		) -> Option<(impl Iterator<Item = TestCommittee>, impl Iterator<Item = TestCommittee>)> {
+			Some((self.joiners.clone().into_iter(), self.leavers.clone().into_iter()))
 		}
 	}
 

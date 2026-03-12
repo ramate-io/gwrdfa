@@ -1,6 +1,6 @@
 use crate::PublicKey;
 use crate::{ByzantineRequirement, Index, Proposal};
-use gwrdfa_resample::agreement::{Condition, Subcommittee};
+use gwrdfa_resample::agreement::{std::join_set_committee::TakesJoinSet, Condition, Subcommittee};
 use std::{
 	collections::{BTreeSet, HashMap},
 	hash::Hash,

@@ -23,4 +23,6 @@ pub enum Transaction {
 	ElfScript(ElfScript),
 	/// The intent to join the quorum.
 	Join,
+	/// The intent to leave the quorum.
+	Leave,
 }
