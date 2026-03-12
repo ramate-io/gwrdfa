@@ -1,5 +1,6 @@
 use super::{
-	AegeriExecutionError, AegeriExecutor, Mempool, MempoolError, TransactionStore, TransactionStoreError,
+	AegeriExecutionError, AegeriExecutor, Mempool, MempoolError, TransactionStore,
+	TransactionStoreError,
 };
 use aegeri_message::{Certificate, Index, Proposal, Transaction, VerifiedMessage};
 
@@ -67,9 +68,8 @@ impl AegeriTask {
 				Ok(Some(Proposal::BlockHeader(block_header)))
 			}
 			Proposal::BlockHeader(block_header) => {
-				let block = self
-					.transaction_store
-					.build_block_from_header_proposal(block_header)?;
+				let block =
+					self.transaction_store.build_block_from_header_proposal(block_header)?;
 				let transition = self.executor.execute_block(&block)?;
 
 				for id in block_header.transactions().iter_ids() {
@@ -99,7 +99,7 @@ mod tests {
 	use super::*;
 	use aegeri_message::{BlockHeader, IndexValue, Message, Nonce, TransactionSet};
 	use anyhow::Result;
-	use ml_dsa::{B32, MlDsa44, SigningKey};
+	use ml_dsa::{MlDsa44, SigningKey, B32};
 
 	fn tx(seed: u8, nonce: &[u8]) -> Result<VerifiedMessage<Transaction>> {
 		let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![seed; 32]));
