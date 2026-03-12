@@ -1,10 +1,10 @@
 use aegeri_message::Proposal;
 use gwrdfa_container::{Component, ContainerGiving};
 
-/// Canonical message container used by the Gossamer Hart integration.
+/// Container for tasks.
+/// All tasks are currently are just proposals which have been processed.
 ///
-/// The container keeps the message payload plus lifecycle/error markers as
-/// components so Parabyzantine queries can reason over transport state.
+/// We insert a proposal when we want it to be signed and broadcasted.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct TaskContainer {
 	pub proposal: Component<Proposal>,

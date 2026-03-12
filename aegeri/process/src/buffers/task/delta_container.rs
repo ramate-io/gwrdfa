@@ -4,7 +4,7 @@ use gwrdfa_container::{ContainerStores, Delta, DeltasContainer};
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct TaskDeltasContainer {
-	/// Delta for message payload.
+	/// Delta for proposal payload.
 	pub proposal: Delta<Proposal>,
 }
 
