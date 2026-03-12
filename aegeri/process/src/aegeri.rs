@@ -6,14 +6,18 @@ use aegeri_message::{
 };
 use gossamer::{
 	container::GossamerContainer, hart::gossamer_messages::GossamerMessages, hart::GossamerHart,
-	Gossamer, GossamerConfig, GossamerConfigError, Multiaddr, Out,
+	Gossamer, GossamerConfig, GossamerConfigError, GossamerTaskError, Multiaddr, Out,
 };
-use gwrdfa_container::query::matching_tuple::{MatchingTuple, MatchingTupleQuery};
+use gwrdfa_container::{
+	query::matching_tuple::{MatchingTuple, MatchingTupleQuery},
+	ContainerEntity,
+};
 use gwrdfa_resample::agreement::{
 	std::{ConstantCommittee, MemoryAgreementData},
 	ResampleAgreement,
 };
 use parabyzantine::{act::Act, agreement::Agreement, hart::Hart};
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 /// A [AegeriHart] is a [Hart] that implements the Aegeri protocol.
 pub struct AegeriHart {
@@ -31,6 +35,31 @@ pub struct AegeriHart {
 }
 
 impl AegeriHart {
+	pub fn mock() -> (
+		Self,
+		UnboundedSender<Vec<u8>>,
+		UnboundedReceiver<(ContainerEntity, Vec<u8>)>,
+		UnboundedSender<Result<ContainerEntity, (ContainerEntity, GossamerTaskError)>>,
+	) {
+		let (
+			gossamer,
+			message_into_gossamer_sender,
+			entity_message_from_gossamer_receiver,
+			entity_into_gossamer_sender,
+		) = Gossamer::<ContainerEntity>::mock();
+
+		(
+			Self {
+				data: AegeriData::new(),
+				message: GossamerHart::new(gossamer, AegeriGossamerMessages),
+				agreement: ResampleAgreement::new(MemoryAgreementData::new()),
+			},
+			message_into_gossamer_sender,
+			entity_message_from_gossamer_receiver,
+			entity_into_gossamer_sender,
+		)
+	}
+
 	pub async fn spawn_tokio(
 		config: GossamerConfig,
 	) -> Result<(Self, Multiaddr), GossamerConfigError> {
