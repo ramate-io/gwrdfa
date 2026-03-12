@@ -1,7 +1,7 @@
 use crate::aegeri::AegeriParabyzantineData;
 use aegeri_message::UnifiedMessage;
 use gossamer::{GossamerMessageError, In};
-use gwrdfa_container::query::matching_tuple::{MatchingTuple, MatchingTupleQuery};
+use gwrdfa_container::query::matching_tuple::MatchingTuple;
 use gwrdfa_resample::{
 	agreement::std::{Index as ResampleIndex, Subcom, Value as ResampleValue},
 	ForResample,
