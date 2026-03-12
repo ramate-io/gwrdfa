@@ -1,6 +1,7 @@
 pub mod parabyzantine_data;
 pub use parabyzantine_data::AegeriParabyzantineData;
 
+use crate::task::{AegeriTask, AegeriTaskError};
 use aegeri_message::{
 	AegeriSubcommittee, Index as AegeriIndex, Proposal as AegeriProposal, UnifiedMessage,
 };
@@ -16,7 +17,7 @@ use gwrdfa_resample::agreement::{
 	std::{ConstantCommittee, MemoryAgreementData},
 	ResampleAgreement,
 };
-use parabyzantine::{act::Act, agreement::Agreement, hart::Hart};
+use parabyzantine::{act::Act, agreement::Agreement, hart::Hart, task::Task};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 /// A [AegeriHart] is a [Hart] that implements the Aegeri protocol.
@@ -32,15 +33,29 @@ pub struct AegeriHart {
 		AegeriParabyzantineData,
 		MemoryAgreementData<AegeriIndex, AegeriProposal, AegeriSubcommittee, ConstantCommittee>,
 	>,
+
+	/// Task protocol is aegeri task.
+	task: AegeriTask,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum AegeriHartError {
+	#[error("task error: {0}")]
+	Task(#[from] AegeriTaskError),
+	#[error("gossamer error: {0}")]
+	Gossamer(#[from] GossamerConfigError),
 }
 
 impl AegeriHart {
-	pub fn mock() -> (
-		Self,
-		UnboundedSender<Vec<u8>>,
-		UnboundedReceiver<(ContainerEntity, Vec<u8>)>,
-		UnboundedSender<Result<ContainerEntity, (ContainerEntity, GossamerTaskError)>>,
-	) {
+	pub fn mock() -> Result<
+		(
+			Self,
+			UnboundedSender<Vec<u8>>,
+			UnboundedReceiver<(ContainerEntity, Vec<u8>)>,
+			UnboundedSender<Result<ContainerEntity, (ContainerEntity, GossamerTaskError)>>,
+		),
+		AegeriHartError,
+	> {
 		let (
 			gossamer,
 			message_into_gossamer_sender,
@@ -48,21 +63,20 @@ impl AegeriHart {
 			entity_into_gossamer_sender,
 		) = Gossamer::<ContainerEntity>::mock();
 
-		(
+		Ok((
 			Self {
 				data: AegeriParabyzantineData::new(),
 				message: GossamerHart::new(gossamer, AegeriGossamerMessages),
 				agreement: ResampleAgreement::new(MemoryAgreementData::new()),
+				task: AegeriTask::new(100)?,
 			},
 			message_into_gossamer_sender,
 			entity_message_from_gossamer_receiver,
 			entity_into_gossamer_sender,
-		)
+		))
 	}
 
-	pub async fn spawn_tokio(
-		config: GossamerConfig,
-	) -> Result<(Self, Multiaddr), GossamerConfigError> {
+	pub async fn spawn_tokio(config: GossamerConfig) -> Result<(Self, Multiaddr), AegeriHartError> {
 		let (gossamer, listen_addr) = Gossamer::spawn_tokio(config).await?;
 
 		Ok((
@@ -70,6 +84,7 @@ impl AegeriHart {
 				data: AegeriParabyzantineData::new(),
 				message: GossamerHart::new(gossamer, AegeriGossamerMessages),
 				agreement: ResampleAgreement::new(MemoryAgreementData::new()),
+				task: AegeriTask::new(100)?,
 			},
 			listen_addr,
 		))
@@ -78,6 +93,7 @@ impl AegeriHart {
 	pub fn tick(&mut self) {
 		self.message.act(Hart, &mut self.data);
 		self.agreement.act(Agreement, &mut self.data);
+		self.task.act(Task, &mut self.data);
 	}
 
 	pub fn run(&mut self) {

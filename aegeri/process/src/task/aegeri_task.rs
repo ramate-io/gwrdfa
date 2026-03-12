@@ -2,7 +2,7 @@ use super::{
 	AegeriExecutionError, AegeriExecutor, Mempool, MempoolError, TransactionStore,
 	TransactionStoreError,
 };
-use aegeri_message::{Certificate, Index, Proposal, Transaction, VerifiedMessage};
+use aegeri_message::{Index, Proposal, Transaction, VerifiedMessage};
 
 /// High-level task flow that coordinates mempool, storage, and execution.
 pub struct AegeriTask {
