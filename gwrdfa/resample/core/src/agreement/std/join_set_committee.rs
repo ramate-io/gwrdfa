@@ -16,15 +16,14 @@ pub trait GivesJoinSet<S: Subcommittee<Self> + Clone>: Eq + Hash + Clone + 'stat
 	fn joiners_and_leavers(&self) -> (impl Iterator<Item = S>, impl Iterator<Item = S>);
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug)]
 pub struct JoinSetCommittee<V: Eq + Hash + Clone + 'static, S: Subcommittee<V> + Clone> {
-	members: HashSet<S>,
-	__marker: PhantomData<V>,
+	__marker: PhantomData<(V, S)>,
 }
 
 impl<V: Eq + Hash + Clone + 'static, S: Subcommittee<V> + Clone> JoinSetCommittee<V, S> {
 	pub fn new() -> Self {
-		Self { members: HashSet::new(), __marker: PhantomData }
+		Self { __marker: PhantomData }
 	}
 }
 
