@@ -1,30 +1,14 @@
-use super::Id;
-use serde::{Deserialize, Serialize};
+//! Certificate-side consensus model for Aegeri.
+//!
+//! The model intentionally separates agreement into four layers:
+//! availability -> confirmation -> block header -> transition.
 
-/// The index of a block in the system.
-///
-/// The system groups transactions into blocks which are indexed.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Index(u64);
+mod certificate;
+mod index;
+mod proposal;
+mod transition;
 
-/// The block itself which is a set of transaction ids.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Block(Vec<Id>);
-
-/// The state root produced by execution of the block.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-pub struct StateRoot(Vec<u8>);
-
-/// The unified value of a certificate.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Value {
-	block: Block,
-	state_root: StateRoot,
-}
-
-/// The certificate for a block.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Certificate {
-	index: Index,
-	value: Value,
-}
+pub use certificate::Certificate;
+pub use index::{Index, IndexValue};
+pub use proposal::{Availability, BlockHeader, ByzantineRequirement, Confirmation, Proposal};
+pub use transition::{JoinSet, StateRoot, Transition};

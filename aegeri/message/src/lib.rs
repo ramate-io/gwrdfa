@@ -4,6 +4,12 @@ pub use certificate::*;
 pub mod transaction;
 pub use transaction::*;
 
+pub mod block;
+pub use block::*;
+
+pub mod subcommittee;
+pub use subcommittee::*;
+
 use ml_dsa::{
 	signature::{SignatureEncoding, Signer, Verifier},
 	EncodedSignature, EncodedVerifyingKey, MlDsa44, Signature as MlDsaSignature, SigningKey,
@@ -15,8 +21,8 @@ use sha3::Digest;
 /// The ID of a message
 ///
 /// This will be a hash of the payload.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Id(Vec<u8>);
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Id([u8; 32]);
 
 impl Id {
 	/// Builds a new ID from the payload bytes.
@@ -25,8 +31,8 @@ impl Id {
 		hasher.update(payload_bytes);
 		hasher.update(nonce.as_bytes());
 		hasher.update(public_key.as_bytes());
-		let hash = hasher.finalize();
-		Self(hash.to_vec())
+		let hash: [u8; 32] = hasher.finalize().into();
+		Self(hash)
 	}
 
 	/// Borrow the bytes of the ID.

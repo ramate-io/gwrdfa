@@ -183,7 +183,10 @@
         "Tokio",
         "->",
         "entrypoint",
-        "newtype"
+        "newtype",
+        "Dataflow",
+        "Aegeri-specific",
+        "mempool"
       ]
     },
     "bibtex": {

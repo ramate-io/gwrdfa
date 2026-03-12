@@ -8,6 +8,10 @@ impl ElfScript {
 	pub fn new(elf: impl Into<Vec<u8>>) -> Self {
 		Self(elf.into())
 	}
+
+	pub fn as_bytes(&self) -> &[u8] {
+		&self.0
+	}
 }
 
 /// The payload of a transaction.
