@@ -13,6 +13,7 @@ use gwrdfa_resample::agreement::{
 	std::{ConstantCommittee, MemoryAgreementData},
 	ResampleAgreement,
 };
+use parabyzantine::{act::Act, agreement::Agreement, hart::Hart};
 
 /// A [AegeriHart] is a [Hart] that implements the Aegeri protocol.
 pub struct AegeriHart {
@@ -43,6 +44,17 @@ impl AegeriHart {
 			},
 			listen_addr,
 		))
+	}
+
+	pub fn tick(&mut self) {
+		self.message.act(Hart, &mut self.data);
+		self.agreement.act(Agreement, &mut self.data);
+	}
+
+	pub fn run(&mut self) {
+		loop {
+			self.tick();
+		}
 	}
 }
 
