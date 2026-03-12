@@ -1,4 +1,5 @@
 use crate::agreement::std::NextRound;
+use crate::agreement::std::{Subcom, Value};
 use crate::agreement::{Condition, Sampler, Subcommittee};
 use std::hash::Hash;
 
@@ -10,11 +11,36 @@ pub trait TakesJoinSet<V: Eq + Hash + Clone + 'static>: Subcommittee<V> + Clone 
 	);
 }
 
+impl<S: TakesJoinSet<V> + 'static, V: Eq + Hash + Clone + 'static> TakesJoinSet<Value<V>>
+	for Subcom<S>
+{
+	fn update_with_join_set(
+		&mut self,
+		joiners: impl Iterator<Item = Self>,
+		leavers: impl Iterator<Item = Self>,
+	) {
+		self.0
+			.update_with_join_set(joiners.map(|subcom| subcom.0), leavers.map(|subcom| subcom.0));
+	}
+}
+
 pub trait GivesJoinSet<S: Subcommittee<Self> + Clone>: Eq + Hash + Clone + 'static {
 	fn joiners_and_leavers(&self) -> Option<(impl Iterator<Item = S>, impl Iterator<Item = S>)>;
 }
 
-#[derive(Debug)]
+impl<S: Subcommittee<V> + Clone + 'static, V: GivesJoinSet<S> + 'static> GivesJoinSet<Subcom<S>>
+	for Value<V>
+{
+	fn joiners_and_leavers(
+		&self,
+	) -> Option<(impl Iterator<Item = Subcom<S>>, impl Iterator<Item = Subcom<S>>)> {
+		self.0.joiners_and_leavers().map(|(joiners, leavers)| {
+			(joiners.map(|subcom| Subcom::new(subcom)), leavers.map(|subcom| Subcom::new(subcom)))
+		})
+	}
+}
+
+#[derive(Debug, Clone, Default)]
 pub struct JoinSetCommittee;
 
 impl JoinSetCommittee {

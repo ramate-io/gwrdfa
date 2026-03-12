@@ -14,7 +14,7 @@ use gwrdfa_container::{
 	ContainerEntity,
 };
 use gwrdfa_resample::agreement::{
-	std::{ConstantCommittee, MemoryAgreementData},
+	std::{join_set_committee::JoinSetCommittee, MemoryAgreementData},
 	ResampleAgreement,
 };
 use parabyzantine::{act::Act, agreement::Agreement, hart::Hart, task::Task};
@@ -31,7 +31,7 @@ pub struct AegeriHart {
 	/// Agreement protocol is resample agreement.
 	agreement: ResampleAgreement<
 		AegeriParabyzantineData,
-		MemoryAgreementData<AegeriIndex, AegeriProposal, AegeriSubcommittee, ConstantCommittee>,
+		MemoryAgreementData<AegeriIndex, AegeriProposal, AegeriSubcommittee, JoinSetCommittee>,
 	>,
 
 	/// Task protocol is aegeri task.
