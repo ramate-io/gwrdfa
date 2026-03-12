@@ -43,6 +43,7 @@ dependencies = [
  "gossamer",
  "gwrdfa-container",
  "gwrdfa-resample",
+ "log",
  "ml-dsa",
  "parabyzantine",
  "thiserror 1.0.69",
