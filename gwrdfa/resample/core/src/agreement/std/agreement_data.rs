@@ -1,11 +1,12 @@
 use crate::agreement::std::MemoryCertificateSet;
 use crate::agreement::std::{
-	AgreementContainer, AgreementParabyzantineData, CertificateContainer, ConstantCommittee, Index,
-	NextRound, Subcom, Value,
+	AgreementContainer, AgreementDelta, CertificateContainer, CertificateDelta, ConstantCommittee,
+	Index, NextRound, Subcom, Value,
 };
 use crate::agreement::{ResampleAgreementData, Sampler, Subcommittee};
 use crate::ForResample;
 use gwrdfa_container::query::matching_tuple::{MatchingTuple, MatchingTupleQuery};
+use gwrdfa_container::{ContainerEntity, ContainerEntityBuffer, ContainerEntityDraftBuffer};
 use parabyzantine::agreement::ParabyzantineAgreementData;
 use std::hash::Hash;
 
@@ -62,7 +63,15 @@ impl<
 		V: Eq + Hash + Clone + 'static,
 		S: Subcommittee<V> + Hash + Clone + 'static,
 		Sm: Sampler<Index<I>, Value<V>, Subcom<S>>,
-	> ResampleAgreementData<AgreementParabyzantineData<I, V, S>> for MemoryAgreementData<I, V, S, Sm>
+		Data: ParabyzantineAgreementData<
+			AgreementEntity = ContainerEntity,
+			AgreementBuffer = ContainerEntityBuffer<AgreementContainer<I, V, S>>,
+			AgreementDraftBuffer = ContainerEntityDraftBuffer<AgreementDelta<I, V, S>>,
+			CertificateEntity = ContainerEntity,
+			CertificateBuffer = ContainerEntityBuffer<CertificateContainer<I, V, S>>,
+			CertificateDraftBuffer = ContainerEntityDraftBuffer<CertificateDelta<I, V, S>>,
+		>,
+	> ResampleAgreementData<Data> for MemoryAgreementData<I, V, S, Sm>
 {
 	type Index = Index<I>;
 	type Value = Value<V>;
@@ -110,6 +119,7 @@ impl<
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use crate::agreement::std::container::AgreementParabyzantineData;
 	use crate::agreement::std::VoterSet;
 	use crate::agreement::CertificateSet;
 
@@ -118,8 +128,22 @@ mod tests {
 		let mut data = MemoryAgreementData::<u32, u32, VoterSet<u32>>::new();
 		let index = Index::new(0);
 		let value = Value::new(0);
+
+		// Gnarly type annotation needed to satisfy the trait bounds.
 		let subcom = Subcom::new(VoterSet::new());
-		data.certificate_set_mut().insert(index.clone(), value, subcom);
-		assert_eq!(data.certificate_set().partial_subcommittees_for_index(&index).count(), 1);
+		<MemoryAgreementData<u32, u32, VoterSet<u32>> as ResampleAgreementData<
+			AgreementParabyzantineData<u32, u32, VoterSet<u32>>,
+		>>::certificate_set_mut(&mut data)
+		.insert(index.clone(), value, subcom);
+
+		// Gnarly type annotation needed to satisfy the trait bounds.
+		assert_eq!(
+			<MemoryAgreementData<u32, u32, VoterSet<u32>> as ResampleAgreementData<
+				AgreementParabyzantineData<u32, u32, VoterSet<u32>>,
+			>>::certificate_set(&data)
+			.partial_subcommittees_for_index(&index)
+			.count(),
+			1
+		);
 	}
 }

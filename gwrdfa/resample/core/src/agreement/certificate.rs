@@ -43,7 +43,7 @@ impl CertificateSet<NoOp, NoOp, NoOp> for NoOp {
 
 #[cfg(any(test, feature = "std"))]
 pub mod test {
-	use super::CertificateSet;
+	use crate::agreement::certificate::CertificateSet;
 	use crate::agreement::std::MemoryCertificateSet;
 
 	#[test]
