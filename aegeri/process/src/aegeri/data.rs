@@ -14,6 +14,17 @@ pub struct AegeriData {
 	pub noop: NoOpData,
 }
 
+impl AegeriData {
+	pub fn new() -> Self {
+		Self {
+			messages: ContainerEntityBuffer::new(),
+			certificates: ContainerEntityBuffer::new(),
+			agreements: ContainerEntityBuffer::new(),
+			noop: NoOpData::new(),
+		}
+	}
+}
+
 impl ParabyzantineData for AegeriData {
 	// Message is just gossamer messages over [UnifiedMessage].
 	type MessageEntity = ContainerEntity;

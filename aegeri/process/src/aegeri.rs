@@ -6,7 +6,7 @@ use aegeri_message::{
 };
 use gossamer::{
 	container::GossamerContainer, hart::gossamer_messages::GossamerMessages, hart::GossamerHart,
-	Out,
+	Gossamer, GossamerConfig, GossamerConfigError, Multiaddr, Out,
 };
 use gwrdfa_container::query::matching_tuple::{MatchingTuple, MatchingTupleQuery};
 use gwrdfa_resample::agreement::{
@@ -27,6 +27,23 @@ pub struct AegeriHart {
 		AegeriData,
 		MemoryAgreementData<AegeriIndex, AegeriProposal, AegeriSubcommittee, ConstantCommittee>,
 	>,
+}
+
+impl AegeriHart {
+	pub async fn spawn_tokio(
+		config: GossamerConfig,
+	) -> Result<(Self, Multiaddr), GossamerConfigError> {
+		let (gossamer, listen_addr) = Gossamer::spawn_tokio(config).await?;
+
+		Ok((
+			Self {
+				data: AegeriData::new(),
+				message: GossamerHart::new(gossamer, AegeriGossamerMessages),
+				agreement: ResampleAgreement::new(MemoryAgreementData::new()),
+			},
+			listen_addr,
+		))
+	}
 }
 
 pub struct AegeriGossamerMessages;
