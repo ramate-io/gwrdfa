@@ -84,9 +84,10 @@ impl Subcommittee<Proposal> for AegeriSubcommittee {
 	}
 }
 
-impl TakesJoinSet<Proposal> for AegeriSubcommittee {
+impl TakesJoinSet<Index, Proposal> for AegeriSubcommittee {
 	fn update_with_join_set(
 		&mut self,
+		index: &Index,
 		joiners: impl Iterator<Item = Self>,
 		leavers: impl Iterator<Item = Self>,
 	) {
@@ -100,6 +101,8 @@ impl TakesJoinSet<Proposal> for AegeriSubcommittee {
 				self.remove_member(member);
 			}
 		}
+
+		self.index = index.clone();
 	}
 }
 

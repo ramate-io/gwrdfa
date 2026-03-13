@@ -1,26 +1,31 @@
 use crate::agreement::std::NextRound;
-use crate::agreement::std::{Subcom, Value};
+use crate::agreement::std::{Index, Subcom, Value};
 use crate::agreement::{Condition, Sampler, Subcommittee};
 use std::hash::Hash;
 
-pub trait TakesJoinSet<V: Eq + Hash + Clone + 'static>: Subcommittee<V> + Clone {
+pub trait TakesJoinSet<I: Eq, V: Eq + Hash + Clone + 'static>: Subcommittee<V> + Clone {
 	fn update_with_join_set(
 		&mut self,
+		index: &I,
 		joiners: impl Iterator<Item = Self>,
 		leavers: impl Iterator<Item = Self>,
 	);
 }
 
-impl<S: TakesJoinSet<V> + 'static, V: Eq + Hash + Clone + 'static> TakesJoinSet<Value<V>>
-	for Subcom<S>
+impl<I: Eq, S: TakesJoinSet<I, V> + 'static, V: Eq + Hash + Clone + 'static>
+	TakesJoinSet<Index<I>, Value<V>> for Subcom<S>
 {
 	fn update_with_join_set(
 		&mut self,
+		index: &Index<I>,
 		joiners: impl Iterator<Item = Self>,
 		leavers: impl Iterator<Item = Self>,
 	) {
-		self.0
-			.update_with_join_set(joiners.map(|subcom| subcom.0), leavers.map(|subcom| subcom.0));
+		self.0.update_with_join_set(
+			&index.0,
+			joiners.map(|subcom| subcom.0),
+			leavers.map(|subcom| subcom.0),
+		);
 	}
 }
 
@@ -49,7 +54,7 @@ impl JoinSetCommittee {
 	}
 }
 
-impl<Index: Eq + NextRound, Value: GivesJoinSet<Sub>, Sub: TakesJoinSet<Value>>
+impl<Index: Eq + NextRound, Value: GivesJoinSet<Sub>, Sub: TakesJoinSet<Index, Value>>
 	Sampler<Index, Value, Sub> for JoinSetCommittee
 {
 	fn elect_subcommittee_from_condition(
@@ -63,7 +68,7 @@ impl<Index: Eq + NextRound, Value: GivesJoinSet<Sub>, Sub: TakesJoinSet<Value>>
 				let mut new_subcommittee = subcommittee.clone();
 
 				if let Some((joiners, leavers)) = value.joiners_and_leavers() {
-					new_subcommittee.update_with_join_set(joiners, leavers);
+					new_subcommittee.update_with_join_set(index, joiners, leavers);
 				}
 				index.next().map(|index| (index, new_subcommittee))
 			}
@@ -112,9 +117,10 @@ mod tests {
 		}
 	}
 
-	impl TakesJoinSet<TestValue> for TestCommittee {
+	impl<I: Eq> TakesJoinSet<I, TestValue> for TestCommittee {
 		fn update_with_join_set(
 			&mut self,
+			_index: &I,
 			joiners: impl Iterator<Item = Self>,
 			leavers: impl Iterator<Item = Self>,
 		) {
