@@ -1,7 +1,7 @@
 use crate::aegeri::AegeriParabyzantineData;
-use aegeri_message::{Index, IndexValue, Message, Nonce, Proposal, UnifiedMessage};
+use aegeri_message::{Index, Message, Nonce, Proposal, UnifiedMessage};
 use gossamer::{GossamerMessageError, Out};
-use gwrdfa_container::query::matching_components::MatchingComponents;
+use gwrdfa_container::query::matching_tuple::MatchingTuple;
 use ml_dsa::{MlDsa44, SigningKey, B32};
 use parabyzantine::message_out::{MessageOutWorld, ParabyzantineMessageOut};
 
@@ -49,13 +49,12 @@ impl ParabyzantineMessageOut<AegeriParabyzantineData> for AegeriMessageOut {
 		&mut self,
 		data: &mut MessageOutWorld<AegeriParabyzantineData>,
 	) {
-		for (entity, proposal) in data.task_facts.query(MatchingComponents::<Proposal>::new()) {
+		for (entity, (index, proposal)) in
+			data.task_facts.query(MatchingTuple::<(Index, Proposal)>::new())
+		{
 			// Task buffer stores proposals; until index is carried with tasks, we wrap
 			// with a placeholder transition index for signing/broadcast.
-			let certificate = aegeri_message::Certificate::new(
-				Index::Transition(IndexValue(0)),
-				proposal.clone(),
-			);
+			let certificate = aegeri_message::Certificate::new(index.clone(), proposal.clone());
 
 			let nonce = self.next_nonce();
 			match Message::<aegeri_message::Certificate>::try_new(&self.signer, certificate, nonce)

@@ -3,6 +3,7 @@ use super::{
 	TransactionStoreError,
 };
 use aegeri_message::{Index, Proposal, Transaction, VerifiedMessage};
+use gwrdfa_resample::agreement::std::NextRound;
 
 /// High-level task flow that coordinates mempool, storage, and execution.
 pub struct AegeriTask {
@@ -23,6 +24,8 @@ pub enum AegeriTaskError {
 	IndexMismatch,
 	#[error("provided index does not match certificate proposal stage")]
 	StageMismatch,
+	#[error("provided index is not the next round of the provided proposal index")]
+	NotNextRound,
 }
 
 impl AegeriTask {
@@ -50,7 +53,7 @@ impl AegeriTask {
 		&mut self,
 		index: &Index,
 		proposal: &Proposal,
-	) -> Result<Option<Proposal>, AegeriTaskError> {
+	) -> Result<(Index, Proposal), AegeriTaskError> {
 		if !Self::proposal_matches_index(index, proposal) {
 			return Err(AegeriTaskError::StageMismatch);
 		}
@@ -58,11 +61,13 @@ impl AegeriTask {
 		match proposal {
 			Proposal::Availability(availability) => {
 				let confirmation = self.mempool.build_confirmation_proposal(index, availability)?;
-				Ok(Some(Proposal::Confirmation(confirmation)))
+				let next_index = index.next().ok_or(AegeriTaskError::NotNextRound)?;
+				Ok((next_index, Proposal::Confirmation(confirmation)))
 			}
 			Proposal::Confirmation(confirmation) => {
 				let block_header = self.mempool.build_block_header_proposal(index, confirmation)?;
-				Ok(Some(Proposal::BlockHeader(block_header)))
+				let next_index = index.next().ok_or(AegeriTaskError::NotNextRound)?;
+				Ok((next_index, Proposal::BlockHeader(block_header)))
 			}
 			Proposal::BlockHeader(block_header) => {
 				let block =
@@ -74,9 +79,19 @@ impl AegeriTask {
 					self.mempool.remove(*id);
 				}
 
-				Ok(Some(Proposal::Transition(transition)))
+				let next_index = index.next().ok_or(AegeriTaskError::NotNextRound)?;
+				Ok((next_index, Proposal::Transition(transition)))
 			}
-			Proposal::Transition(_) => Ok(None),
+			Proposal::Transition(_) => {
+				let next_index = index.next().ok_or(AegeriTaskError::NotNextRound)?;
+				let now_epoch_ms = std::time::SystemTime::now()
+					.duration_since(std::time::UNIX_EPOCH)
+					.unwrap()
+					.as_millis() as u64;
+				let availability_proposal =
+					self.mempool.build_availability_proposal(now_epoch_ms, 128, &next_index)?;
+				Ok((next_index, Proposal::Availability(availability_proposal)))
+			}
 		}
 	}
 
@@ -129,7 +144,7 @@ mod tests {
 		let proposal = Proposal::BlockHeader(header);
 
 		let output = task.handle_agreement(&index, &proposal)?;
-		assert!(matches!(output, Some(Proposal::Transition(_))));
+		assert!(matches!(output, (_, Proposal::Transition(_))));
 		assert!(task.transaction_store.get(&id).is_none());
 		Ok(())
 	}

@@ -137,6 +137,7 @@ impl AegeriHart {
 		agreement_world.agreement_inferences.insert(
 			None,
 			(
+				Resample,
 				Index::new(AegeriIndex::genesis()),
 				Value::new(AegeriProposal::Availability(genesis_availability_agreement)),
 				Subcom::new(genesis_subcommittee),
@@ -157,11 +158,13 @@ impl AegeriHart {
 			mut message_out,
 		} = self;
 
-		message_in.act(MessageIn, &mut data);
 		message.act(Hart, &mut data);
+		message_in.act(MessageIn, &mut data);
 		agreement.act(Agreement, &mut data);
 		task.act(Task, &mut data);
 		message_out.act(MessageOut, &mut data);
+		message.act(Hart, &mut data);
+
 		Self { data, message, agreement, task, message_in, message_out }
 	}
 
@@ -226,7 +229,7 @@ impl GossamerMessages<AegeriParabyzantineData> for AegeriGossamerMessages {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use aegeri_message::{Message, Nonce, Transaction, UnifiedMessage};
+	use aegeri_message::{Confirmation, IndexValue, Message, Nonce, Transaction, UnifiedMessage};
 	use gossamer::GossamerMessage;
 	use ml_dsa::{SigningKey, B32};
 
@@ -278,7 +281,16 @@ mod tests {
 		gossamer_channels.message_into_gossamer_sender.send(single_hart_cert_bytes)?;
 
 		let hart = hart.tick();
-		assert_eq!(hart.certificates().count(), 1);
+		let certificates = hart
+			.certificates()
+			.map(|(_, (index, value))| (index.0.clone(), value.0.clone()))
+			.collect::<Vec<_>>();
+		let expected_certificates = vec![(
+			AegeriIndex::Confirmation(IndexValue::genesis()),
+			AegeriProposal::Confirmation(Confirmation::genesis()),
+		)];
+		assert_eq!(certificates, expected_certificates);
+
 		Ok(())
 	}
 }
