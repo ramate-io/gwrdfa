@@ -194,3 +194,17 @@ impl GossamerMessages<AegeriParabyzantineData> for AegeriGossamerMessages {
 		MatchingTuple::new()
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn test_aegeri_hart_with_genesis_subcommittee() -> Result<(), AegeriHartError> {
+		let (hart, _, _, _) = AegeriHart::mock()?;
+		let subcommittee = AegeriSubcommittee::genesis();
+		let hart = hart.with_genesis_subcommittee(subcommittee);
+		assert_eq!(hart.index_subcommittee_agreements().count(), 1);
+		Ok(())
+	}
+}
