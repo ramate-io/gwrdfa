@@ -6,7 +6,7 @@ use crate::message_in::AegeriMessageIn;
 use crate::message_out::AegeriMessageOut;
 use crate::task::{AegeriTask, AegeriTaskError};
 use aegeri_message::{
-	AegeriSubcommittee, Index as AegeriIndex, Proposal as AegeriProposal, PublicKey, UnifiedMessage,
+	AegeriSubcommittee, Index as AegeriIndex, Proposal as AegeriProposal, UnifiedMessage,
 };
 use gossamer::{
 	container::GossamerContainer, hart::gossamer_messages::GossamerMessages, hart::GossamerHart,
@@ -17,7 +17,7 @@ use gwrdfa_container::{
 	ContainerEntity,
 };
 use gwrdfa_resample::agreement::{
-	std::{join_set_committee::JoinSetCommittee, Index, MemoryAgreementData, Subcom},
+	std::{join_set_committee::JoinSetCommittee, Index, MemoryAgreementData, Subcom, Value},
 	ResampleAgreement,
 };
 use parabyzantine::{act::Act, agreement::Agreement, hart::Hart, task::Task};
@@ -147,6 +147,34 @@ impl AegeriHart {
 		loop {
 			self = self.tick();
 		}
+	}
+
+	pub fn index_subcommittee_agreements(
+		&self,
+	) -> impl Iterator<Item = (ContainerEntity, (&Index<AegeriIndex>, &Subcom<AegeriSubcommittee>))>
+	{
+		self.data
+			.parabyzantine_agreement_world()
+			.agreement_facts
+			.query(MatchingTuple::<(Index<AegeriIndex>, Subcom<AegeriSubcommittee>)>::new())
+	}
+
+	pub fn index_value_agreements(
+		&self,
+	) -> impl Iterator<
+		Item = (
+			ContainerEntity,
+			(&Index<AegeriIndex>, &Value<AegeriProposal>, &Subcom<AegeriSubcommittee>),
+		),
+	> {
+		self.data
+			.parabyzantine_agreement_world()
+			.agreement_facts
+			.query(MatchingTuple::<(
+				Index<AegeriIndex>,
+				Value<AegeriProposal>,
+				Subcom<AegeriSubcommittee>,
+			)>::new())
 	}
 }
 
