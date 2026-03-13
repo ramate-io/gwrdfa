@@ -1,4 +1,5 @@
 pub mod parabyzantine_data;
+use gwrdfa_container::query::matching_components::MatchingComponents;
 use parabyzantine::agreement::ParabyzantineAgreementData;
 pub use parabyzantine_data::AegeriParabyzantineData;
 
@@ -6,7 +7,8 @@ use crate::message_in::AegeriMessageIn;
 use crate::message_out::AegeriMessageOut;
 use crate::task::{AegeriTask, AegeriTaskError};
 use aegeri_message::{
-	AegeriSubcommittee, Index as AegeriIndex, Proposal as AegeriProposal, PublicKey, UnifiedMessage,
+	AegeriSubcommittee, Availability, Index as AegeriIndex, Proposal as AegeriProposal, PublicKey,
+	UnifiedMessage,
 };
 use gossamer::{
 	container::GossamerContainer, hart::gossamer_messages::GossamerMessages, hart::GossamerHart,
@@ -110,21 +112,36 @@ impl AegeriHart {
 	}
 
 	/// Registers the genesis subcommittee for the agreement.
-	pub fn with_genesis_subcommittee(mut self, subcommittee: AegeriSubcommittee) -> Self {
+	pub fn with_genesis(
+		mut self,
+		genesis_subcommittee: AegeriSubcommittee,
+		genesis_availability_agreement: Availability,
+	) -> Self {
 		let mut agreement_world = self.data.parabyzantine_agreement_world();
 
 		// Clear out any existing agreements for the genesis index.
-		for (entity, (_index, _subcommittee)) in agreement_world
+		for (entity, _index) in agreement_world
 			.agreement_facts
-			.query(MatchingTuple::<(Index<AegeriIndex>, Subcom<AegeriSubcommittee>)>::new())
+			.query(MatchingComponents::<Index<AegeriIndex>>::new())
 		{
 			agreement_world.agreement_inferences.remove_entity(entity);
 		}
 
 		// Insert the new genesis subcommittee.
-		agreement_world
-			.agreement_inferences
-			.insert(None, (Index::new(AegeriIndex::genesis()), Subcom::new(subcommittee)));
+		agreement_world.agreement_inferences.insert(
+			None,
+			(Index::new(AegeriIndex::genesis()), Subcom::new(genesis_subcommittee.clone())),
+		);
+
+		// Insert the new genesis availability agreement.
+		agreement_world.agreement_inferences.insert(
+			None,
+			(
+				Index::new(AegeriIndex::genesis()),
+				Value::new(AegeriProposal::Availability(genesis_availability_agreement)),
+				Subcom::new(genesis_subcommittee),
+			),
+		);
 
 		self.data.commit_parabyzantine_agreement(agreement_world.into());
 		self
@@ -182,6 +199,15 @@ impl AegeriHart {
 			Value<AegeriProposal>,
 		)>::new())
 	}
+
+	pub fn certificates(
+		&self,
+	) -> impl Iterator<Item = (ContainerEntity, (&Index<AegeriIndex>, &Value<AegeriProposal>))> {
+		self.data
+			.parabyzantine_agreement_world()
+			.certificate_facts
+			.query(MatchingTuple::<(Index<AegeriIndex>, Value<AegeriProposal>)>::new())
+	}
 }
 
 pub struct AegeriGossamerMessages;
@@ -200,13 +226,59 @@ impl GossamerMessages<AegeriParabyzantineData> for AegeriGossamerMessages {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use aegeri_message::{Message, Nonce, Transaction, UnifiedMessage};
+	use gossamer::GossamerMessage;
+	use ml_dsa::{SigningKey, B32};
 
 	#[test]
 	fn test_aegeri_hart_with_genesis_subcommittee() -> Result<(), AegeriHartError> {
 		let (hart, _gossamer_channels) = AegeriHart::mock()?;
 		let subcommittee = AegeriSubcommittee::genesis();
-		let hart = hart.with_genesis_subcommittee(subcommittee);
-		assert_eq!(hart.index_subcommittee_agreements().count(), 1);
+		let availability = Availability::genesis();
+		let hart = hart.with_genesis(subcommittee, availability);
+		assert_eq!(hart.index_subcommittee_agreements().count(), 2);
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_aegeri_hart_trivial_consensus() -> Result<(), anyhow::Error> {
+		let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![1; 32]));
+		let signer_public_key = PublicKey::new(&signer);
+		let genesis_subcommittee =
+			AegeriSubcommittee::genesis().with_members(vec![signer_public_key].into_iter());
+		let availability = Availability::genesis();
+
+		let (hart, mut gossamer_channels) = AegeriHart::mock()?;
+		let hart = hart.with_genesis(genesis_subcommittee, availability);
+
+		// Send in a bunch of transactions
+		for i in 0..10 {
+			let transaction_signer =
+				SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![i as u8; 32]));
+			let transaction = Transaction::Leave;
+			let message: UnifiedMessage = Message::<Transaction>::try_new(
+				&transaction_signer,
+				transaction,
+				Nonce::new([i as u8; 32]),
+			)?
+			.into();
+			gossamer_channels
+				.message_into_gossamer_sender
+				.send(message.to_gossamer_bytes()?)?;
+		}
+
+		let hart = hart.tick();
+		// loop back the message
+		let (entity, single_hart_cert_bytes) =
+			gossamer_channels.entity_message_from_gossamer_receiver.try_recv()?;
+
+		// Confirm the sending
+		gossamer_channels.entity_into_gossamer_sender.send(Ok(entity))?;
+		// Loop back the certificate
+		gossamer_channels.message_into_gossamer_sender.send(single_hart_cert_bytes)?;
+
+		let hart = hart.tick();
+		assert_eq!(hart.certificates().count(), 1);
 		Ok(())
 	}
 }
