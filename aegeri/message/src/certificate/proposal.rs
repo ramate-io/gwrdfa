@@ -98,6 +98,10 @@ impl GivesJoinSet<AegeriSubcommittee> for Proposal {
 }
 
 impl Proposal {
+	pub fn genesis() -> Self {
+		Proposal::Availability(Availability::genesis())
+	}
+
 	/// Aggregates proposals for the given stage index.
 	///
 	/// Proposals that do not match the index stage are ignored.

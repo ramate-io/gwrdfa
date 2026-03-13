@@ -12,6 +12,10 @@ impl Availability {
 		Self::default()
 	}
 
+	pub fn genesis() -> Self {
+		Self(TransactionSet::new())
+	}
+
 	pub fn from_transactions(transactions: TransactionSet) -> Self {
 		Self(transactions)
 	}

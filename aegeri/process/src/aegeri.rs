@@ -1,11 +1,12 @@
 pub mod parabyzantine_data;
+use parabyzantine::agreement::ParabyzantineAgreementData;
 pub use parabyzantine_data::AegeriParabyzantineData;
 
 use crate::message_in::AegeriMessageIn;
 use crate::message_out::AegeriMessageOut;
 use crate::task::{AegeriTask, AegeriTaskError};
 use aegeri_message::{
-	AegeriSubcommittee, Index as AegeriIndex, Proposal as AegeriProposal, UnifiedMessage,
+	AegeriSubcommittee, Index as AegeriIndex, Proposal as AegeriProposal, PublicKey, UnifiedMessage,
 };
 use gossamer::{
 	container::GossamerContainer, hart::gossamer_messages::GossamerMessages, hart::GossamerHart,
@@ -16,7 +17,7 @@ use gwrdfa_container::{
 	ContainerEntity,
 };
 use gwrdfa_resample::agreement::{
-	std::{join_set_committee::JoinSetCommittee, MemoryAgreementData},
+	std::{join_set_committee::JoinSetCommittee, Index, MemoryAgreementData, Subcom},
 	ResampleAgreement,
 };
 use parabyzantine::{act::Act, agreement::Agreement, hart::Hart, task::Task};
@@ -101,6 +102,27 @@ impl AegeriHart {
 			},
 			listen_addr,
 		))
+	}
+
+	/// Registers the genesis subcommittee for the agreement.
+	pub fn with_genesis_subcommittee(mut self, subcommittee: AegeriSubcommittee) -> Self {
+		let mut agreement_world = self.data.parabyzantine_agreement_world();
+
+		// Clear out any existing agreements for the genesis index.
+		for (entity, (_index, _subcommittee)) in agreement_world
+			.agreement_facts
+			.query(MatchingTuple::<(Index<AegeriIndex>, Subcom<AegeriSubcommittee>)>::new())
+		{
+			agreement_world.agreement_inferences.remove_entity(entity);
+		}
+
+		// Insert the new genesis subcommittee.
+		agreement_world
+			.agreement_inferences
+			.insert(None, (Index::new(AegeriIndex::genesis()), Subcom::new(subcommittee)));
+
+		self.data.commit_parabyzantine_agreement(agreement_world.into());
+		self
 	}
 
 	pub fn tick(self) -> Self {

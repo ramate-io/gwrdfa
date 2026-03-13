@@ -5,6 +5,16 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct IndexValue(pub u64);
 
+impl IndexValue {
+	pub fn new(value: u64) -> Self {
+		Self(value)
+	}
+
+	pub fn genesis() -> Self {
+		Self(0)
+	}
+}
+
 /// Index of a certificate round in the layered consensus pipeline.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Index {
@@ -28,6 +38,10 @@ impl NextRound for Index {
 }
 
 impl Index {
+	pub fn genesis() -> Self {
+		Index::Availability(IndexValue::genesis())
+	}
+
 	pub fn is_availability(&self) -> bool {
 		matches!(self, Index::Availability(_))
 	}
