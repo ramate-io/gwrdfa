@@ -64,14 +64,14 @@ impl<Index: Eq + NextRound, Value: GivesJoinSet<Sub>, Sub: TakesJoinSet<Index, V
 		value: &Condition<Value>,
 	) -> Option<(Index, Sub)> {
 		match value {
-			Condition::Consensus(value) => {
+			Condition::Consensus(value) => index.next().map(|index| {
 				let mut new_subcommittee = subcommittee.clone();
 
 				if let Some((joiners, leavers)) = value.joiners_and_leavers() {
-					new_subcommittee.update_with_join_set(index, joiners, leavers);
+					new_subcommittee.update_with_join_set(&index, joiners, leavers);
 				}
-				index.next().map(|index| (index, new_subcommittee))
-			}
+				(index, new_subcommittee)
+			}),
 			Condition::Hung | Condition::InProgress => None,
 		}
 	}
