@@ -16,9 +16,12 @@ use gwrdfa_container::{
 	query::matching_tuple::{MatchingTuple, MatchingTupleQuery},
 	ContainerEntity,
 };
-use gwrdfa_resample::agreement::{
-	std::{join_set_committee::JoinSetCommittee, Index, MemoryAgreementData, Subcom, Value},
-	ResampleAgreement,
+use gwrdfa_resample::{
+	agreement::{
+		std::{join_set_committee::JoinSetCommittee, Index, MemoryAgreementData, Subcom, Value},
+		ResampleAgreement,
+	},
+	Resample,
 };
 use parabyzantine::{act::Act, agreement::Agreement, hart::Hart, task::Task};
 use parabyzantine::{message_in::MessageIn, message_out::MessageOut};
@@ -164,17 +167,18 @@ impl AegeriHart {
 	) -> impl Iterator<
 		Item = (
 			ContainerEntity,
-			(&Index<AegeriIndex>, &Value<AegeriProposal>, &Subcom<AegeriSubcommittee>),
+			(&Agreement, &Resample, &Index<AegeriIndex>, &Value<AegeriProposal>),
 		),
 	> {
 		self.data
 			.parabyzantine_agreement_world()
 			.agreement_facts
 			.query(MatchingTuple::<(
-				Index<AegeriIndex>,
-				Value<AegeriProposal>,
-				Subcom<AegeriSubcommittee>,
-			)>::new())
+			Agreement,
+			Resample,
+			Index<AegeriIndex>,
+			Value<AegeriProposal>,
+		)>::new())
 	}
 }
 
