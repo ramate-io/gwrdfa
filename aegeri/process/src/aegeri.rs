@@ -229,7 +229,9 @@ impl GossamerMessages<AegeriParabyzantineData> for AegeriGossamerMessages {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use aegeri_message::{Confirmation, IndexValue, Message, Nonce, Transaction, UnifiedMessage};
+	use aegeri_message::{
+		BlockHeader, Confirmation, IndexValue, Message, Nonce, Transaction, UnifiedMessage,
+	};
 	use gossamer::GossamerMessage;
 	use ml_dsa::{SigningKey, B32};
 
@@ -271,15 +273,17 @@ mod tests {
 		}
 
 		let hart = hart.tick();
+
+		// Simulate broadcasting
 		// loop back the message
 		let (entity, single_hart_cert_bytes) =
 			gossamer_channels.entity_message_from_gossamer_receiver.try_recv()?;
-
 		// Confirm the sending
 		gossamer_channels.entity_into_gossamer_sender.send(Ok(entity))?;
 		// Loop back the certificate
 		gossamer_channels.message_into_gossamer_sender.send(single_hart_cert_bytes)?;
 
+		// See if it generates a confirmation certificate
 		let hart = hart.tick();
 		let certificates = hart
 			.certificates()
@@ -289,6 +293,36 @@ mod tests {
 			AegeriIndex::Confirmation(IndexValue::genesis()),
 			AegeriProposal::Confirmation(Confirmation::genesis()),
 		)];
+		assert_eq!(certificates, expected_certificates);
+
+		// Simulate broadcasting
+		// loop back the message
+		let (entity, single_hart_cert_bytes) =
+			gossamer_channels.entity_message_from_gossamer_receiver.try_recv()?;
+		// Confirm the sending
+		gossamer_channels.entity_into_gossamer_sender.send(Ok(entity))?;
+		// Loop back the certificate
+		gossamer_channels.message_into_gossamer_sender.send(single_hart_cert_bytes)?;
+
+		// See if it generates a block header certificate
+		let hart = hart.tick();
+		let certificates = hart
+			.certificates()
+			.map(|(_, (index, value))| (index.0.clone(), value.0.clone()))
+			.collect::<Vec<_>>();
+
+		// Currently, there isn't any certificate eviction.
+		// So we expect the confirmation certificate to still be present.
+		let expected_certificates = vec![
+			(
+				AegeriIndex::Confirmation(IndexValue::genesis()),
+				AegeriProposal::Confirmation(Confirmation::genesis()),
+			),
+			(
+				AegeriIndex::Block(IndexValue::genesis()),
+				AegeriProposal::BlockHeader(BlockHeader::genesis()),
+			),
+		];
 		assert_eq!(certificates, expected_certificates);
 
 		Ok(())

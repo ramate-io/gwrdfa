@@ -1,6 +1,6 @@
 use crate::aegeri::AegeriParabyzantineData;
 use aegeri_message::{Index, Message, Nonce, Proposal, UnifiedMessage};
-use gossamer::{GossamerMessageError, Out};
+use gossamer::{Broadcast, GossamerMessageError, Out};
 use gwrdfa_container::query::matching_tuple::MatchingTuple;
 use ml_dsa::{MlDsa44, SigningKey, B32};
 use parabyzantine::message_out::{MessageOutWorld, ParabyzantineMessageOut};
@@ -49,9 +49,19 @@ impl ParabyzantineMessageOut<AegeriParabyzantineData> for AegeriMessageOut {
 		&mut self,
 		data: &mut MessageOutWorld<AegeriParabyzantineData>,
 	) {
+		// Remove all of the messages that were broadcasted.
+		for (entity, (Broadcast, _message)) in
+			data.message_facts.query(MatchingTuple::<(Broadcast, UnifiedMessage)>::new())
+		{
+			data.message_inferences.remove_entity(entity);
+		}
+
+		// Emit all the certificates from the task buffer.
 		for (entity, (index, proposal)) in
 			data.task_facts.query(MatchingTuple::<(Index, Proposal)>::new())
 		{
+			println!("Processing proposal: {:?}, {:?}", index, proposal);
+
 			// Task buffer stores proposals; until index is carried with tasks, we wrap
 			// with a placeholder transition index for signing/broadcast.
 			let certificate = aegeri_message::Certificate::new(index.clone(), proposal.clone());
@@ -61,13 +71,15 @@ impl ParabyzantineMessageOut<AegeriParabyzantineData> for AegeriMessageOut {
 			{
 				Ok(message) => {
 					data.message_inferences
-						.insert(None, (Out, UnifiedMessage::Certificate(message)));
+						.insert(None, (Out, UnifiedMessage::Certificate(message.clone())));
 					// Consume task once emitted.
 					data.task_inferences.remove_entity(entity);
+					println!("Inserted certificate: {:?}", message.payload());
 				}
 				Err(e) => {
 					data.message_inferences
 						.insert(None, GossamerMessageError::InternalError(e.to_string()));
+					println!("Error inserting certificate: {:?}", e);
 				}
 			}
 		}

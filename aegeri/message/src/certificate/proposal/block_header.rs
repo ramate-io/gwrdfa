@@ -12,6 +12,10 @@ impl BlockHeader {
 		Self::default()
 	}
 
+	pub fn genesis() -> Self {
+		Self::new()
+	}
+
 	pub fn transactions(&self) -> &TransactionSet {
 		&self.0
 	}

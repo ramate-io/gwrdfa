@@ -54,7 +54,10 @@ impl AegeriTask {
 		index: &Index,
 		proposal: &Proposal,
 	) -> Result<(Index, Proposal), AegeriTaskError> {
+		println!("Handling agreement: {:?}, {:?}", index, proposal);
+
 		if !Self::proposal_matches_index(index, proposal) {
+			println!("Stage mismatch: {:?}, {:?}", index, proposal);
 			return Err(AegeriTaskError::StageMismatch);
 		}
 

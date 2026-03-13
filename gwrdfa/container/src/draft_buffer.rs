@@ -130,6 +130,11 @@ impl<D: DeltasContainer<C>, C: Sized> DraftBufferlike<ContainerEntity, Container
 			}
 		}
 
+		// Remove all entities for removal from the buffer.
+		for entity in self.entities_for_removal {
+			buffer.remove_container(entity);
+		}
+
 		// Insert all new containers into the buffer.
 		for delta in self.new_entities {
 			buffer.insert_container(delta.into_container());
