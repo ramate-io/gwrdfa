@@ -23,7 +23,7 @@ use gwrdfa_resample::{
 		std::{join_set_committee::JoinSetCommittee, Index, MemoryAgreementData, Subcom, Value},
 		ResampleAgreement,
 	},
-	Resample,
+	ForResample, Resample,
 };
 use ml_dsa::{MlDsa44, SigningKey};
 use parabyzantine::{act::Act, agreement::Agreement, hart::Hart, task::Task};
@@ -133,11 +133,11 @@ impl AegeriHart {
 			(Index::new(AegeriIndex::genesis()), Subcom::new(genesis_subcommittee.clone())),
 		);
 
-		// Insert the new genesis availability agreement.
-		agreement_world.agreement_inferences.insert(
+		// Insert the new genesis availability certificate.
+		agreement_world.certificate_inferences.insert(
 			None,
 			(
-				Resample,
+				ForResample,
 				Index::new(AegeriIndex::genesis()),
 				Value::new(AegeriProposal::Availability(genesis_availability_agreement)),
 				Subcom::new(genesis_subcommittee),
@@ -234,6 +234,7 @@ mod tests {
 	};
 	use gossamer::GossamerMessage;
 	use ml_dsa::{SigningKey, B32};
+	use std::collections::BTreeSet;
 
 	#[test]
 	fn test_aegeri_hart_with_genesis_subcommittee() -> Result<(), AegeriHartError> {
@@ -288,11 +289,17 @@ mod tests {
 		let certificates = hart
 			.certificates()
 			.map(|(_, (index, value))| (index.0.clone(), value.0.clone()))
-			.collect::<Vec<_>>();
-		let expected_certificates = vec![(
-			AegeriIndex::Confirmation(IndexValue::genesis()),
-			AegeriProposal::Confirmation(Confirmation::genesis()),
-		)];
+			.collect::<BTreeSet<_>>();
+		let expected_certificates = BTreeSet::from_iter(vec![
+			(
+				AegeriIndex::Availability(IndexValue::genesis()),
+				AegeriProposal::Availability(Availability::genesis()),
+			),
+			(
+				AegeriIndex::Confirmation(IndexValue::genesis()),
+				AegeriProposal::Confirmation(Confirmation::genesis()),
+			),
+		]);
 		assert_eq!(certificates, expected_certificates);
 
 		// Simulate broadcasting
@@ -309,11 +316,15 @@ mod tests {
 		let certificates = hart
 			.certificates()
 			.map(|(_, (index, value))| (index.0.clone(), value.0.clone()))
-			.collect::<Vec<_>>();
+			.collect::<BTreeSet<_>>();
 
 		// Currently, there isn't any certificate eviction.
 		// So we expect the confirmation certificate to still be present.
-		let expected_certificates = vec![
+		let expected_certificates = BTreeSet::from_iter(vec![
+			(
+				AegeriIndex::Availability(IndexValue::genesis()),
+				AegeriProposal::Availability(Availability::genesis()),
+			),
 			(
 				AegeriIndex::Confirmation(IndexValue::genesis()),
 				AegeriProposal::Confirmation(Confirmation::genesis()),
@@ -322,7 +333,7 @@ mod tests {
 				AegeriIndex::Block(IndexValue::genesis()),
 				AegeriProposal::BlockHeader(BlockHeader::genesis()),
 			),
-		];
+		]);
 		assert_eq!(certificates, expected_certificates);
 
 		Ok(())

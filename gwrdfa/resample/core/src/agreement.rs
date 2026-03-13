@@ -120,6 +120,7 @@ where
 				.elect_subcommittee_from_condition(index, subcommittee, &subcommittee_condition);
 
 			if let Some((next_index, next_subcommittee)) = next_subcommittee {
+				println!("Inserting next subcommittee");
 				// insert the next subcommittee into the agreement world
 				agreement_world.agreement_inferences.insert(
 					None,

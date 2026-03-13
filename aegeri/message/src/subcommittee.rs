@@ -76,11 +76,15 @@ impl Subcommittee<Proposal> for AegeriSubcommittee {
 		}
 
 		let requirement = ByzantineRequirement::byzantine_quorum(self.size());
-		Proposal::consensus_condition_for_index(
+		let result = Proposal::consensus_condition_for_index(
 			self.index(),
 			sender_to_proposal.into_values(),
 			requirement,
-		)
+		);
+
+		println!("Subcommittee condition: {:?}", result);
+
+		result
 	}
 }
 

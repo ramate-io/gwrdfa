@@ -25,7 +25,7 @@ pub struct ByzantineRequirement {
 
 impl ByzantineRequirement {
 	pub fn byzantine_quorum(total_voters: usize) -> Self {
-		let quorum = (total_voters * 2).div_ceil(3) + 1;
+		let quorum = ((total_voters * 2) / 3) + 1;
 		Self { total_voters, quorum }
 	}
 
