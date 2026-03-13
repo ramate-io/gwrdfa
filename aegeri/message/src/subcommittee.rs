@@ -23,6 +23,10 @@ impl AegeriSubcommittee {
 		Self { index, members: BTreeSet::new() }
 	}
 
+	pub fn genesis() -> Self {
+		Self::new(Index::genesis())
+	}
+
 	pub fn index(&self) -> &Index {
 		&self.index
 	}
