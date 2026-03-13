@@ -12,7 +12,7 @@ pub trait TakesJoinSet<I: Eq, V: Eq + Hash + Clone + 'static>: Subcommittee<V> +
 	);
 }
 
-impl<I: Eq, S: TakesJoinSet<I, V> + 'static, V: Eq + Hash + Clone + 'static>
+impl<I: Eq + std::fmt::Debug, S: TakesJoinSet<I, V> + 'static, V: Eq + Hash + Clone + 'static>
 	TakesJoinSet<Index<I>, Value<V>> for Subcom<S>
 {
 	fn update_with_join_set(
@@ -54,8 +54,11 @@ impl JoinSetCommittee {
 	}
 }
 
-impl<Index: Eq + NextRound, Value: GivesJoinSet<Sub>, Sub: TakesJoinSet<Index, Value>>
-	Sampler<Index, Value, Sub> for JoinSetCommittee
+impl<
+		Index: std::fmt::Debug + Eq + NextRound,
+		Value: GivesJoinSet<Sub>,
+		Sub: TakesJoinSet<Index, Value>,
+	> Sampler<Index, Value, Sub> for JoinSetCommittee
 {
 	fn elect_subcommittee_from_condition(
 		&mut self,
@@ -69,6 +72,12 @@ impl<Index: Eq + NextRound, Value: GivesJoinSet<Sub>, Sub: TakesJoinSet<Index, V
 
 				if let Some((joiners, leavers)) = value.joiners_and_leavers() {
 					new_subcommittee.update_with_join_set(&index, joiners, leavers);
+				} else {
+					new_subcommittee.update_with_join_set(
+						&index,
+						std::iter::empty(),
+						std::iter::empty(),
+					);
 				}
 				(index, new_subcommittee)
 			}),

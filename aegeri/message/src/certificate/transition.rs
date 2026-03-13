@@ -57,6 +57,10 @@ impl Transition {
 		Self { block, state_root, join_set }
 	}
 
+	pub fn genesis() -> Self {
+		Self::new(TransactionSet::new(), StateRoot::new(Vec::new()), JoinSet::new())
+	}
+
 	pub fn block(&self) -> &TransactionSet {
 		&self.block
 	}

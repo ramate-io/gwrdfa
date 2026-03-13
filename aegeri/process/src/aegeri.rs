@@ -205,11 +205,13 @@ impl AegeriHart {
 
 	pub fn certificates(
 		&self,
-	) -> impl Iterator<Item = (ContainerEntity, (&Index<AegeriIndex>, &Value<AegeriProposal>))> {
+	) -> impl Iterator<
+		Item = (ContainerEntity, (&ForResample, &Index<AegeriIndex>, &Value<AegeriProposal>)),
+	> {
 		self.data
 			.parabyzantine_agreement_world()
 			.certificate_facts
-			.query(MatchingTuple::<(Index<AegeriIndex>, Value<AegeriProposal>)>::new())
+			.query(MatchingTuple::<(ForResample, Index<AegeriIndex>, Value<AegeriProposal>)>::new())
 	}
 }
 
@@ -230,7 +232,8 @@ impl GossamerMessages<AegeriParabyzantineData> for AegeriGossamerMessages {
 mod tests {
 	use super::*;
 	use aegeri_message::{
-		BlockHeader, Confirmation, IndexValue, Message, Nonce, Transaction, UnifiedMessage,
+		BlockHeader, Confirmation, IndexValue, Message, Nonce, Transaction, Transition,
+		UnifiedMessage,
 	};
 	use gossamer::GossamerMessage;
 	use ml_dsa::{SigningKey, B32};
@@ -242,7 +245,7 @@ mod tests {
 		let subcommittee = AegeriSubcommittee::genesis();
 		let availability = Availability::genesis();
 		let hart = hart.with_genesis(subcommittee, availability);
-		assert_eq!(hart.index_subcommittee_agreements().count(), 2);
+		assert_eq!(hart.index_subcommittee_agreements().count(), 1);
 		Ok(())
 	}
 
@@ -274,7 +277,6 @@ mod tests {
 		}
 
 		let hart = hart.tick();
-
 		// Simulate broadcasting
 		// loop back the message
 		let (entity, single_hart_cert_bytes) =
@@ -288,7 +290,7 @@ mod tests {
 		let hart = hart.tick();
 		let certificates = hart
 			.certificates()
-			.map(|(_, (index, value))| (index.0.clone(), value.0.clone()))
+			.map(|(_, (_, index, value))| (index.0.clone(), value.0.clone()))
 			.collect::<BTreeSet<_>>();
 		let expected_certificates = BTreeSet::from_iter(vec![
 			(
@@ -315,7 +317,7 @@ mod tests {
 		let hart = hart.tick();
 		let certificates = hart
 			.certificates()
-			.map(|(_, (index, value))| (index.0.clone(), value.0.clone()))
+			.map(|(_, (_, index, value))| (index.0.clone(), value.0.clone()))
 			.collect::<BTreeSet<_>>();
 
 		// Currently, there isn't any certificate eviction.
@@ -332,6 +334,50 @@ mod tests {
 			(
 				AegeriIndex::Block(IndexValue::genesis()),
 				AegeriProposal::BlockHeader(BlockHeader::genesis()),
+			),
+		]);
+		assert_eq!(certificates, expected_certificates);
+
+		// TOOD: we should not be rebroadcasting the same certificates over and over again
+		// Simulate broadcasting
+		// loop back the message
+		while let Ok((entity, single_hart_cert_bytes)) =
+			gossamer_channels.entity_message_from_gossamer_receiver.try_recv()
+		{
+			// Confirm the sending
+			gossamer_channels.entity_into_gossamer_sender.send(Ok(entity))?;
+			// Loop back the certificate
+			gossamer_channels
+				.message_into_gossamer_sender
+				.send(single_hart_cert_bytes.clone())?;
+		}
+
+		// See if it generates a transition certificate
+		let hart = hart.tick();
+		println!("Agreements");
+		for (_, (index, subcommittee)) in hart.index_subcommittee_agreements() {
+			println!("{index:?} {:?}", subcommittee.0.index())
+		}
+		let certificates = hart
+			.certificates()
+			.map(|(_, (_, index, value))| (index.0.clone(), value.0.clone()))
+			.collect::<BTreeSet<_>>();
+		let expected_certificates = BTreeSet::from_iter(vec![
+			(
+				AegeriIndex::Availability(IndexValue::genesis()),
+				AegeriProposal::Availability(Availability::genesis()),
+			),
+			(
+				AegeriIndex::Confirmation(IndexValue::genesis()),
+				AegeriProposal::Confirmation(Confirmation::genesis()),
+			),
+			(
+				AegeriIndex::Block(IndexValue::genesis()),
+				AegeriProposal::BlockHeader(BlockHeader::genesis()),
+			),
+			(
+				AegeriIndex::Transition(IndexValue::genesis()),
+				AegeriProposal::Transition(Transition::genesis()),
 			),
 		]);
 		assert_eq!(certificates, expected_certificates);

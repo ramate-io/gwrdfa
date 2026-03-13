@@ -60,8 +60,6 @@ impl ParabyzantineMessageOut<AegeriParabyzantineData> for AegeriMessageOut {
 		for (entity, (index, proposal)) in
 			data.task_facts.query(MatchingTuple::<(Index, Proposal)>::new())
 		{
-			println!("Processing proposal: {:?}, {:?}", index, proposal);
-
 			// Task buffer stores proposals; until index is carried with tasks, we wrap
 			// with a placeholder transition index for signing/broadcast.
 			let certificate = aegeri_message::Certificate::new(index.clone(), proposal.clone());
@@ -74,12 +72,10 @@ impl ParabyzantineMessageOut<AegeriParabyzantineData> for AegeriMessageOut {
 						.insert(None, (Out, UnifiedMessage::Certificate(message.clone())));
 					// Consume task once emitted.
 					data.task_inferences.remove_entity(entity);
-					println!("Inserted certificate: {:?}", message.payload());
 				}
 				Err(e) => {
 					data.message_inferences
 						.insert(None, GossamerMessageError::InternalError(e.to_string()));
-					println!("Error inserting certificate: {:?}", e);
 				}
 			}
 		}

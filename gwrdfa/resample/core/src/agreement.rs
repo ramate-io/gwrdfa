@@ -15,7 +15,7 @@ pub mod subcommittee;
 #[cfg(any(test, feature = "std"))]
 pub mod std;
 
-use crate::Resample;
+use crate::{ForResample, Resample};
 pub use certificate::CertificateSet;
 pub use consensus::Condition;
 use core::marker::PhantomData;
@@ -90,7 +90,7 @@ where
 	fn update_parabyzantine_agreement(&mut self, agreement_world: &mut AgreementWorld<Data>) {
 		// over all the index subcommittee agreements
 		let index_query = self.data_mut().index_subcommittee_agreement_query_plan();
-		for (_agreement_entity, (index, subcommittee)) in
+		for (index_agreement_entity, (index, subcommittee)) in
 			agreement_world.agreement_facts.query(index_query)
 		{
 			// Insert all of the certificates for this index into the certificate set
@@ -120,7 +120,6 @@ where
 				.elect_subcommittee_from_condition(index, subcommittee, &subcommittee_condition);
 
 			if let Some((next_index, next_subcommittee)) = next_subcommittee {
-				println!("Inserting next subcommittee");
 				// insert the next subcommittee into the agreement world
 				agreement_world.agreement_inferences.insert(
 					None,
@@ -134,6 +133,9 @@ where
 					agreement_world
 						.agreement_inferences
 						.insert(None, (Agreement, Resample, index.clone(), value));
+
+					// Remove the index agreement entity as it has been processed.
+					agreement_world.agreement_inferences.remove_entity(index_agreement_entity);
 				}
 				Condition::Hung => {
 					// do nothing

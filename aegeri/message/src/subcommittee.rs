@@ -82,8 +82,6 @@ impl Subcommittee<Proposal> for AegeriSubcommittee {
 			requirement,
 		);
 
-		println!("Subcommittee condition: {:?}", result);
-
 		result
 	}
 }
