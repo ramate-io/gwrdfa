@@ -6,7 +6,7 @@ use crate::message_in::AegeriMessageIn;
 use crate::message_out::AegeriMessageOut;
 use crate::task::{AegeriTask, AegeriTaskError};
 use aegeri_message::{
-	AegeriSubcommittee, Index as AegeriIndex, Proposal as AegeriProposal, UnifiedMessage,
+	AegeriSubcommittee, Index as AegeriIndex, Proposal as AegeriProposal, PublicKey, UnifiedMessage,
 };
 use gossamer::{
 	container::GossamerContainer, hart::gossamer_messages::GossamerMessages, hart::GossamerHart,
@@ -23,6 +23,7 @@ use gwrdfa_resample::{
 	},
 	Resample,
 };
+use ml_dsa::{MlDsa44, SigningKey};
 use parabyzantine::{act::Act, agreement::Agreement, hart::Hart, task::Task};
 use parabyzantine::{message_in::MessageIn, message_out::MessageOut};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
@@ -105,6 +106,23 @@ impl AegeriHart {
 			},
 			listen_addr,
 		))
+	}
+
+	/// With signer.
+	pub fn with_signer(mut self, signer: SigningKey<MlDsa44>) -> Self {
+		self.message_out = self.message_out.with_signer(signer);
+		self
+	}
+
+	/// Gets the public key of the signer.
+	pub fn signer_public_key(&self) -> PublicKey {
+		PublicKey::new(&self.message_out.signer)
+	}
+
+	/// With nonce counter.
+	pub fn with_nonce_counter(mut self, nonce_counter: u64) -> Self {
+		self.message_out = self.message_out.with_nonce_counter(nonce_counter);
+		self
 	}
 
 	/// Registers the genesis subcommittee for the agreement.

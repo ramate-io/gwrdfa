@@ -1,1 +1,0 @@
-Signs `Proposals` from tasks and wraps them as `UnifiedMessages`.

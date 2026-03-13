@@ -7,11 +7,25 @@ use parabyzantine::message_out::{MessageOutWorld, ParabyzantineMessageOut};
 
 /// Aegeri outbound signer/wrapper for task certificates.
 pub struct AegeriMessageOut {
-	signer: SigningKey<MlDsa44>,
+	pub(crate) signer: SigningKey<MlDsa44>,
 	nonce_counter: u64,
 }
 
 impl AegeriMessageOut {
+	pub fn new(signer: SigningKey<MlDsa44>) -> Self {
+		Self { signer, nonce_counter: 0 }
+	}
+
+	pub fn with_signer(mut self, signer: SigningKey<MlDsa44>) -> Self {
+		self.signer = signer;
+		self
+	}
+
+	pub fn with_nonce_counter(mut self, nonce_counter: u64) -> Self {
+		self.nonce_counter = nonce_counter;
+		self
+	}
+
 	pub fn from_seed(seed: [u8; 32]) -> Self {
 		let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(seed));
 		Self { signer, nonce_counter: 0 }
