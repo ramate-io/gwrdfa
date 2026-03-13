@@ -23,6 +23,13 @@ pub struct Gossamer<Entity: Send + Sync> {
 		UnboundedReceiver<Result<Entity, (Entity, GossamerTaskError)>>,
 }
 
+#[derive(Debug)]
+pub struct GossamerChannels<Entity: Send + Sync> {
+	pub message_into_gossamer_sender: UnboundedSender<Vec<u8>>,
+	pub entity_message_from_gossamer_receiver: UnboundedReceiver<(Entity, Vec<u8>)>,
+	pub entity_into_gossamer_sender: UnboundedSender<Result<Entity, (Entity, GossamerTaskError)>>,
+}
+
 #[derive(Debug, Clone, thiserror::Error, PartialEq, Eq)]
 pub enum GossamerMessageError {
 	#[error("Error serializing message: {0:?}")]
@@ -71,12 +78,7 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 	}
 
 	/// Produces a mock instance, mostly used for testing purposes.
-	pub fn mock() -> (
-		Self,
-		UnboundedSender<Vec<u8>>,
-		UnboundedReceiver<(Entity, Vec<u8>)>,
-		UnboundedSender<Result<Entity, (Entity, GossamerTaskError)>>,
-	) {
+	pub fn mock() -> (Self, GossamerChannels<Entity>) {
 		let (message_into_gossamer_sender, message_into_gossamer_receiver) = unbounded_channel();
 		let (entity_message_from_gossamer_sender, entity_message_from_gossamer_receiver) =
 			unbounded_channel();
@@ -88,9 +90,11 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 				entity_message_from_gossamer_sender,
 				entity_into_gossamer_receiver,
 			},
-			message_into_gossamer_sender,
-			entity_message_from_gossamer_receiver,
-			entity_into_gossamer_sender,
+			GossamerChannels {
+				message_into_gossamer_sender,
+				entity_message_from_gossamer_receiver,
+				entity_into_gossamer_sender,
+			},
 		)
 	}
 
@@ -178,12 +182,9 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 		&mut self,
 		duration: Duration,
 	) -> Result<Option<GossamerConfirmation<Entity>>, GossamerMessageError> {
-		timeout(duration, self.wait_for_confirmation())
-			.await
-			.map_err(|_| GossamerMessageError::Timeout {
-				operation: "broadcast confirmation",
-				duration,
-			})?
+		timeout(duration, self.wait_for_confirmation()).await.map_err(|_| {
+			GossamerMessageError::Timeout { operation: "broadcast confirmation", duration }
+		})?
 	}
 
 	/// Receives a message from the Gossamer swarm up to a timeout.
@@ -191,12 +192,9 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 		&mut self,
 		duration: Duration,
 	) -> Result<Option<M>, GossamerMessageError> {
-		timeout(duration, self.recv_message::<M>())
-			.await
-			.map_err(|_| GossamerMessageError::Timeout {
-				operation: "inbound swarm message",
-				duration,
-			})?
+		timeout(duration, self.recv_message::<M>()).await.map_err(|_| {
+			GossamerMessageError::Timeout { operation: "inbound swarm message", duration }
+		})?
 	}
 
 	/// Sends a message and waits for a confirmation.
@@ -272,9 +270,11 @@ mod tests {
 		// Build the mock Gossamer instance.
 		let (
 			mut gossamer,
-			message_into_gossamer_sender,
-			mut entity_message_from_gossamer_receiver,
-			entity_into_gossamer_sender,
+			GossamerChannels {
+				message_into_gossamer_sender,
+				mut entity_message_from_gossamer_receiver,
+				entity_into_gossamer_sender,
+			},
 		) = Gossamer::<u32>::mock();
 
 		// Send a message into the Gossamer instance.

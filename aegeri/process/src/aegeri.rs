@@ -10,7 +10,7 @@ use aegeri_message::{
 };
 use gossamer::{
 	container::GossamerContainer, hart::gossamer_messages::GossamerMessages, hart::GossamerHart,
-	Gossamer, GossamerConfig, GossamerConfigError, GossamerTaskError, Multiaddr, Out,
+	Gossamer, GossamerChannels, GossamerConfig, GossamerConfigError, Multiaddr, Out,
 };
 use gwrdfa_container::{
 	query::matching_tuple::{MatchingTuple, MatchingTupleQuery},
@@ -26,7 +26,6 @@ use gwrdfa_resample::{
 use ml_dsa::{MlDsa44, SigningKey};
 use parabyzantine::{act::Act, agreement::Agreement, hart::Hart, task::Task};
 use parabyzantine::{message_in::MessageIn, message_out::MessageOut};
-use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 /// A [AegeriHart] is a [Hart] that implements the Aegeri protocol.
 pub struct AegeriHart {
@@ -61,21 +60,8 @@ pub enum AegeriHartError {
 }
 
 impl AegeriHart {
-	pub fn mock() -> Result<
-		(
-			Self,
-			UnboundedSender<Vec<u8>>,
-			UnboundedReceiver<(ContainerEntity, Vec<u8>)>,
-			UnboundedSender<Result<ContainerEntity, (ContainerEntity, GossamerTaskError)>>,
-		),
-		AegeriHartError,
-	> {
-		let (
-			gossamer,
-			message_into_gossamer_sender,
-			entity_message_from_gossamer_receiver,
-			entity_into_gossamer_sender,
-		) = Gossamer::<ContainerEntity>::mock();
+	pub fn mock() -> Result<(Self, GossamerChannels<ContainerEntity>), AegeriHartError> {
+		let (gossamer, gossamer_channels) = Gossamer::<ContainerEntity>::mock();
 
 		Ok((
 			Self {
@@ -86,9 +72,7 @@ impl AegeriHart {
 				message_in: AegeriMessageIn,
 				message_out: AegeriMessageOut::default(),
 			},
-			message_into_gossamer_sender,
-			entity_message_from_gossamer_receiver,
-			entity_into_gossamer_sender,
+			gossamer_channels,
 		))
 	}
 
@@ -219,7 +203,7 @@ mod tests {
 
 	#[test]
 	fn test_aegeri_hart_with_genesis_subcommittee() -> Result<(), AegeriHartError> {
-		let (hart, _, _, _) = AegeriHart::mock()?;
+		let (hart, _gossamer_channels) = AegeriHart::mock()?;
 		let subcommittee = AegeriSubcommittee::genesis();
 		let hart = hart.with_genesis_subcommittee(subcommittee);
 		assert_eq!(hart.index_subcommittee_agreements().count(), 1);

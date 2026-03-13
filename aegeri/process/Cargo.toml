@@ -12,7 +12,6 @@ rust-version = { workspace = true }
 [dependencies]
 ml-dsa = { workspace = true }
 log = { workspace = true }
-tokio = { workspace = true }
 anyhow = { workspace = true }
 gwrdfa-container = { workspace = true }
 aegeri-message = { workspace = true }
