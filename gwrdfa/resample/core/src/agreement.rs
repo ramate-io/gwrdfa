@@ -100,6 +100,7 @@ where
 				agreement_world.certificate_facts.query(certificate_query_plan)
 			{
 				// This is just for moving the certificate into the certificate set.
+				// TODO: at this point, we should mark the certificate as processed.
 				self.data_mut().certificate_set_mut().insert(
 					index.clone(),
 					value.clone(),
@@ -135,6 +136,7 @@ where
 						.insert(None, (Agreement, Resample, index.clone(), value));
 
 					// Remove the index agreement entity as it has been processed.
+					// TODO: It would be better to mark as processed instead of removing the entity.
 					agreement_world.agreement_inferences.remove_entity(index_agreement_entity);
 				}
 				Condition::Hung => {

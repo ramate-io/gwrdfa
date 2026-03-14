@@ -23,7 +23,7 @@ use gwrdfa_resample::{
 		std::{join_set_committee::JoinSetCommittee, Index, MemoryAgreementData, Subcom, Value},
 		ResampleAgreement,
 	},
-	ForResample, Resample,
+	ForResample,
 };
 use ml_dsa::{MlDsa44, SigningKey};
 use parabyzantine::{act::Act, agreement::Agreement, hart::Hart, task::Task};
@@ -186,21 +186,12 @@ impl AegeriHart {
 
 	pub fn index_value_agreements(
 		&self,
-	) -> impl Iterator<
-		Item = (
-			ContainerEntity,
-			(&Agreement, &Resample, &Index<AegeriIndex>, &Value<AegeriProposal>),
-		),
-	> {
+	) -> impl Iterator<Item = (ContainerEntity, (&Agreement, &Index<AegeriIndex>, &Value<AegeriProposal>))>
+	{
 		self.data
 			.parabyzantine_agreement_world()
 			.agreement_facts
-			.query(MatchingTuple::<(
-			Agreement,
-			Resample,
-			Index<AegeriIndex>,
-			Value<AegeriProposal>,
-		)>::new())
+			.query(MatchingTuple::<(Agreement, Index<AegeriIndex>, Value<AegeriProposal>)>::new())
 	}
 
 	pub fn certificates(
@@ -258,10 +249,11 @@ mod tests {
 		let availability = Availability::genesis();
 
 		let (hart, mut gossamer_channels) = AegeriHart::mock()?;
-		let hart = hart.with_genesis(genesis_subcommittee, availability);
+		let hart = hart.with_genesis(genesis_subcommittee.clone(), availability);
 
 		// Send in a bunch of transactions
-		for i in 0..10 {
+		// TODO: we'll move this into a separate test where we wait for the mempool to make these available and see if they get proposed.
+		/*for i in 0..10 {
 			let transaction_signer =
 				SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![i as u8; 32]));
 			let transaction = Transaction::Leave;
@@ -274,7 +266,7 @@ mod tests {
 			gossamer_channels
 				.message_into_gossamer_sender
 				.send(message.to_gossamer_bytes()?)?;
-		}
+		}*/
 
 		let hart = hart.tick();
 		// Simulate broadcasting
@@ -303,6 +295,40 @@ mod tests {
 			),
 		]);
 		assert_eq!(certificates, expected_certificates);
+
+		// See if it has the index subcommittee agreement for the BlockHeader
+		let index_subcommittee_agreements = hart
+			.index_subcommittee_agreements()
+			.map(|(_, (index, subcommittee))| (index.0.clone(), subcommittee.0.clone()))
+			.collect::<BTreeSet<_>>();
+		assert_eq!(
+			index_subcommittee_agreements,
+			BTreeSet::from_iter(vec![(
+				AegeriIndex::Block(IndexValue::genesis()),
+				genesis_subcommittee
+					.clone()
+					.with_index(AegeriIndex::Block(IndexValue::genesis())),
+			),])
+		);
+
+		// See if it has the index value agreement for the Availability and the Confirmation value agreements
+		let index_value_agreements = hart
+			.index_value_agreements()
+			.map(|(_, (_agreement, index, proposal))| (index.0.clone(), proposal.0.clone()))
+			.collect::<BTreeSet<_>>();
+		assert_eq!(
+			index_value_agreements,
+			BTreeSet::from_iter(vec![
+				(
+					AegeriIndex::Availability(IndexValue::genesis()),
+					AegeriProposal::Availability(Availability::genesis())
+				),
+				(
+					AegeriIndex::Confirmation(IndexValue::genesis()),
+					AegeriProposal::Confirmation(Confirmation::genesis())
+				)
+			])
+		);
 
 		// Simulate broadcasting
 		// loop back the message
@@ -338,19 +364,44 @@ mod tests {
 		]);
 		assert_eq!(certificates, expected_certificates);
 
-		// TOOD: we should not be rebroadcasting the same certificates over and over again
-		// Simulate broadcasting
-		// loop back the message
-		/*while let Ok((entity, single_hart_cert_bytes)) =
-			gossamer_channels.entity_message_from_gossamer_receiver.try_recv()
-		{
-			// Confirm the sending
-			gossamer_channels.entity_into_gossamer_sender.send(Ok(entity))?;
-			// Loop back the certificate
-			gossamer_channels
-				.message_into_gossamer_sender
-				.send(single_hart_cert_bytes.clone())?;
-		}*/
+		// See if it has the index subcommittee agreement for the Transition
+		let index_subcommittee_agreements = hart
+			.index_subcommittee_agreements()
+			.map(|(_, (index, subcommittee))| (index.0.clone(), subcommittee.0.clone()))
+			.collect::<BTreeSet<_>>();
+		assert_eq!(
+			index_subcommittee_agreements,
+			BTreeSet::from_iter(vec![(
+				AegeriIndex::Transition(IndexValue::genesis()),
+				genesis_subcommittee
+					.clone()
+					.with_index(AegeriIndex::Transition(IndexValue::genesis())),
+			)])
+		);
+
+		// See if it has the index value agreement for the Availability, Confirmation and BlockHeader value agreements
+		let index_value_agreements = hart
+			.index_value_agreements()
+			.map(|(_, (_agreement, index, proposal))| (index.0.clone(), proposal.0.clone()))
+			.collect::<BTreeSet<_>>();
+		assert_eq!(
+			index_value_agreements,
+			BTreeSet::from_iter(vec![
+				(
+					AegeriIndex::Availability(IndexValue::genesis()),
+					AegeriProposal::Availability(Availability::genesis()),
+				),
+				(
+					AegeriIndex::Confirmation(IndexValue::genesis()),
+					AegeriProposal::Confirmation(Confirmation::genesis()),
+				),
+				(
+					AegeriIndex::Block(IndexValue::genesis()),
+					AegeriProposal::BlockHeader(BlockHeader::genesis())
+				),
+			])
+		);
+
 		let (entity, single_hart_cert_bytes) =
 			gossamer_channels.entity_message_from_gossamer_receiver.try_recv()?;
 		// Confirm the sending
@@ -383,6 +434,54 @@ mod tests {
 			),
 		]);
 		assert_eq!(certificates, expected_certificates);
+
+		// See if it has the index subcommittee agreement for the Availability in the next round
+		let index_subcommittee_agreements = hart
+			.index_subcommittee_agreements()
+			.map(|(_, (index, subcommittee))| (index.0.clone(), subcommittee.0.clone()))
+			.collect::<BTreeSet<_>>();
+		assert_eq!(
+			index_subcommittee_agreements,
+			BTreeSet::from_iter(vec![(
+				AegeriIndex::Availability(IndexValue::new(1)),
+				genesis_subcommittee
+					.clone()
+					.with_index(AegeriIndex::Availability(IndexValue::new(1))),
+			)])
+		);
+
+		// See if it has the index value agreements for:
+		// 0: Availability, Confirmation, BlockHeader, Transition
+		// 1: Availability
+		let index_value_agreements = hart
+			.index_value_agreements()
+			.map(|(_, (_agreement, index, proposal))| (index.0.clone(), proposal.0.clone()))
+			.collect::<BTreeSet<_>>();
+		assert_eq!(
+			index_value_agreements,
+			BTreeSet::from_iter(vec![
+				(
+					AegeriIndex::Availability(IndexValue::genesis()),
+					AegeriProposal::Availability(Availability::genesis())
+				),
+				(
+					AegeriIndex::Availability(IndexValue::genesis()),
+					AegeriProposal::Availability(Availability::genesis())
+				),
+				(
+					AegeriIndex::Confirmation(IndexValue::genesis()),
+					AegeriProposal::Confirmation(Confirmation::genesis())
+				),
+				(
+					AegeriIndex::Block(IndexValue::genesis()),
+					AegeriProposal::BlockHeader(BlockHeader::genesis())
+				),
+				(
+					AegeriIndex::Transition(IndexValue::genesis()),
+					AegeriProposal::Transition(Transition::genesis())
+				),
+			])
+		);
 
 		Ok(())
 	}

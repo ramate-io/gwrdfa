@@ -40,6 +40,11 @@ impl AegeriSubcommittee {
 		self
 	}
 
+	pub fn with_index(mut self, index: Index) -> Self {
+		self.index = index;
+		self
+	}
+
 	pub fn add_member(&mut self, member: PublicKey) {
 		self.members.insert(member);
 	}
