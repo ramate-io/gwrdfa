@@ -483,6 +483,98 @@ mod tests {
 			])
 		);
 
+		// Simulate broadcasting
+		// loop back the message
+		let (entity, single_hart_cert_bytes) =
+			gossamer_channels.entity_message_from_gossamer_receiver.try_recv()?;
+		// Confirm the sending
+		gossamer_channels.entity_into_gossamer_sender.send(Ok(entity))?;
+		// Loop back the certificate
+		gossamer_channels.message_into_gossamer_sender.send(single_hart_cert_bytes)?;
+
+		// See if it generates a availability certificate in the next round
+		let hart = hart.tick();
+		let certificates = hart
+			.certificates()
+			.map(|(_, (_, index, value))| (index.0.clone(), value.0.clone()))
+			.collect::<BTreeSet<_>>();
+		let expected_certificates = BTreeSet::from_iter(vec![
+			(
+				AegeriIndex::Availability(IndexValue::genesis()),
+				AegeriProposal::Availability(Availability::genesis()),
+			),
+			(
+				AegeriIndex::Confirmation(IndexValue::genesis()),
+				AegeriProposal::Confirmation(Confirmation::genesis()),
+			),
+			(
+				AegeriIndex::Block(IndexValue::genesis()),
+				AegeriProposal::BlockHeader(BlockHeader::genesis()),
+			),
+			(
+				AegeriIndex::Transition(IndexValue::genesis()),
+				AegeriProposal::Transition(Transition::genesis()),
+			),
+			(
+				AegeriIndex::Availability(IndexValue::new(1)),
+				// Still genesis availability
+				AegeriProposal::Availability(Availability::genesis()),
+			),
+		]);
+		assert_eq!(certificates, expected_certificates);
+
+		// See if it has the index subcommittee agreement for the Availability in the next round
+		let index_subcommittee_agreements = hart
+			.index_subcommittee_agreements()
+			.map(|(_, (index, subcommittee))| (index.0.clone(), subcommittee.0.clone()))
+			.collect::<BTreeSet<_>>();
+		assert_eq!(
+			index_subcommittee_agreements,
+			BTreeSet::from_iter(vec![(
+				AegeriIndex::Confirmation(IndexValue::new(1)),
+				genesis_subcommittee
+					.clone()
+					.with_index(AegeriIndex::Confirmation(IndexValue::new(1)))
+			),])
+		);
+
+		// See if it has the index value agreements for:
+		// 0: Availability, Confirmation, BlockHeader, Transition
+		// 1: Availability
+		let index_value_agreements = hart
+			.index_value_agreements()
+			.map(|(_, (_agreement, index, proposal))| (index.0.clone(), proposal.0.clone()))
+			.collect::<BTreeSet<_>>();
+		assert_eq!(
+			index_value_agreements,
+			BTreeSet::from_iter(vec![
+				(
+					AegeriIndex::Availability(IndexValue::new(0)),
+					AegeriProposal::Availability(Availability::genesis())
+				),
+				(
+					AegeriIndex::Availability(IndexValue::new(1)),
+					AegeriProposal::Availability(Availability::genesis())
+				),
+				(
+					AegeriIndex::Confirmation(IndexValue::genesis()),
+					AegeriProposal::Confirmation(Confirmation::genesis())
+				),
+				(
+					AegeriIndex::Block(IndexValue::genesis()),
+					AegeriProposal::BlockHeader(BlockHeader::genesis())
+				),
+				(
+					AegeriIndex::Transition(IndexValue::genesis()),
+					AegeriProposal::Transition(Transition::genesis())
+				),
+				(
+					AegeriIndex::Availability(IndexValue::new(1)),
+					AegeriProposal::Availability(Availability::genesis())
+				),
+			])
+		);
+
 		Ok(())
 	}
 }
