@@ -16,7 +16,7 @@ use tokio::sync::oneshot::Sender;
 #[cfg(feature = "gossamer-logging")]
 macro_rules! gossamer_log {
 	($($arg:tt)*) => {
-		eprintln!($($arg)*)
+		log::error!($($arg)*)
 	};
 }
 
@@ -86,7 +86,8 @@ impl<Entity> PendingOutbound<Entity> {
 		msg: Vec<u8>,
 	) -> Result<(), (Entity, GossamerTaskError)> {
 		let attempted_message_bytes = msg.len();
-		let Some(new_pending_bytes) = self.current_pending_bytes.checked_add(attempted_message_bytes)
+		let Some(new_pending_bytes) =
+			self.current_pending_bytes.checked_add(attempted_message_bytes)
 		else {
 			return Err((
 				entity,
@@ -145,11 +146,9 @@ impl<Entity: Send + Sync + 'static> Future for GossamerTask<Entity> {
 				}
 				Err(gossipsub::PublishError::InsufficientPeers) => {
 					if let Err((entity, e)) = task.pending_outbound.push(entity, msg) {
-						task.entity_into_gossamer_sender
-							.send(Err((entity, e)))
-							.map_err(|e| {
-								GossamerTaskError::BroadcastResultRelayError(e.to_string())
-							})?;
+						task.entity_into_gossamer_sender.send(Err((entity, e))).map_err(|e| {
+							GossamerTaskError::BroadcastResultRelayError(e.to_string())
+						})?;
 						return Ok(true);
 					}
 					Ok(false)

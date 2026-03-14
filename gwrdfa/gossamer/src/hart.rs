@@ -52,7 +52,7 @@ where
 					// ...for the purpose of Gossamer, it has been broadcast.
 					data.message_inferences.insert(Some(entity), Broadcast);
 					// NOTE: we do not remove the entity or any other data besides these markers.
-					// We allow a consumeing service to take care of garbage collection.
+					// We allow a consuming service to take care of garbage collection.
 				}
 				Ok(Some(Err((entity, e)))) => {
 					// Insert the confirmation error on the originating entity.

@@ -341,7 +341,7 @@ mod tests {
 		// TOOD: we should not be rebroadcasting the same certificates over and over again
 		// Simulate broadcasting
 		// loop back the message
-		while let Ok((entity, single_hart_cert_bytes)) =
+		/*while let Ok((entity, single_hart_cert_bytes)) =
 			gossamer_channels.entity_message_from_gossamer_receiver.try_recv()
 		{
 			// Confirm the sending
@@ -350,14 +350,16 @@ mod tests {
 			gossamer_channels
 				.message_into_gossamer_sender
 				.send(single_hart_cert_bytes.clone())?;
-		}
+		}*/
+		let (entity, single_hart_cert_bytes) =
+			gossamer_channels.entity_message_from_gossamer_receiver.try_recv()?;
+		// Confirm the sending
+		gossamer_channels.entity_into_gossamer_sender.send(Ok(entity))?;
+		// Loop back the certificate
+		gossamer_channels.message_into_gossamer_sender.send(single_hart_cert_bytes)?;
 
 		// See if it generates a transition certificate
 		let hart = hart.tick();
-		println!("Agreements");
-		for (_, (index, subcommittee)) in hart.index_subcommittee_agreements() {
-			println!("{index:?} {:?}", subcommittee.0.index())
-		}
 		let certificates = hart
 			.certificates()
 			.map(|(_, (_, index, value))| (index.0.clone(), value.0.clone()))

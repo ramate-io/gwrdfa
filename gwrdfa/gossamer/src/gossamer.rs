@@ -66,7 +66,7 @@ impl<Entity: Send + Sync + 'static> Gossamer<Entity> {
 		let (gossamer_task, listen_addr_receiver, gossamer) = config.build().await?;
 		tokio::spawn(async move {
 			if let Err(e) = gossamer_task.await {
-				println!("Error in Gossamer task: {:?}", e);
+				log::error!("Error in Gossamer task: {:?}", e);
 				return Err(e);
 			}
 

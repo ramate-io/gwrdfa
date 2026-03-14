@@ -46,6 +46,9 @@ impl ParabyzantineTask<AegeriParabyzantineData> for AegeriTask {
 				Ok((index, proposal)) => {
 					// If we got a proposal, insert it into the task inferences.
 					data.task_inferences.insert(None, (index, proposal));
+
+					// Remove the [Resample] value on the agreement s.t. this doesn't get processed again
+					data.agreement_inferences.remove::<Resample>(container_entity);
 				}
 				Err(e) => {
 					log::error!("error handling agreement: {:?}", e);

@@ -15,7 +15,7 @@ pub mod subcommittee;
 #[cfg(any(test, feature = "std"))]
 pub mod std;
 
-use crate::{ForResample, Resample};
+use crate::Resample;
 pub use certificate::CertificateSet;
 pub use consensus::Condition;
 use core::marker::PhantomData;

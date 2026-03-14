@@ -1271,6 +1271,7 @@ dependencies = [
  "futures",
  "gwrdfa-container",
  "libp2p",
+ "log",
  "parabyzantine",
  "thiserror 1.0.69",
  "tokio",
