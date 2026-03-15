@@ -14,6 +14,12 @@ pub(crate) struct TrivialConsensusHarness {
 	pub genesis_subcommittee: AegeriSubcommittee,
 }
 
+pub(crate) struct MultiHartHarness {
+	pub harts: Vec<AegeriHart>,
+	pub gossamer_channels: Vec<GossamerChannels<ContainerEntity>>,
+	pub genesis_subcommittee: AegeriSubcommittee,
+}
+
 pub(crate) struct SentTransaction {
 	pub id: Id,
 	pub public_key: PublicKey,
@@ -30,6 +36,32 @@ pub(crate) fn setup_trivial_consensus_harness(seed: u8) -> Result<TrivialConsens
 	let hart = hart.with_genesis(genesis_subcommittee.clone(), availability);
 
 	Ok(TrivialConsensusHarness { hart, gossamer_channels, genesis_subcommittee })
+}
+
+pub(crate) fn setup_multi_hart_harness(
+	seeds: impl IntoIterator<Item = u8>,
+) -> Result<MultiHartHarness, AegeriHartError> {
+	let seeds = seeds.into_iter().collect::<Vec<_>>();
+	let mut members = BTreeSet::new();
+	let mut signers = Vec::with_capacity(seeds.len());
+	for seed in seeds {
+		let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![seed; 32]));
+		members.insert(PublicKey::new(&signer));
+		signers.push(signer);
+	}
+
+	let genesis_subcommittee = AegeriSubcommittee::genesis().with_members(members.into_iter());
+	let availability = Availability::genesis();
+	let mut harts = Vec::with_capacity(signers.len());
+	let mut gossamer_channels = Vec::with_capacity(signers.len());
+
+	for signer in signers {
+		let (hart, channels) = AegeriHart::mock()?;
+		harts.push(hart.with_signer(signer).with_genesis(genesis_subcommittee.clone(), availability.clone()));
+		gossamer_channels.push(channels);
+	}
+
+	Ok(MultiHartHarness { harts, gossamer_channels, genesis_subcommittee })
 }
 
 pub(crate) fn loopback_single_outbound_message(
@@ -50,6 +82,80 @@ pub(crate) fn advance_consensus_step(
 	loopback_single_outbound_message(gossamer_channels)?;
 	hart.tick();
 	Ok(())
+}
+
+pub(crate) fn advance_multi_hart_consensus_step(
+	harts: &mut [AegeriHart],
+	gossamer_channels: &mut [GossamerChannels<ContainerEntity>],
+	active: &[usize],
+) -> Result<(), anyhow::Error> {
+	for &i in active {
+		harts[i].tick();
+	}
+
+	let mut outbound_messages = Vec::new();
+	for &i in active {
+		while let Ok((entity, bytes)) = gossamer_channels[i].entity_message_from_gossamer_receiver.try_recv()
+		{
+			gossamer_channels[i].entity_into_gossamer_sender.send(Ok(entity))?;
+			outbound_messages.push(bytes);
+		}
+	}
+
+	for &receiver in active {
+		for bytes in outbound_messages.iter() {
+			gossamer_channels[receiver].message_into_gossamer_sender.send(bytes.clone())?;
+		}
+	}
+
+	for &i in active {
+		harts[i].tick();
+	}
+
+	Ok(())
+}
+
+pub(crate) fn hart_has_certificate_index(hart: &AegeriHart, index: AegeriIndex) -> bool {
+	hart.certificate_set().into_iter().any(|(candidate, _)| candidate == index)
+}
+
+pub(crate) fn assert_active_harts_have_certificate_index(
+	harts: &[AegeriHart],
+	active: &[usize],
+	index: AegeriIndex,
+) {
+	for &i in active {
+		let known_indexes = harts[i]
+			.certificate_set()
+			.into_iter()
+			.map(|(candidate, _)| candidate)
+			.collect::<BTreeSet<_>>();
+		assert!(
+			hart_has_certificate_index(&harts[i], index),
+			"hart {i} does not have expected certificate index; known indexes: {known_indexes:?}"
+		);
+	}
+}
+
+pub(crate) fn assert_active_harts_lack_certificate_index(
+	harts: &[AegeriHart],
+	active: &[usize],
+	index: AegeriIndex,
+) {
+	for &i in active {
+		assert!(
+			!hart_has_certificate_index(&harts[i], index),
+			"hart {i} unexpectedly has certificate index"
+		);
+	}
+}
+
+pub(crate) fn active_harts_all_have_certificate_index(
+	harts: &[AegeriHart],
+	active: &[usize],
+	index: AegeriIndex,
+) -> bool {
+	active.iter().all(|&i| hart_has_certificate_index(&harts[i], index))
 }
 
 pub(crate) fn send_transaction(
