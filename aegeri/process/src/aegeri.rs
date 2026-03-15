@@ -149,29 +149,22 @@ impl AegeriHart {
 		self
 	}
 
-	pub fn tick(self) -> Self {
-		let Self {
-			mut data,
-			mut message,
-			mut agreement,
-			mut task,
-			mut message_in,
-			mut message_out,
-		} = self;
-
-		message.act(Hart, &mut data);
-		message_in.act(MessageIn, &mut data);
-		agreement.act(Agreement, &mut data);
-		task.act(Task, &mut data);
-		message_out.act(MessageOut, &mut data);
-		message.act(Hart, &mut data);
-
-		Self { data, message, agreement, task, message_in, message_out }
+	pub fn mempool_slot_width_ms(&self) -> u64 {
+		self.task.slot_width_ms()
 	}
 
-	pub fn run(mut self) {
+	pub fn tick(&mut self) {
+		self.message.act(Hart, &mut self.data);
+		self.message_in.act(MessageIn, &mut self.data);
+		self.agreement.act(Agreement, &mut self.data);
+		self.task.act(Task, &mut self.data);
+		self.message_out.act(MessageOut, &mut self.data);
+		self.message.act(Hart, &mut self.data);
+	}
+
+	pub fn run(&mut self) {
 		loop {
-			self = self.tick();
+			self.tick();
 		}
 	}
 

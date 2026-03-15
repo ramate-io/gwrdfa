@@ -1,8 +1,9 @@
 use super::{AegeriHart, AegeriHartError};
 use aegeri_message::{
-	AegeriSubcommittee, Availability, Index as AegeriIndex, Proposal as AegeriProposal, PublicKey,
+	AegeriSubcommittee, Availability, Id, Index as AegeriIndex, Message, Nonce,
+	Proposal as AegeriProposal, PublicKey, Transaction, TransactionSet, UnifiedMessage,
 };
-use gossamer::GossamerChannels;
+use gossamer::{GossamerChannels, GossamerMessage};
 use gwrdfa_container::ContainerEntity;
 use ml_dsa::{MlDsa44, SigningKey, B32};
 use std::collections::BTreeSet;
@@ -37,12 +38,37 @@ pub(crate) fn loopback_single_outbound_message(
 }
 
 pub(crate) fn advance_consensus_step(
-	hart: AegeriHart,
+	hart: &mut AegeriHart,
 	gossamer_channels: &mut GossamerChannels<ContainerEntity>,
-) -> Result<AegeriHart, anyhow::Error> {
-	let hart = hart.tick();
+) -> Result<(), anyhow::Error> {
+	hart.tick();
 	loopback_single_outbound_message(gossamer_channels)?;
-	Ok(hart.tick())
+	hart.tick();
+	Ok(())
+}
+
+pub(crate) fn send_transaction(
+	gossamer_channels: &mut GossamerChannels<ContainerEntity>,
+	seed: u8,
+	payload: Transaction,
+	nonce: [u8; 32],
+) -> Result<Id, anyhow::Error> {
+	let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![seed; 32]));
+	let message = Message::<Transaction>::try_new(&signer, payload, Nonce::new(nonce))?;
+	let transaction_id = *message.id();
+	let unified_message: UnifiedMessage = message.into();
+	gossamer_channels
+		.message_into_gossamer_sender
+		.send(unified_message.to_gossamer_bytes()?)?;
+	Ok(transaction_id)
+}
+
+pub(crate) fn availability_from_ids(ids: impl IntoIterator<Item = Id>) -> Availability {
+	let mut transactions = TransactionSet::new();
+	for id in ids {
+		transactions.add_id(id);
+	}
+	Availability::from_transactions(transactions)
 }
 
 pub(crate) fn assert_certificate_set(

@@ -14,7 +14,7 @@ async fn test_aegeri_hart_trivial_consensus() -> Result<(), anyhow::Error> {
 	let mut gossamer_channels = harness.gossamer_channels;
 	let genesis_subcommittee = harness.genesis_subcommittee;
 
-	hart = advance_consensus_step(hart, &mut gossamer_channels)?;
+	advance_consensus_step(&mut hart, &mut gossamer_channels)?;
 	assert_certificate_set(
 		&hart,
 		[
@@ -51,7 +51,7 @@ async fn test_aegeri_hart_trivial_consensus() -> Result<(), anyhow::Error> {
 		],
 	);
 
-	hart = advance_consensus_step(hart, &mut gossamer_channels)?;
+	advance_consensus_step(&mut hart, &mut gossamer_channels)?;
 	assert_certificate_set(
 		&hart,
 		[
@@ -96,7 +96,7 @@ async fn test_aegeri_hart_trivial_consensus() -> Result<(), anyhow::Error> {
 		],
 	);
 
-	hart = advance_consensus_step(hart, &mut gossamer_channels)?;
+	advance_consensus_step(&mut hart, &mut gossamer_channels)?;
 	assert_certificate_set(
 		&hart,
 		[
@@ -149,7 +149,7 @@ async fn test_aegeri_hart_trivial_consensus() -> Result<(), anyhow::Error> {
 		],
 	);
 
-	hart = advance_consensus_step(hart, &mut gossamer_channels)?;
+	advance_consensus_step(&mut hart, &mut gossamer_channels)?;
 	assert_certificate_set(
 		&hart,
 		[

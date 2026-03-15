@@ -37,6 +37,10 @@ impl AegeriTask {
 		})
 	}
 
+	pub fn slot_width_ms(&self) -> u64 {
+		self.mempool.slot_width_ms()
+	}
+
 	/// Adds a transaction to both persistent verified storage and mempool scheduling.
 	pub fn add_transaction(
 		&mut self,
