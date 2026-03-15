@@ -14,6 +14,11 @@ pub(crate) struct TrivialConsensusHarness {
 	pub genesis_subcommittee: AegeriSubcommittee,
 }
 
+pub(crate) struct SentTransaction {
+	pub id: Id,
+	pub public_key: PublicKey,
+}
+
 pub(crate) fn setup_trivial_consensus_harness(seed: u8) -> Result<TrivialConsensusHarness, AegeriHartError> {
 	let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![seed; 32]));
 	let signer_public_key = PublicKey::new(&signer);
@@ -53,14 +58,24 @@ pub(crate) fn send_transaction(
 	payload: Transaction,
 	nonce: [u8; 32],
 ) -> Result<Id, anyhow::Error> {
+	Ok(send_transaction_with_public_key(gossamer_channels, seed, payload, nonce)?.id)
+}
+
+pub(crate) fn send_transaction_with_public_key(
+	gossamer_channels: &mut GossamerChannels<ContainerEntity>,
+	seed: u8,
+	payload: Transaction,
+	nonce: [u8; 32],
+) -> Result<SentTransaction, anyhow::Error> {
 	let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![seed; 32]));
+	let public_key = PublicKey::new(&signer);
 	let message = Message::<Transaction>::try_new(&signer, payload, Nonce::new(nonce))?;
 	let transaction_id = *message.id();
 	let unified_message: UnifiedMessage = message.into();
 	gossamer_channels
 		.message_into_gossamer_sender
 		.send(unified_message.to_gossamer_bytes()?)?;
-	Ok(transaction_id)
+	Ok(SentTransaction { id: transaction_id, public_key })
 }
 
 pub(crate) fn availability_from_ids(ids: impl IntoIterator<Item = Id>) -> Availability {
