@@ -249,10 +249,11 @@ mod tests {
 			.iter()
 			.map(|(_entity, container)| container.clone())
 			.collect::<BTreeSet<_>>();
-		assert_eq!(agreement_containers.len(), 3);
+		assert_eq!(agreement_containers.len(), 2);
 
 		let reference_agreement_containers = vec![
-			genesis_agreement_container.clone(),
+			// We now evict genesis agreements.
+			// genesis_agreement_container.clone(),
 			// Next subcommittee agreement
 			AgreementContainer {
 				agreement: Component::Present(Agreement),
@@ -323,7 +324,8 @@ mod tests {
 			.map(|(_entity, container)| container.clone())
 			.collect::<BTreeSet<_>>();
 		let expected_after_index_0_consensus = vec![
-			genesis_agreement.clone(),
+			// We now evict genesis agreements.
+			// genesis_agreement.clone(),
 			AgreementContainer {
 				agreement: Component::Present(Agreement),
 				resample: Component::Present(Resample),
@@ -362,7 +364,8 @@ mod tests {
 			.map(|(_entity, container)| container.clone())
 			.collect::<BTreeSet<_>>();
 		let expected_after_index_1_consensus = vec![
-			genesis_agreement,
+			// We now evict genesis agreements.
+			// genesis_agreement,
 			AgreementContainer {
 				agreement: Component::Present(Agreement),
 				resample: Component::Present(Resample),
@@ -370,13 +373,15 @@ mod tests {
 				value: Component::Present(Value::new(10)),
 				..Default::default()
 			},
-			AgreementContainer {
+			// Next index committee
+			// Is also evicted.
+			/*AgreementContainer {
 				agreement: Component::Present(Agreement),
 				resample: Component::Present(Resample),
 				index: Component::Present(Index::new(1)),
 				subcommittee: Component::Present(all_voters.clone()),
 				..Default::default()
-			},
+			},*/
 			AgreementContainer {
 				agreement: Component::Present(Agreement),
 				resample: Component::Present(Resample),

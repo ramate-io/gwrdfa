@@ -255,6 +255,7 @@ pub mod tests {
 			let mut buffer_messages = Vec::new();
 			let mut containers = Vec::new();
 			for (entity, container) in data.gossamer_buffer.iter() {
+				println!("entity: {:?}, container: {:?}", entity, container);
 				containers.push((entity, container));
 				match &container.message {
 					Component::Present(message) => {
@@ -359,14 +360,7 @@ pub mod tests {
 
 	#[test]
 	fn test_gossamer_single_hart_in() -> Result<(), anyhow::Error> {
-		let (
-			gossamer,
-			GossamerChannels {
-				message_into_gossamer_sender,
-				entity_message_from_gossamer_receiver: _,
-				entity_into_gossamer_sender: _,
-			},
-		) = Gossamer::<ContainerEntity>::mock();
+		let (gossamer, gossamer_channels) = Gossamer::<ContainerEntity>::mock();
 
 		let messages = TestGossamerMessages;
 		let mut hart =
@@ -377,7 +371,7 @@ pub mod tests {
 		hart_in(
 			&mut hart,
 			&mut data,
-			message_into_gossamer_sender,
+			gossamer_channels.message_into_gossamer_sender,
 			vec![TestMessage("Hello, world!".to_string())],
 		)?;
 
