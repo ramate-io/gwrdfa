@@ -151,6 +151,7 @@ impl AegeriHart {
 	}
 
 	pub fn tick(&mut self) {
+		log::debug!("\n\n===\nTICKING AEGERI HART: {}\n====", self.signer_public_key());
 		self.message.act(Hart, &mut self.data);
 		self.message_in.act(MessageIn, &mut self.data);
 		self.agreement.act(Agreement, &mut self.data);

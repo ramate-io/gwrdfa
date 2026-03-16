@@ -19,6 +19,7 @@ dependencies = [
  "anyhow",
  "gossamer",
  "gwrdfa-resample",
+ "log",
  "ml-dsa",
  "serde",
  "serde_json",

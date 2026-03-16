@@ -1,5 +1,7 @@
 use crate::aegeri::{AegeriHart, AegeriHartError};
-use crate::aegeri_message::{AegeriSubcommittee, Availability, Index as AegeriIndex, PublicKey};
+#[cfg(test)]
+use crate::aegeri_message::Index as AegeriIndex;
+use crate::aegeri_message::{AegeriSubcommittee, Availability, PublicKey};
 use crate::gossamer::local_cluster::{LocalClusterConfig, LocalClusterError};
 use crate::gossamer::Multiaddr;
 use gwrdfa_container::ContainerEntity;
@@ -80,6 +82,7 @@ mod tests {
 	use super::*;
 	use crate::aegeri_message::IndexValue;
 	use anyhow::Result;
+	use gwrdfa_resample::agreement::std::NextRound;
 	use std::sync::Once;
 	use tokio::time::Duration;
 
@@ -88,7 +91,8 @@ mod tests {
 	fn init_test_logger() {
 		LOG_INIT.call_once(|| {
 			let _ = env_logger::Builder::from_env(
-				env_logger::Env::default().default_filter_or("trace"),
+				env_logger::Env::default()
+					.default_filter_or("gossamer=debug,aegeri_process=debug,aegeri_message=debug"),
 			)
 			.is_test(true)
 			.try_init();
@@ -97,6 +101,16 @@ mod tests {
 
 	fn hart_has_index(hart: &AegeriHart, index: AegeriIndex) -> bool {
 		hart.certificate_set().into_iter().any(|(candidate, _)| candidate == index)
+	}
+
+	fn hart_has_index_agreement(hart: &AegeriHart, index: AegeriIndex) -> bool {
+		hart.index_subcommittee_agreement_set()
+			.into_iter()
+			.any(|(candidate, _)| candidate == index)
+	}
+
+	fn hart_current_index_agreement(hart: &AegeriHart) -> Option<AegeriIndex> {
+		hart.index_subcommittee_agreement_set().into_iter().map(|(index, _)| index).max()
 	}
 
 	async fn tick_active(harts: &mut [AegeriHart], active: &[usize], steps: usize) {
@@ -116,7 +130,7 @@ mod tests {
 	) -> Result<()> {
 		for step in 0..max_steps {
 			if active.iter().all(|&i| hart_has_index(&harts[i], index)) {
-				log::trace!("local-cluster: reached target index {index:?} at step {step}");
+				log::debug!("local-cluster: reached target index {index:?} at step {step}");
 				return Ok(());
 			}
 
@@ -133,7 +147,7 @@ mod tests {
 					})
 					.collect::<Vec<_>>()
 					.join(" | ");
-				log::trace!(
+				log::debug!(
 					"local-cluster: waiting for {index:?}, step={step}, active snapshot={snapshot}"
 				);
 			}
@@ -156,6 +170,94 @@ mod tests {
 		anyhow::bail!("did not reach expected index {index:?} within max steps; {snapshots}")
 	}
 
+	async fn drive_until_all_active_have_index_agreement(
+		harts: &mut [AegeriHart],
+		active: &[usize],
+		index: AegeriIndex,
+		max_steps: usize,
+	) -> Result<()> {
+		for _ in 0..max_steps {
+			if active.iter().all(|&i| hart_has_index_agreement(&harts[i], index)) {
+				return Ok(());
+			}
+			tick_active(harts, active, 1).await;
+		}
+
+		let snapshots = active
+			.iter()
+			.map(|&i| {
+				let known = harts[i]
+					.index_subcommittee_agreement_set()
+					.into_iter()
+					.map(|(idx, _)| idx)
+					.collect::<std::collections::BTreeSet<_>>();
+				format!("hart {i}: {known:?}")
+			})
+			.collect::<Vec<_>>()
+			.join("; ");
+		anyhow::bail!(
+			"did not reach expected index agreement {index:?} within max steps; {snapshots}"
+		)
+	}
+
+	async fn drive_until_all_active_share_same_index_agreement(
+		harts: &mut [AegeriHart],
+		active: &[usize],
+		max_steps: usize,
+	) -> Result<AegeriIndex> {
+		for _ in 0..max_steps {
+			let current = active
+				.iter()
+				.map(|&i| hart_current_index_agreement(&harts[i]))
+				.collect::<Vec<_>>();
+			if current.iter().all(Option::is_some) {
+				let first = current[0].expect("checked is_some");
+				if current.iter().all(|candidate| *candidate == Some(first)) {
+					return Ok(first);
+				}
+			}
+			tick_active(harts, active, 1).await;
+		}
+
+		let snapshots = active
+			.iter()
+			.map(|&i| format!("hart {i}: {:?}", hart_current_index_agreement(&harts[i])))
+			.collect::<Vec<_>>()
+			.join("; ");
+		anyhow::bail!("active harts did not converge on same index agreement; {snapshots}")
+	}
+
+	async fn find_stalled_shared_index_under_active_set(
+		harts: &mut [AegeriHart],
+		active: &[usize],
+		max_index_hops: usize,
+		stall_ticks: usize,
+	) -> Result<AegeriIndex> {
+		let mut shared =
+			drive_until_all_active_share_same_index_agreement(harts, active, 120).await?;
+		for _ in 0..max_index_hops {
+			let next = shared.next().ok_or_else(|| {
+				anyhow::anyhow!("shared index {shared:?} did not have a next round")
+			})?;
+
+			let mut advanced = false;
+			for _ in 0..stall_ticks {
+				tick_active(harts, active, 1).await;
+				if active.iter().all(|&i| hart_has_index_agreement(&harts[i], next)) {
+					advanced = true;
+					shared = next;
+					break;
+				}
+			}
+
+			if !advanced {
+				return Ok(shared);
+			}
+		}
+
+		anyhow::bail!("active set kept advancing without stalling under reduced participation")
+	}
+
 	#[tokio::test]
 	#[ignore = "Acquires ephemeral ports; run with --ignored to opt in."]
 	async fn test_local_cluster_multi_hart_consensus_varying_participation() -> Result<()> {
@@ -164,11 +266,13 @@ mod tests {
 		let active5 = vec![0, 1, 2, 3, 4];
 		let active4 = vec![0, 1, 2, 3];
 
-		// Scenario 1: first round, all seven active -> transition consensus.
+		// One local cluster for the whole scenario progression.
 		let mut cluster = AegeriLocalClusterConfig::default().with_count(7).build().await?;
 		assert_eq!(cluster.genesis_subcommittee.size(), 7);
 		assert_eq!(cluster.listen_addrs.len(), 7);
-		tokio::time::sleep(Duration::from_secs(2)).await;
+		tokio::time::sleep(Duration::from_secs(15)).await;
+
+		// Scenario 1: first round, all seven active -> transition consensus.
 		drive_until_all_active_have_index(
 			&mut cluster.harts,
 			&active7,
@@ -177,33 +281,54 @@ mod tests {
 		)
 		.await?;
 
-		// Scenario 2: "second round" shape, five active -> consensus reached.
-		let mut cluster = AegeriLocalClusterConfig::default().with_count(7).build().await?;
-		tokio::time::sleep(Duration::from_secs(2)).await;
+		// Scenario 2: second round, five active -> consensus reached.
 		drive_until_all_active_have_index(
 			&mut cluster.harts,
 			&active5,
-			AegeriIndex::Confirmation(IndexValue::new(0)),
+			AegeriIndex::Confirmation(IndexValue::new(1)),
 			120,
 		)
 		.await?;
 
-		// Scenario 3: four active first -> no consensus, then fifth joins -> consensus reached.
-		let mut cluster = AegeriLocalClusterConfig::default().with_count(7).build().await?;
-		tokio::time::sleep(Duration::from_secs(2)).await;
-		tick_active(&mut cluster.harts, &active4, 1).await;
+		// Scenario 3: third round, four active first -> no consensus, then fifth joins.
+		let stalled_index = find_stalled_shared_index_under_active_set(
+			&mut cluster.harts,
+			&active4,
+			24,
+			8,
+		)
+		.await?;
+		let next_index = stalled_index.next().ok_or_else(|| {
+			anyhow::anyhow!("shared index {stalled_index:?} did not have a next round")
+		})?;
+		let only_the_following_harts_should_send = format!(
+			"Only the following harts should send: {}",
+			active4.iter().fold(String::new(), |acc, &i| acc
+				+ &format!("hart {i}: {}", cluster.harts[i].signer_public_key().to_string())
+				+ ", ")
+		);
 		for &i in &active4 {
+			let signer_public_key = cluster.harts[i].signer_public_key();
 			assert!(
-				!hart_has_index(&cluster.harts[i], AegeriIndex::Confirmation(IndexValue::new(0))),
-				"hart {i} unexpectedly reached confirmation with only four active senders"
+				!hart_has_index_agreement(&cluster.harts[i], next_index),
+				"hart {i}: {signer_public_key} unexpectedly reached next index agreement {next_index:?} after active4 stalled at {stalled_index:?}\n{only_the_following_harts_should_send}"
 			);
 		}
 
-		drive_until_all_active_have_index(
+		// Let the fifth hart catch up to the same stalled index first.
+		drive_until_all_active_have_index_agreement(
 			&mut cluster.harts,
 			&active5,
-			AegeriIndex::Confirmation(IndexValue::new(0)),
-			120,
+			stalled_index,
+			400,
+		)
+		.await?;
+
+		drive_until_all_active_have_index_agreement(
+			&mut cluster.harts,
+			&active5,
+			next_index,
+			400,
 		)
 		.await?;
 

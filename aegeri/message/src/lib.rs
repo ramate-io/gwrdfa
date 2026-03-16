@@ -21,6 +21,19 @@ use ml_dsa::{
 };
 use serde::{Deserialize, Serialize};
 use sha3::Digest;
+use std::fmt;
+use std::fmt::Write as _;
+
+fn write_lower_hex(f: &mut fmt::Formatter<'_>, bytes: &[u8]) -> fmt::Result {
+	const HEX: &[u8; 16] = b"0123456789abcdef";
+	for &byte in &bytes[..16] {
+		let hi = HEX[(byte >> 4) as usize] as char;
+		let lo = HEX[(byte & 0x0f) as usize] as char;
+		f.write_char(hi)?;
+		f.write_char(lo)?;
+	}
+	Ok(())
+}
 
 /// The ID of a message
 ///
@@ -42,6 +55,12 @@ impl Id {
 	/// Borrow the bytes of the ID.
 	fn as_bytes(&self) -> &[u8] {
 		&self.0
+	}
+}
+
+impl fmt::Display for Id {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write_lower_hex(f, self.as_bytes())
 	}
 }
 
@@ -83,6 +102,12 @@ impl PublicKey {
 	}
 }
 
+impl fmt::Display for PublicKey {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write_lower_hex(f, self.as_bytes())
+	}
+}
+
 /// The signature of a message for a given signer.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Signature(Vec<u8>);
@@ -109,6 +134,12 @@ impl Signature {
 	pub fn to_ml_dsa_signature(&self) -> Result<MlDsaSignature<MlDsa44>, VerificationError> {
 		MlDsaSignature::<MlDsa44>::decode(&self.to_encoded_signature()?)
 			.ok_or(VerificationError::SignatureVerificationFailed)
+	}
+}
+
+impl fmt::Display for Signature {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write_lower_hex(f, self.as_bytes())
 	}
 }
 
@@ -337,6 +368,26 @@ mod tests {
 		let mut message = Message::<Transaction>::try_new(&signer, transaction, nonce)?;
 		message.signature.0[0] = !message.signature.0[0];
 		assert!(message.verify() == Err(VerificationError::SignatureVerificationFailed));
+		Ok(())
+	}
+
+	#[test]
+	fn test_hex_display_for_id_public_key_and_signature() -> Result<(), anyhow::Error> {
+		let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![7; 32]));
+		let transaction = Transaction::ElfScript(ElfScript::new(b"display"));
+		let nonce = Nonce::new(b"nonce");
+		let message = Message::<Transaction>::try_new(&signer, transaction, nonce)?;
+
+		let id_hex = message.id().to_string();
+		let pk_hex = message.public_key().to_string();
+		let sig_hex = message.signature().to_string();
+
+		assert_eq!(id_hex.len(), 64);
+		assert_eq!(pk_hex.len() % 2, 0);
+		assert_eq!(sig_hex.len() % 2, 0);
+		assert!(id_hex.chars().all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()));
+		assert!(pk_hex.chars().all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()));
+		assert!(sig_hex.chars().all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()));
 		Ok(())
 	}
 }

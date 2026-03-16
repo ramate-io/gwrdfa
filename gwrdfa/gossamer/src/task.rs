@@ -26,14 +26,14 @@ macro_rules! gossamer_log {
 }
 
 #[cfg(feature = "gossamer-logging")]
-macro_rules! gossamer_trace {
+macro_rules! gossamer_debug {
 	($($arg:tt)*) => {
-		log::trace!($($arg)*)
+		log::debug!($($arg)*)
 	};
 }
 
 #[cfg(not(feature = "gossamer-logging"))]
-macro_rules! gossamer_trace {
+macro_rules! gossamer_debug {
 	($($arg:tt)*) => {};
 }
 
@@ -144,7 +144,7 @@ impl<Entity: Send + Sync + 'static> Future for GossamerTask<Entity> {
 			entity: Entity,
 			msg: Vec<u8>,
 		) -> Result<bool, GossamerTaskError> {
-			gossamer_trace!("gossamer: try_publish (bytes={})", msg.len());
+			gossamer_debug!("gossamer: try_publish (bytes={})", msg.len());
 			match task
 				.swarm
 				.behaviour_mut()
@@ -152,14 +152,14 @@ impl<Entity: Send + Sync + 'static> Future for GossamerTask<Entity> {
 				.publish(task.topic_hash.clone(), msg.clone())
 			{
 				Ok(_) => {
-					gossamer_trace!("gossamer: publish accepted");
+					gossamer_debug!("gossamer: publish accepted");
 					task.entity_into_gossamer_sender
 						.send(Ok(entity))
 						.map_err(|e| GossamerTaskError::BroadcastResultRelayError(e.to_string()))?;
 					Ok(true)
 				}
 				Err(gossipsub::PublishError::InsufficientPeers) => {
-					gossamer_trace!(
+					gossamer_debug!(
 						"gossamer: insufficient peers, deferring outbound (bytes={})",
 						msg.len()
 					);
@@ -190,7 +190,7 @@ impl<Entity: Send + Sync + 'static> Future for GossamerTask<Entity> {
 			let mut progressed = false;
 
 			if let Some((entity, msg)) = this.pending_outbound.pop() {
-				gossamer_trace!("gossamer: retry deferred outbound (bytes={})", msg.len());
+				gossamer_debug!("gossamer: retry deferred outbound (bytes={})", msg.len());
 				let publish_result = try_publish(this, entity, msg)?;
 				progressed = progressed || publish_result;
 			}
@@ -198,7 +198,10 @@ impl<Entity: Send + Sync + 'static> Future for GossamerTask<Entity> {
 			// 1. Poll outbound channel
 			match Pin::new(&mut this.entity_message_from_gossamer_receiver).poll_recv(cx) {
 				Poll::Ready(Some((entity, msg))) => {
-					gossamer_trace!("gossamer: outbound channel received message (bytes={})", msg.len());
+					gossamer_debug!(
+						"gossamer: outbound channel received message (bytes={})",
+						msg.len()
+					);
 					let _ = try_publish(this, entity, msg)?;
 					// Receiving one outbound message is progress even if publish is deferred.
 					progressed = true;
@@ -214,7 +217,10 @@ impl<Entity: Send + Sync + 'static> Future for GossamerTask<Entity> {
 				Poll::Ready(Some(SwarmEvent::Behaviour(GossamerBehaviourEvent::Gossipsub(
 					gossipsub::Event::Message { message, .. },
 				)))) => {
-					gossamer_trace!("gossamer: inbound gossipsub message received (bytes={})", message.data.len());
+					gossamer_debug!(
+						"gossamer: inbound gossipsub message received (bytes={})",
+						message.data.len()
+					);
 					if let Err(e) = this.message_into_gossamer_sender.send(message.data) {
 						return Poll::Ready(Err(GossamerTaskError::RelayToGossamerError(e)));
 					}
@@ -222,7 +228,7 @@ impl<Entity: Send + Sync + 'static> Future for GossamerTask<Entity> {
 				}
 
 				Poll::Ready(Some(SwarmEvent::ConnectionEstablished { peer_id, .. })) => {
-					gossamer_trace!("gossamer: connection established with peer {peer_id}");
+					gossamer_debug!("gossamer: connection established with peer {peer_id}");
 					{
 						let behaviour = this.swarm.behaviour_mut();
 						behaviour.gossipsub.add_explicit_peer(&peer_id);
@@ -236,7 +242,7 @@ impl<Entity: Send + Sync + 'static> Future for GossamerTask<Entity> {
 				}
 
 				Poll::Ready(Some(SwarmEvent::ConnectionClosed { peer_id, .. })) => {
-					gossamer_trace!("gossamer: connection closed with peer {peer_id}");
+					gossamer_debug!("gossamer: connection closed with peer {peer_id}");
 					this.swarm.behaviour_mut().gossipsub.remove_explicit_peer(&peer_id);
 					progressed = true;
 				}
@@ -249,7 +255,7 @@ impl<Entity: Send + Sync + 'static> Future for GossamerTask<Entity> {
 				}
 
 				Poll::Ready(Some(SwarmEvent::NewListenAddr { address, .. })) => {
-					gossamer_trace!("gossamer: new listen address {address}");
+					gossamer_debug!("gossamer: new listen address {address}");
 					if let Some(sender) = this.listen_addr_sender.take() {
 						let _ = sender
 							.send(address)

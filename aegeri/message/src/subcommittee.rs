@@ -1,6 +1,7 @@
 use crate::PublicKey;
 use crate::{ByzantineRequirement, Index, Proposal};
 use gwrdfa_resample::agreement::{std::join_set_committee::TakesJoinSet, Condition, Subcommittee};
+use std::fmt;
 use std::{
 	collections::{BTreeSet, HashMap},
 	hash::Hash,
@@ -16,6 +17,17 @@ pub struct AegeriSubcommittee {
 	// but it serves as a final safety measure.
 	index: Index,
 	members: BTreeSet<PublicKey>,
+}
+
+impl fmt::Display for AegeriSubcommittee {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write!(f, "AegeriSubcommittee(index: {:?}", self.index)?;
+		for member in self.members.iter() {
+			write!(f, ", {member}")?;
+		}
+		write!(f, ")")?;
+		Ok(())
+	}
 }
 
 impl AegeriSubcommittee {
@@ -78,6 +90,10 @@ impl Subcommittee<Proposal> for AegeriSubcommittee {
 					}
 				}
 			}
+		}
+		log::debug!("===\nchecking proposals for subcommittee: {}\n====", self);
+		for (sender, proposal) in &sender_to_proposal {
+			log::debug!("subcommittee: sender: {}, proposal: {:?}", sender, proposal);
 		}
 
 		let requirement = ByzantineRequirement::byzantine_quorum(self.size());
