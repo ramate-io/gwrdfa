@@ -17,6 +17,8 @@ serde = { workspace = true, features = [ "derive" ] }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
 gwrdfa-resample = { workspace = true }
+gossamer = { workspace = true }
+log = { workspace = true }
 
 [lints]
 workspace = true

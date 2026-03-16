@@ -27,7 +27,7 @@ pub struct Mempool {
 	inflight_by_index: HashMap<IndexValue, HashSet<Id>>,
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, PartialEq, Eq, Clone)]
 pub enum MempoolError {
 	#[error("slot_width_ms must be greater than zero")]
 	InvalidSlotWidth,
@@ -369,12 +369,7 @@ mod tests {
 		mempool.mark_inflight(id, index_value);
 
 		assert_eq!(mempool.inflight_by_id.get(&id), Some(&index_value));
-		assert!(
-			mempool
-				.inflight_by_index
-				.get(&index_value)
-				.is_some_and(|ids| ids.contains(&id))
-		);
+		assert!(mempool.inflight_by_index.get(&index_value).is_some_and(|ids| ids.contains(&id)));
 		Ok(())
 	}
 
@@ -390,12 +385,7 @@ mod tests {
 
 		assert_eq!(mempool.inflight_by_id.get(&id), Some(&second));
 		assert!(mempool.inflight_by_index.get(&first).is_none_or(|ids| !ids.contains(&id)));
-		assert!(
-			mempool
-				.inflight_by_index
-				.get(&second)
-				.is_some_and(|ids| ids.contains(&id))
-		);
+		assert!(mempool.inflight_by_index.get(&second).is_some_and(|ids| ids.contains(&id)));
 		Ok(())
 	}
 
@@ -409,12 +399,7 @@ mod tests {
 		mempool.unmark_inflight(id);
 
 		assert!(!mempool.inflight_by_id.contains_key(&id));
-		assert!(
-			mempool
-				.inflight_by_index
-				.get(&index_value)
-				.is_none_or(|ids| !ids.contains(&id))
-		);
+		assert!(mempool.inflight_by_index.get(&index_value).is_none_or(|ids| !ids.contains(&id)));
 		Ok(())
 	}
 
@@ -430,12 +415,7 @@ mod tests {
 
 		assert!(mempool.by_slot.values().all(|ids| !ids.contains(&id)));
 		assert!(!mempool.inflight_by_id.contains_key(&id));
-		assert!(
-			mempool
-				.inflight_by_index
-				.get(&index_value)
-				.is_none_or(|ids| !ids.contains(&id))
-		);
+		assert!(mempool.inflight_by_index.get(&index_value).is_none_or(|ids| !ids.contains(&id)));
 		Ok(())
 	}
 

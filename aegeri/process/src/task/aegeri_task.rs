@@ -1,7 +1,9 @@
 use super::{
-	AegeriExecutionError, AegeriExecutor, Mempool, MempoolError, TransactionStore, TransactionStoreError,
+	AegeriExecutionError, AegeriExecutor, Mempool, MempoolError, TransactionStore,
+	TransactionStoreError,
 };
-use aegeri_message::{Certificate, Index, Proposal, Transaction, VerifiedMessage};
+use aegeri_message::{Index, Proposal, Transaction, VerifiedMessage};
+use gwrdfa_resample::agreement::std::NextRound;
 
 /// High-level task flow that coordinates mempool, storage, and execution.
 pub struct AegeriTask {
@@ -22,6 +24,8 @@ pub enum AegeriTaskError {
 	IndexMismatch,
 	#[error("provided index does not match certificate proposal stage")]
 	StageMismatch,
+	#[error("provided index is not the next round of the provided proposal index")]
+	NotNextRound,
 }
 
 impl AegeriTask {
@@ -31,6 +35,10 @@ impl AegeriTask {
 			transaction_store: TransactionStore::new(),
 			executor: AegeriExecutor::new(),
 		})
+	}
+
+	pub fn slot_width_ms(&self) -> u64 {
+		self.mempool.slot_width_ms()
 	}
 
 	/// Adds a transaction to both persistent verified storage and mempool scheduling.
@@ -48,28 +56,26 @@ impl AegeriTask {
 	pub fn handle_agreement(
 		&mut self,
 		index: &Index,
-		certificate: &Certificate,
-	) -> Result<Option<Proposal>, AegeriTaskError> {
-		if certificate.index() != index {
-			return Err(AegeriTaskError::IndexMismatch);
-		}
-		if !Self::proposal_matches_index(index, certificate.value()) {
+		proposal: &Proposal,
+	) -> Result<(Index, Proposal), AegeriTaskError> {
+		if !Self::proposal_matches_index(index, proposal) {
 			return Err(AegeriTaskError::StageMismatch);
 		}
 
-		match certificate.value() {
+		match proposal {
 			Proposal::Availability(availability) => {
 				let confirmation = self.mempool.build_confirmation_proposal(index, availability)?;
-				Ok(Some(Proposal::Confirmation(confirmation)))
+				let next_index = index.next().ok_or(AegeriTaskError::NotNextRound)?;
+				Ok((next_index, Proposal::Confirmation(confirmation)))
 			}
 			Proposal::Confirmation(confirmation) => {
 				let block_header = self.mempool.build_block_header_proposal(index, confirmation)?;
-				Ok(Some(Proposal::BlockHeader(block_header)))
+				let next_index = index.next().ok_or(AegeriTaskError::NotNextRound)?;
+				Ok((next_index, Proposal::BlockHeader(block_header)))
 			}
 			Proposal::BlockHeader(block_header) => {
-				let block = self
-					.transaction_store
-					.build_block_from_header_proposal(block_header)?;
+				let block =
+					self.transaction_store.build_block_from_header_proposal(block_header)?;
 				let transition = self.executor.execute_block(&block)?;
 
 				for id in block_header.transactions().iter_ids() {
@@ -77,9 +83,19 @@ impl AegeriTask {
 					self.mempool.remove(*id);
 				}
 
-				Ok(Some(Proposal::Transition(transition)))
+				let next_index = index.next().ok_or(AegeriTaskError::NotNextRound)?;
+				Ok((next_index, Proposal::Transition(transition)))
 			}
-			Proposal::Transition(_) => Ok(None),
+			Proposal::Transition(_) => {
+				let next_index = index.next().ok_or(AegeriTaskError::NotNextRound)?;
+				let now_epoch_ms = std::time::SystemTime::now()
+					.duration_since(std::time::UNIX_EPOCH)
+					.unwrap()
+					.as_millis() as u64;
+				let availability_proposal =
+					self.mempool.build_availability_proposal(now_epoch_ms, 128, &next_index)?;
+				Ok((next_index, Proposal::Availability(availability_proposal)))
+			}
 		}
 	}
 
@@ -99,7 +115,7 @@ mod tests {
 	use super::*;
 	use aegeri_message::{BlockHeader, IndexValue, Message, Nonce, TransactionSet};
 	use anyhow::Result;
-	use ml_dsa::{B32, MlDsa44, SigningKey};
+	use ml_dsa::{MlDsa44, SigningKey, B32};
 
 	fn tx(seed: u8, nonce: &[u8]) -> Result<VerifiedMessage<Transaction>> {
 		let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![seed; 32]));
@@ -112,22 +128,9 @@ mod tests {
 	fn test_handle_agreement_returns_error_on_stage_mismatch() -> Result<()> {
 		let mut task = AegeriTask::new(100)?;
 		let index = Index::Availability(IndexValue(1));
-		let certificate = Certificate::new(index, Proposal::Confirmation(Default::default()));
-		let result = task.handle_agreement(&index, &certificate);
+		let proposal = Proposal::Confirmation(Default::default());
+		let result = task.handle_agreement(&index, &proposal);
 		assert!(matches!(result, Err(AegeriTaskError::StageMismatch)));
-		Ok(())
-	}
-
-	#[test]
-	fn test_handle_agreement_returns_error_on_index_mismatch() -> Result<()> {
-		let mut task = AegeriTask::new(100)?;
-		let index = Index::Availability(IndexValue(1));
-		let certificate = Certificate::new(
-			Index::Availability(IndexValue(2)),
-			Proposal::Availability(Default::default()),
-		);
-		let result = task.handle_agreement(&index, &certificate);
-		assert!(matches!(result, Err(AegeriTaskError::IndexMismatch)));
 		Ok(())
 	}
 
@@ -142,10 +145,10 @@ mod tests {
 		txs.add_id(id);
 		let header = BlockHeader::from_transactions(txs);
 		let index = Index::Block(IndexValue(5));
-		let certificate = Certificate::new(index, Proposal::BlockHeader(header));
+		let proposal = Proposal::BlockHeader(header);
 
-		let output = task.handle_agreement(&index, &certificate)?;
-		assert!(matches!(output, Some(Proposal::Transition(_))));
+		let output = task.handle_agreement(&index, &proposal)?;
+		assert!(matches!(output, (_, Proposal::Transition(_))));
 		assert!(task.transaction_store.get(&id).is_none());
 		Ok(())
 	}

@@ -20,7 +20,7 @@ impl Block {
 }
 
 /// Transaction identifier set used by proposal layers.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
 pub struct TransactionSet(BTreeSet<Id>);
 
 impl TransactionSet {

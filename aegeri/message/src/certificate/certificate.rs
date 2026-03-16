@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 /// Signed certificate payload.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Certificate {
-	index: Index,
-	value: Proposal,
+	pub(crate) index: Index,
+	pub(crate) value: Proposal,
 }
 
 impl Certificate {

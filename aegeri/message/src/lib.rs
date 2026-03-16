@@ -10,6 +10,10 @@ pub use block::*;
 pub mod subcommittee;
 pub use subcommittee::*;
 
+pub use gossamer::{GossamerMessage, GossamerMessageError};
+
+#[cfg(test)]
+use ml_dsa::B32;
 use ml_dsa::{
 	signature::{SignatureEncoding, Signer, Verifier},
 	EncodedSignature, EncodedVerifyingKey, MlDsa44, Signature as MlDsaSignature, SigningKey,
@@ -17,6 +21,19 @@ use ml_dsa::{
 };
 use serde::{Deserialize, Serialize};
 use sha3::Digest;
+use std::fmt;
+use std::fmt::Write as _;
+
+fn write_lower_hex(f: &mut fmt::Formatter<'_>, bytes: &[u8]) -> fmt::Result {
+	const HEX: &[u8; 16] = b"0123456789abcdef";
+	for &byte in &bytes[..16] {
+		let hi = HEX[(byte >> 4) as usize] as char;
+		let lo = HEX[(byte & 0x0f) as usize] as char;
+		f.write_char(hi)?;
+		f.write_char(lo)?;
+	}
+	Ok(())
+}
 
 /// The ID of a message
 ///
@@ -41,11 +58,23 @@ impl Id {
 	}
 }
 
+impl fmt::Display for Id {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write_lower_hex(f, self.as_bytes())
+	}
+}
+
 /// The signer of a message.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PublicKey(Vec<u8>);
 
 impl PublicKey {
+	#[cfg(test)]
+	pub fn new_for_test(seed: u8) -> Self {
+		let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![seed; 32]));
+		Self::new(&signer)
+	}
+
 	/// Builds a signer from the given bytes.
 	pub fn new(signer: &SigningKey<MlDsa44>) -> Self {
 		let encoded_verifying_key = signer.verifying_key().encode();
@@ -70,6 +99,12 @@ impl PublicKey {
 	pub fn to_verifying_key(&self) -> Result<VerifyingKey<MlDsa44>, VerificationError> {
 		let encoded_verifying_key = self.to_encoded_verifying_key()?;
 		Ok(VerifyingKey::<MlDsa44>::decode(&encoded_verifying_key))
+	}
+}
+
+impl fmt::Display for PublicKey {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write_lower_hex(f, self.as_bytes())
 	}
 }
 
@@ -99,6 +134,12 @@ impl Signature {
 	pub fn to_ml_dsa_signature(&self) -> Result<MlDsaSignature<MlDsa44>, VerificationError> {
 		MlDsaSignature::<MlDsa44>::decode(&self.to_encoded_signature()?)
 			.ok_or(VerificationError::SignatureVerificationFailed)
+	}
+}
+
+impl fmt::Display for Signature {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write_lower_hex(f, self.as_bytes())
 	}
 }
 
@@ -186,6 +227,18 @@ impl<P> VerifiedMessage<P> {
 	}
 }
 
+impl VerifiedMessage<Certificate> {
+	/// When inserting into the buffer, we will often need to extract the index, subcommittee, and proposal.
+	/// We don't typically have to do anything similar for Transactions since the
+	/// entire enveloped is what we're coming to consensus on.
+	pub fn into_consensus_parts(self) -> (Index, AegeriSubcommittee, Proposal) {
+		let Message { id: _, public_key, signature: _, payload, nonce: _ } = self.0;
+		let Certificate { index, value: proposal } = payload;
+		let subcommittee = AegeriSubcommittee::new(index).with_members(std::iter::once(public_key));
+		(index, subcommittee, proposal)
+	}
+}
+
 impl<P: Serialize + for<'a> Deserialize<'a>> Message<P> {
 	pub fn verify(&self) -> Result<(), VerificationError> {
 		// Convert the public key to an encoded verifying key.
@@ -265,6 +318,20 @@ pub enum UnifiedMessage {
 	Certificate(Message<Certificate>),
 }
 
+impl GossamerMessage for UnifiedMessage {
+	fn to_gossamer_bytes(&self) -> Result<Vec<u8>, GossamerMessageError> {
+		let bytes = serde_json::to_vec(self)
+			.map_err(|e| GossamerMessageError::SerializeError((e.to_string(), vec![])))?;
+		Ok(bytes)
+	}
+
+	fn from_gossamer_bytes(bytes: Vec<u8>) -> Result<Self, GossamerMessageError> {
+		let message = serde_json::from_slice(&bytes)
+			.map_err(|e| GossamerMessageError::DeserializeError((e.to_string(), bytes)))?;
+		Ok(message)
+	}
+}
+
 impl From<Message<Transaction>> for UnifiedMessage {
 	fn from(message: Message<Transaction>) -> Self {
 		UnifiedMessage::Transaction(message)
@@ -301,6 +368,26 @@ mod tests {
 		let mut message = Message::<Transaction>::try_new(&signer, transaction, nonce)?;
 		message.signature.0[0] = !message.signature.0[0];
 		assert!(message.verify() == Err(VerificationError::SignatureVerificationFailed));
+		Ok(())
+	}
+
+	#[test]
+	fn test_hex_display_for_id_public_key_and_signature() -> Result<(), anyhow::Error> {
+		let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![7; 32]));
+		let transaction = Transaction::ElfScript(ElfScript::new(b"display"));
+		let nonce = Nonce::new(b"nonce");
+		let message = Message::<Transaction>::try_new(&signer, transaction, nonce)?;
+
+		let id_hex = message.id().to_string();
+		let pk_hex = message.public_key().to_string();
+		let sig_hex = message.signature().to_string();
+
+		assert_eq!(id_hex.len(), 32);
+		assert_eq!(pk_hex.len() % 2, 0);
+		assert_eq!(sig_hex.len() % 2, 0);
+		assert!(id_hex.chars().all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()));
+		assert!(pk_hex.chars().all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()));
+		assert!(sig_hex.chars().all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()));
 		Ok(())
 	}
 }

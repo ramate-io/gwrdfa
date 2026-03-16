@@ -123,7 +123,10 @@ impl AegeriExecutor {
 					self.run_elf_script(elf.as_bytes())?;
 				}
 				Transaction::Join => {
-					join_set.add_member(transaction.public_key().clone());
+					join_set.add_joiner(transaction.public_key().clone());
+				}
+				Transaction::Leave => {
+					join_set.add_leaver(transaction.public_key().clone());
 				}
 			}
 		}
@@ -153,7 +156,8 @@ mod tests {
 		let value = executor.execute_block(&block)?;
 		assert_eq!(value.block().ids(), &BTreeSet::from([verified_tx.id().clone()]));
 		assert_eq!(value.state_root().as_bytes(), &[0; 0]);
-		assert_eq!(value.join_set().members(), &[verified_tx.public_key().clone()]);
+		assert_eq!(value.join_set().joiners(), &[verified_tx.public_key().clone()]);
+		assert_eq!(value.join_set().leavers(), &[]);
 
 		Ok(())
 	}

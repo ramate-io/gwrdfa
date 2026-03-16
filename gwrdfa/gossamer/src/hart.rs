@@ -52,12 +52,14 @@ where
 					// ...for the purpose of Gossamer, it has been broadcast.
 					data.message_inferences.insert(Some(entity), Broadcast);
 					// NOTE: we do not remove the entity or any other data besides these markers.
-					// We allow a consumeing service to take care of garbage collection.
+					// We allow a consuming service to take care of garbage collection.
 				}
 				Ok(Some(Err((entity, e)))) => {
 					// Insert the confirmation error on the originating entity.
-					data.message_inferences
-						.insert(Some(entity), crate::GossamerMessageError::InternalError(e.to_string()));
+					data.message_inferences.insert(
+						Some(entity),
+						crate::GossamerMessageError::InternalError(e.to_string()),
+					);
 				}
 				Ok(None) => {
 					break;
@@ -108,6 +110,7 @@ where
 pub mod tests {
 	use super::*;
 	use crate::container::{GossamerContainer, GossamerDeltasContainer};
+	use crate::GossamerChannels;
 	use crate::GossamerMessage;
 	use crate::GossamerMessageError;
 	use crate::GossamerTaskError;
@@ -252,6 +255,7 @@ pub mod tests {
 			let mut buffer_messages = Vec::new();
 			let mut containers = Vec::new();
 			for (entity, container) in data.gossamer_buffer.iter() {
+				println!("entity: {:?}, container: {:?}", entity, container);
 				containers.push((entity, container));
 				match &container.message {
 					Component::Present(message) => {
@@ -356,12 +360,7 @@ pub mod tests {
 
 	#[test]
 	fn test_gossamer_single_hart_in() -> Result<(), anyhow::Error> {
-		let (
-			gossamer,
-			message_into_gossamer_sender,
-			mut _entity_message_from_gossamer_receiver,
-			_entity_into_gossamer_sender,
-		) = Gossamer::<ContainerEntity>::mock();
+		let (gossamer, gossamer_channels) = Gossamer::<ContainerEntity>::mock();
 
 		let messages = TestGossamerMessages;
 		let mut hart =
@@ -372,7 +371,7 @@ pub mod tests {
 		hart_in(
 			&mut hart,
 			&mut data,
-			message_into_gossamer_sender,
+			gossamer_channels.message_into_gossamer_sender,
 			vec![TestMessage("Hello, world!".to_string())],
 		)?;
 
@@ -384,9 +383,11 @@ pub mod tests {
 	fn test_gossamer_single_hart_out() -> Result<(), anyhow::Error> {
 		let (
 			gossamer,
-			_message_into_gossamer_sender,
-			mut entity_message_from_gossamer_receiver,
-			_entity_into_gossamer_sender,
+			GossamerChannels {
+				message_into_gossamer_sender: _,
+				mut entity_message_from_gossamer_receiver,
+				entity_into_gossamer_sender: _,
+			},
 		) = Gossamer::<ContainerEntity>::mock();
 
 		let messages = TestGossamerMessages;
@@ -410,9 +411,11 @@ pub mod tests {
 	async fn test_gossamer_single_hart_out_confirm() -> Result<(), anyhow::Error> {
 		let (
 			gossamer,
-			_message_into_gossamer_sender,
-			mut entity_message_from_gossamer_receiver,
-			entity_into_gossamer_sender,
+			GossamerChannels {
+				message_into_gossamer_sender: _,
+				mut entity_message_from_gossamer_receiver,
+				entity_into_gossamer_sender,
+			},
 		) = Gossamer::<ContainerEntity>::mock();
 
 		let messages = TestGossamerMessages;
@@ -437,9 +440,11 @@ pub mod tests {
 	fn test_gossamer_single_hart() -> Result<(), anyhow::Error> {
 		let (
 			gossamer,
-			message_into_gossamer_sender,
-			mut entity_message_from_gossamer_receiver,
-			entity_into_gossamer_sender,
+			GossamerChannels {
+				message_into_gossamer_sender,
+				mut entity_message_from_gossamer_receiver,
+				entity_into_gossamer_sender,
+			},
 		) = Gossamer::<ContainerEntity>::mock();
 		let messages = TestGossamerMessages;
 		let mut hart =
@@ -469,9 +474,11 @@ pub mod tests {
 	fn test_gossamer_multiple_hart() -> Result<(), anyhow::Error> {
 		let (
 			gossamer,
-			message_into_gossamer_sender,
-			mut entity_message_from_gossamer_receiver,
-			entity_into_gossamer_sender,
+			GossamerChannels {
+				message_into_gossamer_sender,
+				mut entity_message_from_gossamer_receiver,
+				entity_into_gossamer_sender,
+			},
 		) = Gossamer::<ContainerEntity>::mock();
 
 		let messages = TestGossamerMessages;

@@ -36,3 +36,5 @@ pub mod task;
 pub use task::*;
 
 pub mod local_cluster;
+
+pub use libp2p::Multiaddr;

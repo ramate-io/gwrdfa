@@ -1,5 +1,7 @@
+use crate::PublicKey;
 use crate::{ByzantineRequirement, Index, Proposal};
-use gwrdfa_resample::agreement::{Condition, Subcommittee};
+use gwrdfa_resample::agreement::{std::join_set_committee::TakesJoinSet, Condition, Subcommittee};
+use std::fmt;
 use std::{
 	collections::{BTreeSet, HashMap},
 	hash::Hash,
@@ -10,31 +12,57 @@ use std::{
 /// Consensus evaluation mirrors `VoterSet` sender-accounting, then delegates
 /// stage-specific aggregation to `Proposal::consensus_condition_for_index`.
 #[derive(Debug, Eq, PartialEq, Clone, Hash, PartialOrd, Ord)]
-pub struct AegeriSubcommittee<Sender: PartialEq + Eq + PartialOrd + Ord + Hash + Clone> {
+pub struct AegeriSubcommittee {
+	// Inclduding the index in the subcommittee is not strictly necessary,
+	// but it serves as a final safety measure.
 	index: Index,
-	members: BTreeSet<Sender>,
+	members: BTreeSet<PublicKey>,
 }
 
-impl<Sender: PartialEq + Eq + PartialOrd + Ord + Hash + Clone> AegeriSubcommittee<Sender> {
+impl fmt::Display for AegeriSubcommittee {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write!(f, "AegeriSubcommittee(index: {:?}", self.index)?;
+		for member in self.members.iter() {
+			write!(f, ", {member}")?;
+		}
+		write!(f, ")")?;
+		Ok(())
+	}
+}
+
+impl AegeriSubcommittee {
 	pub fn new(index: Index) -> Self {
 		Self { index, members: BTreeSet::new() }
+	}
+
+	pub fn genesis() -> Self {
+		Self::new(Index::genesis())
 	}
 
 	pub fn index(&self) -> &Index {
 		&self.index
 	}
 
-	pub fn senders(&self) -> impl Iterator<Item = &Sender> {
+	pub fn senders(&self) -> impl Iterator<Item = &PublicKey> {
 		self.members.iter()
 	}
 
-	pub fn with_members(mut self, members: impl Iterator<Item = Sender>) -> Self {
+	pub fn with_members(mut self, members: impl Iterator<Item = PublicKey>) -> Self {
 		self.members.extend(members);
 		self
 	}
 
-	pub fn add_member(&mut self, member: Sender) {
+	pub fn with_index(mut self, index: Index) -> Self {
+		self.index = index;
+		self
+	}
+
+	pub fn add_member(&mut self, member: PublicKey) {
 		self.members.insert(member);
+	}
+
+	pub fn remove_member(&mut self, member: PublicKey) {
+		self.members.remove(&member);
 	}
 
 	pub fn size(&self) -> usize {
@@ -42,14 +70,12 @@ impl<Sender: PartialEq + Eq + PartialOrd + Ord + Hash + Clone> AegeriSubcommitte
 	}
 }
 
-impl<Sender: PartialEq + Eq + PartialOrd + Ord + Hash + Clone> Subcommittee<Proposal>
-	for AegeriSubcommittee<Sender>
-{
+impl Subcommittee<Proposal> for AegeriSubcommittee {
 	fn condition<'a>(
 		&'a self,
 		partials: impl Iterator<Item = (&'a Self, &'a Proposal)> + 'a,
 	) -> Condition<Proposal> {
-		let mut sender_to_proposal: HashMap<&Sender, &Proposal> = HashMap::new();
+		let mut sender_to_proposal: HashMap<&PublicKey, &Proposal> = HashMap::new();
 		for (subcommittee, proposal) in partials {
 			// Ignore stale/future stage subcommittees and only evaluate active index.
 			if subcommittee.index() != self.index() {
@@ -65,13 +91,41 @@ impl<Sender: PartialEq + Eq + PartialOrd + Ord + Hash + Clone> Subcommittee<Prop
 				}
 			}
 		}
+		log::debug!("===\nchecking proposals for subcommittee: {}\n====", self);
+		for (sender, proposal) in &sender_to_proposal {
+			log::debug!("subcommittee: sender: {}, proposal: {:?}", sender, proposal);
+		}
 
 		let requirement = ByzantineRequirement::byzantine_quorum(self.size());
-		Proposal::consensus_condition_for_index(
+		let result = Proposal::consensus_condition_for_index(
 			self.index(),
 			sender_to_proposal.into_values(),
 			requirement,
-		)
+		);
+
+		result
+	}
+}
+
+impl TakesJoinSet<Index, Proposal> for AegeriSubcommittee {
+	fn update_with_join_set(
+		&mut self,
+		index: &Index,
+		joiners: impl Iterator<Item = Self>,
+		leavers: impl Iterator<Item = Self>,
+	) {
+		for joiner in joiners {
+			for member in joiner.members {
+				self.add_member(member);
+			}
+		}
+		for leaver in leavers {
+			for member in leaver.members {
+				self.remove_member(member);
+			}
+		}
+
+		self.index = index.clone();
 	}
 }
 
@@ -82,8 +136,14 @@ mod tests {
 
 	#[test]
 	fn test_aegeri_subcommittee_reaches_consensus() {
-		let committee = AegeriSubcommittee::<u32>::new(Index::Availability(IndexValue(0)))
-			.with_members(vec![1, 2, 3].into_iter());
+		let committee = AegeriSubcommittee::new(Index::Availability(IndexValue(0))).with_members(
+			vec![
+				PublicKey::new_for_test(1),
+				PublicKey::new_for_test(2),
+				PublicKey::new_for_test(3),
+			]
+			.into_iter(),
+		);
 		let proposal = Proposal::Availability(crate::Availability::new());
 		let condition = committee.condition(vec![(&committee, &proposal)].into_iter());
 		assert_eq!(condition, Condition::Consensus(proposal));
@@ -91,12 +151,18 @@ mod tests {
 
 	#[test]
 	fn test_aegeri_subcommittee_hung_on_sender_conflict() {
-		let committee = AegeriSubcommittee::<u32>::new(Index::Availability(IndexValue(0)))
-			.with_members(vec![1, 2, 3].into_iter());
-		let left = AegeriSubcommittee::<u32>::new(Index::Availability(IndexValue(0)))
-			.with_members(vec![1, 2].into_iter());
-		let right = AegeriSubcommittee::<u32>::new(Index::Availability(IndexValue(0)))
-			.with_members(vec![2, 3].into_iter());
+		let committee = AegeriSubcommittee::new(Index::Availability(IndexValue(0))).with_members(
+			vec![
+				PublicKey::new_for_test(1),
+				PublicKey::new_for_test(2),
+				PublicKey::new_for_test(3),
+			]
+			.into_iter(),
+		);
+		let left = AegeriSubcommittee::new(Index::Availability(IndexValue(0)))
+			.with_members(vec![PublicKey::new_for_test(1), PublicKey::new_for_test(2)].into_iter());
+		let right = AegeriSubcommittee::new(Index::Availability(IndexValue(0)))
+			.with_members(vec![PublicKey::new_for_test(2), PublicKey::new_for_test(3)].into_iter());
 		let availability = Proposal::Availability(crate::Availability::new());
 		let confirmation = Proposal::Confirmation(crate::Confirmation::new());
 		let condition =

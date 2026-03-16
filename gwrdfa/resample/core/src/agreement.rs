@@ -90,7 +90,7 @@ where
 	fn update_parabyzantine_agreement(&mut self, agreement_world: &mut AgreementWorld<Data>) {
 		// over all the index subcommittee agreements
 		let index_query = self.data_mut().index_subcommittee_agreement_query_plan();
-		for (_agreement_entity, (index, subcommittee)) in
+		for (index_agreement_entity, (index, subcommittee)) in
 			agreement_world.agreement_facts.query(index_query)
 		{
 			// Insert all of the certificates for this index into the certificate set
@@ -100,6 +100,7 @@ where
 				agreement_world.certificate_facts.query(certificate_query_plan)
 			{
 				// This is just for moving the certificate into the certificate set.
+				// TODO: at this point, we should mark the certificate as processed.
 				self.data_mut().certificate_set_mut().insert(
 					index.clone(),
 					value.clone(),
@@ -133,6 +134,10 @@ where
 					agreement_world
 						.agreement_inferences
 						.insert(None, (Agreement, Resample, index.clone(), value));
+
+					// Remove the index agreement entity as it has been processed.
+					// TODO: It would be better to mark as processed instead of removing the entity.
+					agreement_world.agreement_inferences.remove_entity(index_agreement_entity);
 				}
 				Condition::Hung => {
 					// do nothing
@@ -244,10 +249,11 @@ mod tests {
 			.iter()
 			.map(|(_entity, container)| container.clone())
 			.collect::<BTreeSet<_>>();
-		assert_eq!(agreement_containers.len(), 3);
+		assert_eq!(agreement_containers.len(), 2);
 
 		let reference_agreement_containers = vec![
-			genesis_agreement_container.clone(),
+			// We now evict genesis agreements.
+			// genesis_agreement_container.clone(),
 			// Next subcommittee agreement
 			AgreementContainer {
 				agreement: Component::Present(Agreement),
@@ -318,7 +324,8 @@ mod tests {
 			.map(|(_entity, container)| container.clone())
 			.collect::<BTreeSet<_>>();
 		let expected_after_index_0_consensus = vec![
-			genesis_agreement.clone(),
+			// We now evict genesis agreements.
+			// genesis_agreement.clone(),
 			AgreementContainer {
 				agreement: Component::Present(Agreement),
 				resample: Component::Present(Resample),
@@ -357,7 +364,8 @@ mod tests {
 			.map(|(_entity, container)| container.clone())
 			.collect::<BTreeSet<_>>();
 		let expected_after_index_1_consensus = vec![
-			genesis_agreement,
+			// We now evict genesis agreements.
+			// genesis_agreement,
 			AgreementContainer {
 				agreement: Component::Present(Agreement),
 				resample: Component::Present(Resample),
@@ -365,13 +373,15 @@ mod tests {
 				value: Component::Present(Value::new(10)),
 				..Default::default()
 			},
-			AgreementContainer {
+			// Next index committee
+			// Is also evicted.
+			/*AgreementContainer {
 				agreement: Component::Present(Agreement),
 				resample: Component::Present(Resample),
 				index: Component::Present(Index::new(1)),
 				subcommittee: Component::Present(all_voters.clone()),
 				..Default::default()
-			},
+			},*/
 			AgreementContainer {
 				agreement: Component::Present(Agreement),
 				resample: Component::Present(Resample),

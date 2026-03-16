@@ -17,5 +17,8 @@ std = ["dep:gwrdfa-container"]
 parabyzantine = { workspace = true }
 gwrdfa-container = { workspace = true, optional = true }
 
+[dev-dependencies]
+anyhow = { workspace = true }
+
 [lints]
 workspace = true

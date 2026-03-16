@@ -4,12 +4,16 @@ use gwrdfa_resample::agreement::Condition;
 use serde::{Deserialize, Serialize};
 
 /// Exact block-header proposal from one replica.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
 pub struct BlockHeader(TransactionSet);
 
 impl BlockHeader {
 	pub fn new() -> Self {
 		Self::default()
+	}
+
+	pub fn genesis() -> Self {
+		Self::new()
 	}
 
 	pub fn transactions(&self) -> &TransactionSet {
@@ -32,17 +36,14 @@ impl BlockHeader {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use anyhow::Result;
 	use crate::{Message, Nonce, Transaction};
-	use ml_dsa::{B32, MlDsa44, SigningKey};
+	use anyhow::Result;
+	use ml_dsa::{MlDsa44, SigningKey, B32};
 
 	fn tx_id(seed: u8) -> Result<crate::Id> {
 		let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![seed; 32]));
-		let message = Message::<Transaction>::try_new(
-			&signer,
-			Transaction::Join,
-			Nonce::new([seed]),
-		)?;
+		let message =
+			Message::<Transaction>::try_new(&signer, Transaction::Join, Nonce::new([seed]))?;
 		Ok(message.id().clone())
 	}
 

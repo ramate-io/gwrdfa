@@ -31,6 +31,7 @@ futures = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
 gwrdfa-container = { workspace = true }
+log = { workspace = true }
 
 [lints]
 workspace = true

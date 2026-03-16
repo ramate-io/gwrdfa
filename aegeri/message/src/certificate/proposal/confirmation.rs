@@ -5,12 +5,16 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 /// Confirmation proposal from one replica.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
 pub struct Confirmation(TransactionSet);
 
 impl Confirmation {
 	pub fn new() -> Self {
 		Self::default()
+	}
+
+	pub fn genesis() -> Self {
+		Self(TransactionSet::new())
 	}
 
 	pub fn from_transactions(transactions: TransactionSet) -> Self {
@@ -51,18 +55,15 @@ impl Confirmation {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use anyhow::{bail, Result};
 	use crate::{Message, Nonce, Transaction};
-	use ml_dsa::{B32, MlDsa44, SigningKey};
+	use anyhow::{bail, Result};
+	use ml_dsa::{MlDsa44, SigningKey, B32};
 	use std::collections::BTreeSet;
 
 	fn tx_id(seed: u8) -> Result<crate::Id> {
 		let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![seed; 32]));
-		let message = Message::<Transaction>::try_new(
-			&signer,
-			Transaction::Join,
-			Nonce::new([seed]),
-		)?;
+		let message =
+			Message::<Transaction>::try_new(&signer, Transaction::Join, Nonce::new([seed]))?;
 		Ok(message.id().clone())
 	}
 

@@ -12,6 +12,10 @@ use gwrdfa_resample::agreement::Condition;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
+use crate::AegeriSubcommittee;
+
+use gwrdfa_resample::agreement::std::join_set_committee::GivesJoinSet;
+
 /// Stage-level quorum requirement for proposal aggregation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ByzantineRequirement {
@@ -21,7 +25,7 @@ pub struct ByzantineRequirement {
 
 impl ByzantineRequirement {
 	pub fn byzantine_quorum(total_voters: usize) -> Self {
-		let quorum = (total_voters * 2).div_ceil(3) + 1;
+		let quorum = ((total_voters * 2) / 3) + 1;
 		Self { total_voters, quorum }
 	}
 
@@ -59,7 +63,7 @@ impl ByzantineRequirement {
 }
 
 /// Layered proposal family for certificates.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Proposal {
 	/// Availability values are merged to maximize candidate visibility.
 	Availability(Availability),
@@ -71,7 +75,33 @@ pub enum Proposal {
 	Transition(Transition),
 }
 
+impl GivesJoinSet<AegeriSubcommittee> for Proposal {
+	fn joiners_and_leavers(
+		&self,
+	) -> Option<(impl Iterator<Item = AegeriSubcommittee>, impl Iterator<Item = AegeriSubcommittee>)>
+	{
+		match self {
+			Proposal::Transition(value) => {
+				let joiners = value.join_set().joiners().iter().map(|public_key| {
+					AegeriSubcommittee::new(Index::Unassigned)
+						.with_members(std::iter::once(public_key.clone()))
+				});
+				let leavers = value.join_set().leavers().iter().map(|public_key| {
+					AegeriSubcommittee::new(Index::Unassigned)
+						.with_members(std::iter::once(public_key.clone()))
+				});
+				Some((joiners, leavers))
+			}
+			_ => None,
+		}
+	}
+}
+
 impl Proposal {
+	pub fn genesis() -> Self {
+		Proposal::Availability(Availability::genesis())
+	}
+
 	/// Aggregates proposals for the given stage index.
 	///
 	/// Proposals that do not match the index stage are ignored.
@@ -113,6 +143,7 @@ impl Proposal {
 				requirement,
 			)
 			.map(Proposal::Transition),
+			Index::Unassigned => Condition::InProgress,
 		}
 	}
 }
