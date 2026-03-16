@@ -63,36 +63,33 @@ pub enum AegeriHartError {
 }
 
 impl AegeriHart {
+	pub fn from_gossamer(gossamer: Gossamer<ContainerEntity>) -> Result<Self, AegeriHartError> {
+		Ok(Self {
+			data: AegeriParabyzantineData::new(),
+			message: GossamerHart::new(gossamer, AegeriGossamerMessages),
+			agreement: ResampleAgreement::new(MemoryAgreementData::new()),
+			task: AegeriTask::new(100)?,
+			message_in: AegeriMessageIn,
+			message_out: AegeriMessageOut::default(),
+		})
+	}
+
+	/// Replaces the underlying gossamer transport used by this hart.
+	pub fn with_gossamer(mut self, gossamer: Gossamer<ContainerEntity>) -> Self {
+		self.message = GossamerHart::new(gossamer, AegeriGossamerMessages);
+		self
+	}
+
 	pub fn mock() -> Result<(Self, GossamerChannels<ContainerEntity>), AegeriHartError> {
 		let (gossamer, gossamer_channels) = Gossamer::<ContainerEntity>::mock();
 
-		Ok((
-			Self {
-				data: AegeriParabyzantineData::new(),
-				message: GossamerHart::new(gossamer, AegeriGossamerMessages),
-				agreement: ResampleAgreement::new(MemoryAgreementData::new()),
-				task: AegeriTask::new(100)?,
-				message_in: AegeriMessageIn,
-				message_out: AegeriMessageOut::default(),
-			},
-			gossamer_channels,
-		))
+		Ok((Self::from_gossamer(gossamer)?, gossamer_channels))
 	}
 
 	pub async fn spawn_tokio(config: GossamerConfig) -> Result<(Self, Multiaddr), AegeriHartError> {
 		let (gossamer, listen_addr) = Gossamer::spawn_tokio(config).await?;
 
-		Ok((
-			Self {
-				data: AegeriParabyzantineData::new(),
-				message: GossamerHart::new(gossamer, AegeriGossamerMessages),
-				agreement: ResampleAgreement::new(MemoryAgreementData::new()),
-				task: AegeriTask::new(100)?,
-				message_in: AegeriMessageIn,
-				message_out: AegeriMessageOut::default(),
-			},
-			listen_addr,
-		))
+		Ok((Self::from_gossamer(gossamer)?, listen_addr))
 	}
 
 	/// With signer.
