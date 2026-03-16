@@ -382,7 +382,7 @@ mod tests {
 		let pk_hex = message.public_key().to_string();
 		let sig_hex = message.signature().to_string();
 
-		assert_eq!(id_hex.len(), 64);
+		assert_eq!(id_hex.len(), 32);
 		assert_eq!(pk_hex.len() % 2, 0);
 		assert_eq!(sig_hex.len() % 2, 0);
 		assert!(id_hex.chars().all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()));

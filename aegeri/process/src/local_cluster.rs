@@ -110,7 +110,10 @@ mod tests {
 	}
 
 	fn hart_current_index_agreement(hart: &AegeriHart) -> Option<AegeriIndex> {
-		hart.index_subcommittee_agreement_set().into_iter().map(|(index, _)| index).max()
+		hart.index_subcommittee_agreement_set()
+			.into_iter()
+			.map(|(index, _)| index)
+			.max()
 	}
 
 	async fn tick_active(harts: &mut [AegeriHart], active: &[usize], steps: usize) {
@@ -291,13 +294,8 @@ mod tests {
 		.await?;
 
 		// Scenario 3: third round, four active first -> no consensus, then fifth joins.
-		let stalled_index = find_stalled_shared_index_under_active_set(
-			&mut cluster.harts,
-			&active4,
-			24,
-			8,
-		)
-		.await?;
+		let stalled_index =
+			find_stalled_shared_index_under_active_set(&mut cluster.harts, &active4, 24, 8).await?;
 		let next_index = stalled_index.next().ok_or_else(|| {
 			anyhow::anyhow!("shared index {stalled_index:?} did not have a next round")
 		})?;
@@ -320,17 +318,12 @@ mod tests {
 			&mut cluster.harts,
 			&active5,
 			stalled_index,
-			400,
+			120,
 		)
 		.await?;
 
-		drive_until_all_active_have_index_agreement(
-			&mut cluster.harts,
-			&active5,
-			next_index,
-			400,
-		)
-		.await?;
+		drive_until_all_active_have_index_agreement(&mut cluster.harts, &active5, next_index, 120)
+			.await?;
 
 		Ok(())
 	}

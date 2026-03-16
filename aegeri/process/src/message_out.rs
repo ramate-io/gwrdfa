@@ -1,6 +1,6 @@
 use crate::aegeri::AegeriParabyzantineData;
 use aegeri_message::{Index, Message, Nonce, Proposal, UnifiedMessage};
-use gossamer::{Broadcast, GossamerMessageError, Out};
+use gossamer::{Broadcast, GossamerMessageError, In, Out};
 use gwrdfa_container::query::matching_tuple::MatchingTuple;
 use ml_dsa::{MlDsa44, SigningKey, B32};
 use parabyzantine::message_out::{MessageOutWorld, ParabyzantineMessageOut};
@@ -68,8 +68,14 @@ impl ParabyzantineMessageOut<AegeriParabyzantineData> for AegeriMessageOut {
 			match Message::<aegeri_message::Certificate>::try_new(&self.signer, certificate, nonce)
 			{
 				Ok(message) => {
+					// Emit the certificate.
 					data.message_inferences
 						.insert(None, (Out, UnifiedMessage::Certificate(message.clone())));
+
+					// Also automatically loop-back via Gossamer In
+					data.message_inferences
+						.insert(None, (In, UnifiedMessage::Certificate(message)));
+
 					// Consume task once emitted.
 					data.task_inferences.remove_entity(entity);
 				}
