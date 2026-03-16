@@ -9,11 +9,12 @@ use parabyzantine::message_out::{MessageOutWorld, ParabyzantineMessageOut};
 pub struct AegeriMessageOut {
 	pub(crate) signer: SigningKey<MlDsa44>,
 	nonce_counter: u64,
+	loopback: bool,
 }
 
 impl AegeriMessageOut {
 	pub fn new(signer: SigningKey<MlDsa44>) -> Self {
-		Self { signer, nonce_counter: 0 }
+		Self { signer, nonce_counter: 0, loopback: true }
 	}
 
 	pub fn with_signer(mut self, signer: SigningKey<MlDsa44>) -> Self {
@@ -26,9 +27,14 @@ impl AegeriMessageOut {
 		self
 	}
 
+	pub fn with_loopback(mut self, loopback: bool) -> Self {
+		self.loopback = loopback;
+		self
+	}
+
 	pub fn from_seed(seed: [u8; 32]) -> Self {
 		let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(seed));
-		Self { signer, nonce_counter: 0 }
+		Self { signer, nonce_counter: 0, loopback: true }
 	}
 
 	fn next_nonce(&mut self) -> Nonce {
@@ -73,8 +79,10 @@ impl ParabyzantineMessageOut<AegeriParabyzantineData> for AegeriMessageOut {
 						.insert(None, (Out, UnifiedMessage::Certificate(message.clone())));
 
 					// Also automatically loop-back via Gossamer In
-					data.message_inferences
-						.insert(None, (In, UnifiedMessage::Certificate(message)));
+					if self.loopback {
+						data.message_inferences
+							.insert(None, (In, UnifiedMessage::Certificate(message)));
+					}
 
 					// Consume task once emitted.
 					data.task_inferences.remove_entity(entity);

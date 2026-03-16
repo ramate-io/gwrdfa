@@ -109,6 +109,12 @@ impl AegeriHart {
 		self
 	}
 
+	/// With loopback.
+	pub fn with_loopback(mut self, loopback: bool) -> Self {
+		self.message_out = self.message_out.with_loopback(loopback);
+		self
+	}
+
 	/// Registers the genesis subcommittee for the agreement.
 	pub fn with_genesis(
 		mut self,

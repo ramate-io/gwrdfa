@@ -25,7 +25,9 @@ pub(crate) struct SentTransaction {
 	pub public_key: PublicKey,
 }
 
-pub(crate) fn setup_trivial_consensus_harness(seed: u8) -> Result<TrivialConsensusHarness, AegeriHartError> {
+pub(crate) fn setup_trivial_consensus_harness(
+	seed: u8,
+) -> Result<TrivialConsensusHarness, AegeriHartError> {
 	let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![seed; 32]));
 	let signer_public_key = PublicKey::new(&signer);
 	let genesis_subcommittee =
@@ -33,7 +35,9 @@ pub(crate) fn setup_trivial_consensus_harness(seed: u8) -> Result<TrivialConsens
 	let availability = Availability::genesis();
 
 	let (hart, gossamer_channels) = AegeriHart::mock()?;
-	let hart = hart.with_genesis(genesis_subcommittee.clone(), availability);
+	let hart = hart
+		.with_genesis(genesis_subcommittee.clone(), availability)
+		.with_loopback(false);
 
 	Ok(TrivialConsensusHarness { hart, gossamer_channels, genesis_subcommittee })
 }
@@ -57,7 +61,10 @@ pub(crate) fn setup_multi_hart_harness(
 
 	for signer in signers {
 		let (hart, channels) = AegeriHart::mock()?;
-		harts.push(hart.with_signer(signer).with_genesis(genesis_subcommittee.clone(), availability.clone()));
+		harts.push(
+			hart.with_signer(signer)
+				.with_genesis(genesis_subcommittee.clone(), availability.clone()),
+		);
 		gossamer_channels.push(channels);
 	}
 
@@ -95,7 +102,8 @@ pub(crate) fn advance_multi_hart_consensus_step(
 
 	let mut outbound_messages = Vec::new();
 	for &i in active {
-		while let Ok((entity, bytes)) = gossamer_channels[i].entity_message_from_gossamer_receiver.try_recv()
+		while let Ok((entity, bytes)) =
+			gossamer_channels[i].entity_message_from_gossamer_receiver.try_recv()
 		{
 			gossamer_channels[i].entity_into_gossamer_sender.send(Ok(entity))?;
 			outbound_messages.push(bytes);
@@ -196,11 +204,7 @@ pub(crate) fn assert_certificate_set(
 	hart: &AegeriHart,
 	expected: impl IntoIterator<Item = (AegeriIndex, AegeriProposal)>,
 ) {
-	assert_eq!(
-		hart.certificate_set(),
-		BTreeSet::from_iter(expected),
-		"unexpected certificate set"
-	);
+	assert_eq!(hart.certificate_set(), BTreeSet::from_iter(expected), "unexpected certificate set");
 }
 
 pub(crate) fn assert_index_subcommittee_agreement_set(
