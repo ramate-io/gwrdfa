@@ -59,31 +59,32 @@ impl ParabyzantineTask<AegeriParabyzantineData> for AegeriTask {
 
 		// Handle pings.
 		if self.pings() {
-			// Reset the ping if it's too old.
 			if let Ok(now) = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH) {
+				// Reset the ping if it's too old.
 				let now_ms = now.as_millis() as u64;
 				if now_ms - self.last_ping_time_ms() > self.ping_frequency_ms() {
 					// ping record is expired, reset it
 					self.set_last_ping(None);
 				}
-			}
 
-			// If there's a new ping, insert it into the task inferences.
-			if let Some((_entity, (index, subcommittee))) = data
-				.agreement_facts
-				.query(MatchingTuple::<(Index<AegeriIndex>, Subcom<AegeriSubcommittee>)>::new())
-				.next()
-			{
-				if Some((&index.0, &subcommittee.0)) != self.last_ping() {
-					data.task_inferences.insert(
-						None,
-						(
-							index.0.clone(),
-							AegeriProposal::SubcommitteeBroadcast(subcommittee.0.clone()),
-						),
-					);
+				// If there's a new ping, insert it into the task inferences.
+				if let Some((_entity, (index, subcommittee))) = data
+					.agreement_facts
+					.query(MatchingTuple::<(Index<AegeriIndex>, Subcom<AegeriSubcommittee>)>::new())
+					.next()
+				{
+					if Some((&index.0, &subcommittee.0)) != self.last_ping() {
+						data.task_inferences.insert(
+							None,
+							(
+								index.0.clone(),
+								AegeriProposal::SubcommitteeBroadcast(subcommittee.0.clone()),
+							),
+						);
 
-					self.set_last_ping(Some((index.0.clone(), subcommittee.0.clone())));
+						self.set_last_ping(Some((index.0.clone(), subcommittee.0.clone())));
+						self.set_last_ping_time_ms(now_ms);
+					}
 				}
 			}
 		}
