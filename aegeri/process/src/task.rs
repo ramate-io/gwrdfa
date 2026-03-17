@@ -5,7 +5,8 @@ pub mod transaction_store;
 
 use crate::aegeri::AegeriParabyzantineData;
 use aegeri_message::{
-	Index as AegeriIndex, Proposal as AegeriProposal, Transaction, VerifiedMessage,
+	AegeriSubcommittee, Index as AegeriIndex, Proposal as AegeriProposal, Transaction,
+	VerifiedMessage,
 };
 pub use aegeri_task::{AegeriTask, AegeriTaskError};
 pub use executor::{AegeriExecutionError, AegeriExecutor};
@@ -13,7 +14,7 @@ use gwrdfa_container::query::{
 	matching_components::MatchingComponents, matching_tuple::MatchingTuple,
 };
 use gwrdfa_resample::{
-	agreement::std::{Index, Value},
+	agreement::std::{Index, Subcom, Value},
 	Resample,
 };
 pub use mempool::{Mempool, MempoolError};
@@ -42,7 +43,7 @@ impl ParabyzantineTask<AegeriParabyzantineData> for AegeriTask {
 			.query(MatchingTuple::<(Resample, Index<AegeriIndex>, Value<AegeriProposal>)>::new())
 		{
 			// If there's an error handling the agreement, for now just log it.
-			match self.handle_agreement(&index.0, &value.0) {
+			match self.handle_value_agreement(&index.0, &value.0) {
 				Ok((index, proposal)) => {
 					// If we got a proposal, insert it into the task inferences.
 					data.task_inferences.insert(None, (index, proposal));
@@ -52,6 +53,37 @@ impl ParabyzantineTask<AegeriParabyzantineData> for AegeriTask {
 				}
 				Err(e) => {
 					log::error!("error handling agreement: {:?}", e);
+				}
+			}
+		}
+
+		// Handle pings.
+		if self.pings() {
+			// Reset the ping if it's too old.
+			if let Ok(now) = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH) {
+				let now_ms = now.as_millis() as u64;
+				if now_ms - self.last_ping_time_ms() > self.ping_frequency_ms() {
+					// ping record is expired, reset it
+					self.set_last_ping(None);
+				}
+			}
+
+			// If there's a new ping, insert it into the task inferences.
+			if let Some((_entity, (index, subcommittee))) = data
+				.agreement_facts
+				.query(MatchingTuple::<(Index<AegeriIndex>, Subcom<AegeriSubcommittee>)>::new())
+				.next()
+			{
+				if Some((&index.0, &subcommittee.0)) != self.last_ping() {
+					data.task_inferences.insert(
+						None,
+						(
+							index.0.clone(),
+							AegeriProposal::SubcommitteeBroadcast(subcommittee.0.clone()),
+						),
+					);
+
+					self.set_last_ping(Some((index.0.clone(), subcommittee.0.clone())));
 				}
 			}
 		}
