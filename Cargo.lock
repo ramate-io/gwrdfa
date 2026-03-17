@@ -18,12 +18,10 @@ version = "0.0.1"
 dependencies = [
  "aegeri-message",
  "anyhow",
- "gossamer",
  "gwrdfa-container",
  "gwrdfa-resample",
  "log",
  "ml-dsa",
- "parabyzantine",
  "tokio",
 ]
 
