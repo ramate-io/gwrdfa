@@ -1,5 +1,6 @@
 pub mod aegeri;
 pub use aegeri::*;
+pub mod bootstrap;
 pub mod buffers;
 pub mod local_cluster;
 pub mod message_in;

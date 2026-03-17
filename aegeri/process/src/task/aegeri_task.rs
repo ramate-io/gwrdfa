@@ -2,7 +2,7 @@ use super::{
 	AegeriExecutionError, AegeriExecutor, Mempool, MempoolError, TransactionStore,
 	TransactionStoreError,
 };
-use aegeri_message::{Index, Proposal, Transaction, VerifiedMessage};
+use aegeri_message::{AegeriSubcommittee, Index, Proposal, Transaction, VerifiedMessage};
 use gwrdfa_resample::agreement::std::NextRound;
 
 /// High-level task flow that coordinates mempool, storage, and execution.
@@ -10,6 +10,10 @@ pub struct AegeriTask {
 	mempool: Mempool,
 	transaction_store: TransactionStore,
 	executor: AegeriExecutor,
+	pings: bool,
+	last_ping: Option<(Index, AegeriSubcommittee)>,
+	ping_frequency_ms: u64,
+	last_ping_time_ms: u64,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -26,6 +30,8 @@ pub enum AegeriTaskError {
 	StageMismatch,
 	#[error("provided index is not the next round of the provided proposal index")]
 	NotNextRound,
+	#[error("subcommittee broadcast not supported")]
+	SubcommitteeBroadcastNotSupported,
 }
 
 impl AegeriTask {
@@ -34,7 +40,45 @@ impl AegeriTask {
 			mempool: Mempool::new(slot_width_ms)?,
 			transaction_store: TransactionStore::new(),
 			executor: AegeriExecutor::new(),
+			// Typically, we want to have the node pinging.
+			pings: true,
+			last_ping: None,
+			ping_frequency_ms: 1000,
+			last_ping_time_ms: 0,
 		})
+	}
+
+	pub fn with_pings(mut self, pings: bool) -> Self {
+		self.pings = pings;
+		self
+	}
+
+	pub fn pings(&self) -> bool {
+		self.pings
+	}
+
+	pub fn last_ping(&self) -> Option<(&Index, &AegeriSubcommittee)> {
+		self.last_ping.as_ref().map(|(index, subcommittee)| (index, subcommittee))
+	}
+
+	pub fn set_last_ping(&mut self, last_ping: Option<(Index, AegeriSubcommittee)>) {
+		self.last_ping = last_ping;
+	}
+
+	pub fn ping_frequency_ms(&self) -> u64 {
+		self.ping_frequency_ms
+	}
+
+	pub fn set_ping_frequency_ms(&mut self, ping_frequency_ms: u64) {
+		self.ping_frequency_ms = ping_frequency_ms;
+	}
+
+	pub fn last_ping_time_ms(&self) -> u64 {
+		self.last_ping_time_ms
+	}
+
+	pub fn set_last_ping_time_ms(&mut self, last_ping_time_ms: u64) {
+		self.last_ping_time_ms = last_ping_time_ms;
 	}
 
 	pub fn slot_width_ms(&self) -> u64 {
@@ -53,7 +97,7 @@ impl AegeriTask {
 	}
 
 	/// Handles agreement for a specific index and returns the next-stage proposal.
-	pub fn handle_agreement(
+	pub fn handle_value_agreement(
 		&mut self,
 		index: &Index,
 		proposal: &Proposal,
@@ -96,6 +140,11 @@ impl AegeriTask {
 					self.mempool.build_availability_proposal(now_epoch_ms, 128, &next_index)?;
 				Ok((next_index, Proposal::Availability(availability_proposal)))
 			}
+			Proposal::SubcommitteeBroadcast(_subcommittee) => {
+				// This is not the channel for handling subcommittee broadcasts.
+				// They trigger no value agreement handling.
+				Err(AegeriTaskError::SubcommitteeBroadcastNotSupported)
+			}
 		}
 	}
 
@@ -129,7 +178,7 @@ mod tests {
 		let mut task = AegeriTask::new(100)?;
 		let index = Index::Availability(IndexValue(1));
 		let proposal = Proposal::Confirmation(Default::default());
-		let result = task.handle_agreement(&index, &proposal);
+		let result = task.handle_value_agreement(&index, &proposal);
 		assert!(matches!(result, Err(AegeriTaskError::StageMismatch)));
 		Ok(())
 	}
@@ -147,7 +196,7 @@ mod tests {
 		let index = Index::Block(IndexValue(5));
 		let proposal = Proposal::BlockHeader(header);
 
-		let output = task.handle_agreement(&index, &proposal)?;
+		let output = task.handle_value_agreement(&index, &proposal)?;
 		assert!(matches!(output, (_, Proposal::Transition(_))));
 		assert!(task.transaction_store.get(&id).is_none());
 		Ok(())

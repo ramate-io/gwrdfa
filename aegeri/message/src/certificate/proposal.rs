@@ -73,6 +73,8 @@ pub enum Proposal {
 	BlockHeader(BlockHeader),
 	/// Transition proposals finalize post-state commitment.
 	Transition(Transition),
+	/// A broacast of the Aegeri subcommittee for an index.
+	SubcommitteeBroadcast(AegeriSubcommittee),
 }
 
 impl GivesJoinSet<AegeriSubcommittee> for Proposal {

@@ -37,8 +37,8 @@ pub(crate) fn setup_trivial_consensus_harness(
 	let (hart, gossamer_channels) = AegeriHart::mock()?;
 	let hart = hart
 		.with_genesis(genesis_subcommittee.clone(), availability)
-		.with_loopback(false);
-
+		.with_loopback(false)
+		.with_pings(false);
 	Ok(TrivialConsensusHarness { hart, gossamer_channels, genesis_subcommittee })
 }
 

@@ -3,6 +3,7 @@ use gwrdfa_container::query::matching_components::MatchingComponents;
 use parabyzantine::agreement::ParabyzantineAgreementData;
 pub use parabyzantine_data::AegeriParabyzantineData;
 
+use crate::bootstrap::Bootstrap;
 use crate::message_in::AegeriMessageIn;
 use crate::message_out::AegeriMessageOut;
 use crate::task::{AegeriTask, AegeriTaskError};
@@ -38,6 +39,9 @@ pub struct AegeriHart {
 	/// Message protocol is gossamer messages over [UnifiedMessage].
 	message: GossamerHart<AegeriParabyzantineData, AegeriGossamerMessages>,
 
+	// Bootstrap agreement protocol
+	bootstrap: Bootstrap,
+
 	/// Agreement protocol is resample agreement.
 	agreement: ResampleAgreement<
 		AegeriParabyzantineData,
@@ -67,6 +71,7 @@ impl AegeriHart {
 		Ok(Self {
 			data: AegeriParabyzantineData::new(),
 			message: GossamerHart::new(gossamer, AegeriGossamerMessages),
+			bootstrap: Bootstrap::new(),
 			agreement: ResampleAgreement::new(MemoryAgreementData::new()),
 			task: AegeriTask::new(100)?,
 			message_in: AegeriMessageIn,
@@ -98,6 +103,38 @@ impl AegeriHart {
 		self
 	}
 
+	/// With bootstrap configuration.
+	pub fn with_bootstrap(mut self, bootstrap: Bootstrap) -> Self {
+		self.bootstrap = bootstrap;
+		self
+	}
+
+	/// Configure whether bootstrap has already completed.
+	pub fn with_bootstrapped(mut self, bootstrapped: bool) -> Self {
+		self.bootstrap = self.bootstrap.with_bootstrapped(bootstrapped);
+		self
+	}
+
+	/// Configure required peers for bootstrap gate.
+	pub fn with_bootstrap_peer_count_required(mut self, peer_count_required: usize) -> Self {
+		self.bootstrap = self.bootstrap.with_peer_count_required(peer_count_required);
+		self
+	}
+
+	/// Configure bootstrap peer allowlist.
+	pub fn with_bootstrap_peers(
+		mut self,
+		bootstrap_peers: impl IntoIterator<Item = PublicKey>,
+	) -> Self {
+		self.bootstrap = self.bootstrap.with_bootstrap_peers(bootstrap_peers);
+		self
+	}
+
+	/// Whether this hart has completed bootstrap.
+	pub fn has_bootstrapped(&self) -> bool {
+		self.bootstrap.has_bootstrapped()
+	}
+
 	/// Gets the public key of the signer.
 	pub fn signer_public_key(&self) -> PublicKey {
 		PublicKey::new(&self.message_out.signer)
@@ -112,6 +149,12 @@ impl AegeriHart {
 	/// With loopback.
 	pub fn with_loopback(mut self, loopback: bool) -> Self {
 		self.message_out = self.message_out.with_loopback(loopback);
+		self
+	}
+
+	/// Enable or disable subcommittee ping broadcasts from task.
+	pub fn with_pings(mut self, pings: bool) -> Self {
+		self.task = self.task.with_pings(pings);
 		self
 	}
 
@@ -160,6 +203,7 @@ impl AegeriHart {
 		log::debug!("\n\n===\nTICKING AEGERI HART: {}\n====", self.signer_public_key());
 		self.message.act(Hart, &mut self.data);
 		self.message_in.act(MessageIn, &mut self.data);
+		self.bootstrap.act(Agreement, &mut self.data);
 		self.agreement.act(Agreement, &mut self.data);
 		self.task.act(Task, &mut self.data);
 		self.message_out.act(MessageOut, &mut self.data);
