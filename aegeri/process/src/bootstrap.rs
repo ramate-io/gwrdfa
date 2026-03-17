@@ -103,7 +103,7 @@ impl ParabyzantineAgreement<AegeriParabyzantineData> for Bootstrap {
 						self.bootstrapped = true;
 					}
 
-					// We can remove the certificat inference.
+					// We can remove the certificate inference.
 					// This is a consuming stage in the parabyzantine tick.
 					world.certificate_inferences.remove_entity(entity);
 				}

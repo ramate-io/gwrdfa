@@ -3,6 +3,7 @@ use gwrdfa_container::query::matching_components::MatchingComponents;
 use parabyzantine::agreement::ParabyzantineAgreementData;
 pub use parabyzantine_data::AegeriParabyzantineData;
 
+use crate::bootstrap::Bootstrap;
 use crate::message_in::AegeriMessageIn;
 use crate::message_out::AegeriMessageOut;
 use crate::task::{AegeriTask, AegeriTaskError};
@@ -38,6 +39,9 @@ pub struct AegeriHart {
 	/// Message protocol is gossamer messages over [UnifiedMessage].
 	message: GossamerHart<AegeriParabyzantineData, AegeriGossamerMessages>,
 
+	// Bootstrap agreement protocol
+	bootstrap: Bootstrap,
+
 	/// Agreement protocol is resample agreement.
 	agreement: ResampleAgreement<
 		AegeriParabyzantineData,
@@ -67,6 +71,7 @@ impl AegeriHart {
 		Ok(Self {
 			data: AegeriParabyzantineData::new(),
 			message: GossamerHart::new(gossamer, AegeriGossamerMessages),
+			bootstrap: Bootstrap::new(),
 			agreement: ResampleAgreement::new(MemoryAgreementData::new()),
 			task: AegeriTask::new(100)?,
 			message_in: AegeriMessageIn,
@@ -160,6 +165,7 @@ impl AegeriHart {
 		log::debug!("\n\n===\nTICKING AEGERI HART: {}\n====", self.signer_public_key());
 		self.message.act(Hart, &mut self.data);
 		self.message_in.act(MessageIn, &mut self.data);
+		self.bootstrap.act(Agreement, &mut self.data);
 		self.agreement.act(Agreement, &mut self.data);
 		self.task.act(Task, &mut self.data);
 		self.message_out.act(MessageOut, &mut self.data);
