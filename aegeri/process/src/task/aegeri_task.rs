@@ -2,8 +2,10 @@ use super::{
 	AegeriExecutionError, AegeriExecutor, Mempool, MempoolError, TransactionStore,
 	TransactionStoreError,
 };
-use aegeri_message::{AegeriSubcommittee, Index, Proposal, Transaction, VerifiedMessage};
+use aegeri_message::{AegeriSubcommittee, Id, Index, Proposal, Transaction, VerifiedMessage};
 use gwrdfa_resample::agreement::std::NextRound;
+use std::collections::HashSet;
+use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
 /// High-level task flow that coordinates mempool, storage, and execution.
 pub struct AegeriTask {
@@ -14,6 +16,16 @@ pub struct AegeriTask {
 	last_ping: Option<(Index, AegeriSubcommittee)>,
 	ping_frequency_ms: u64,
 	last_ping_time_ms: u64,
+	is_participant: bool,
+	// The maximum number of transactions that should be received at a time.
+	max_transaction_batch_size: usize,
+	// Here we track transaction ids until they are included in a transition.
+	inflight_transaction_ids: HashSet<Id>,
+	// Here we receive transactions that are meant to be broadcasted.
+	// They are signed later.
+	broadcast_transaction_receiver: UnboundedReceiver<Transaction>,
+	// Here we send back transactions by index.
+	transaction_status_sender: UnboundedSender<(Index, Id)>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -32,10 +44,17 @@ pub enum AegeriTaskError {
 	NotNextRound,
 	#[error("subcommittee broadcast not supported")]
 	SubcommitteeBroadcastNotSupported,
+	#[error("receiving transactions: {0}")]
+	ReceivingTransactions(String),
+	#[error("sending transaction status: {0}")]
+	SendingTransactionStatus(String),
 }
 
 impl AegeriTask {
 	pub fn new(slot_width_ms: u64) -> Result<Self, AegeriTaskError> {
+		let (_broadcast_transaction_sender, broadcast_transaction_receiver) = unbounded_channel();
+		let (transaction_status_sender, _transaction_status_receiver) = unbounded_channel();
+
 		Ok(Self {
 			mempool: Mempool::new(slot_width_ms)?,
 			transaction_store: TransactionStore::new(),
@@ -45,7 +64,67 @@ impl AegeriTask {
 			last_ping: None,
 			ping_frequency_ms: 1000,
 			last_ping_time_ms: 0,
+			is_participant: true,
+			max_transaction_batch_size: 128,
+			inflight_transaction_ids: HashSet::new(),
+			broadcast_transaction_receiver,
+			transaction_status_sender,
 		})
+	}
+
+	pub fn with_max_transaction_batch_size(mut self, max_transaction_batch_size: usize) -> Self {
+		self.max_transaction_batch_size = max_transaction_batch_size;
+		self
+	}
+
+	pub fn max_transaction_batch_size(&self) -> usize {
+		self.max_transaction_batch_size
+	}
+
+	pub fn receive_transaction_batch(&mut self) -> Vec<Result<Transaction, AegeriTaskError>> {
+		let mut transactions = Vec::new();
+		for _ in 0..self.max_transaction_batch_size {
+			match self.broadcast_transaction_receiver.try_recv() {
+				Ok(transaction) => transactions.push(Ok(transaction)),
+				Err(e) => {
+					transactions.push(Err(AegeriTaskError::ReceivingTransactions(e.to_string())));
+					break;
+				}
+			}
+		}
+		transactions
+	}
+
+	pub fn add_inflight_transaction_id(&mut self, id: Id) {
+		self.inflight_transaction_ids.insert(id);
+	}
+
+	pub fn remove_inflight_transaction_id(&mut self, id: Id) {
+		self.inflight_transaction_ids.remove(&id);
+	}
+
+	pub fn has_inflight_transaction_id(&self, id: &Id) -> bool {
+		self.inflight_transaction_ids.contains(id)
+	}
+
+	pub fn try_send_transaction_status(
+		&mut self,
+		index: Index,
+		id: Id,
+	) -> Result<(), AegeriTaskError> {
+		self.transaction_status_sender
+			.send((index, id))
+			.map_err(|e| AegeriTaskError::SendingTransactionStatus(e.to_string()))?;
+		Ok(())
+	}
+
+	pub fn with_is_participant(mut self, is_participant: bool) -> Self {
+		self.is_participant = is_participant;
+		self
+	}
+
+	pub fn is_participant(&self) -> bool {
+		self.is_participant
 	}
 
 	pub fn with_pings(mut self, pings: bool) -> Self {
