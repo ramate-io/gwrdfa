@@ -1,0 +1,23 @@
+[package]
+name = "aegeri-light-client"
+version = { workspace = true }
+edition = "2021"
+license = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+publish = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+tokio = { workspace = true }
+ml-dsa = { workspace = true }
+log = { workspace = true }
+anyhow = { workspace = true }
+gwrdfa-container = { workspace = true }
+aegeri-message = { workspace = true }
+gwrdfa-resample = { workspace = true }
+
+
+[lints]
+workspace = true

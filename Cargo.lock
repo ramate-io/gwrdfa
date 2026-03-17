@@ -13,6 +13,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "aegeri-light-client"
+version = "0.0.1"
+dependencies = [
+ "aegeri-message",
+ "anyhow",
+ "gossamer",
+ "gwrdfa-container",
+ "gwrdfa-resample",
+ "log",
+ "ml-dsa",
+ "parabyzantine",
+ "tokio",
+]
+
+[[package]]
 name = "aegeri-message"
 version = "0.0.1"
 dependencies = [

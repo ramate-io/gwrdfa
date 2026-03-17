@@ -97,16 +97,16 @@ impl ParabyzantineTask<AegeriParabyzantineData> for AegeriTask {
 			}
 		}
 
-		// Receive all the transactions on the receiver and send the statuses.
-		for transaction_result in self.receive_transaction_batch() {
-			match transaction_result {
-				Ok(transaction) => {
+		// Receive all broadcast transactions and route them to message_out.
+		match self.receive_transaction_batch() {
+			Ok(transactions) => {
+				for transaction in transactions {
 					self.add_inflight_transaction_id(*transaction.id());
 					data.task_inferences.insert(None, transaction);
 				}
-				Err(e) => {
-					data.task_inferences.insert(None, e);
-				}
+			}
+			Err(e) => {
+				data.task_inferences.insert(None, e);
 			}
 		}
 
