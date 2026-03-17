@@ -1,7 +1,9 @@
 use crate::aegeri::AegeriParabyzantineData;
-use aegeri_message::{Index, Message, Nonce, Proposal, UnifiedMessage};
+use aegeri_message::{Index, Message, Nonce, Proposal, Transaction, UnifiedMessage};
 use gossamer::{Broadcast, GossamerMessageError, In, Out};
-use gwrdfa_container::query::matching_tuple::MatchingTuple;
+use gwrdfa_container::query::{
+	matching_components::MatchingComponents, matching_tuple::MatchingTuple,
+};
 use ml_dsa::{MlDsa44, SigningKey, B32};
 use parabyzantine::message_out::{MessageOutWorld, ParabyzantineMessageOut};
 
@@ -92,6 +94,23 @@ impl ParabyzantineMessageOut<AegeriParabyzantineData> for AegeriMessageOut {
 						.insert(None, GossamerMessageError::InternalError(e.to_string()));
 				}
 			}
+		}
+
+		// Emit all the transactions from the task buffer.
+		for (entity, transaction) in
+			data.task_facts.query(MatchingComponents::<Message<Transaction>>::new())
+		{
+			data.message_inferences
+				.insert(None, (Out, UnifiedMessage::Transaction(transaction.clone())));
+
+			// Also automatically loop-back via Gossamer In
+			if self.loopback {
+				data.message_inferences
+					.insert(None, (In, UnifiedMessage::Transaction(transaction.clone())));
+			}
+
+			// Consume transaction task once emitted.
+			data.task_inferences.remove_entity(entity);
 		}
 	}
 }
