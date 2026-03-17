@@ -55,6 +55,7 @@ impl ParabyzantineTask<AegeriParabyzantineData> for AegeriTask {
 					}
 					Err(e) => {
 						log::error!("error handling agreement: {:?}", e);
+						data.task_inferences.insert(None, e);
 					}
 				}
 			}
