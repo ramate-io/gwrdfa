@@ -11,7 +11,7 @@ members = [
   # aegeri
   "aegeri/message",
   "aegeri/process",
-  "aegeri/light-client"
+  "aegeri/full-client"
 ]
 
 [workspace.package]

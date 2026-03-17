@@ -1,5 +1,5 @@
 [package]
-name = "aegeri-light-client"
+name = "aegeri-full-client"
 version = { workspace = true }
 edition = "2021"
 license = { workspace = true }
@@ -12,11 +12,10 @@ rust-version = { workspace = true }
 [dependencies]
 tokio = { workspace = true }
 ml-dsa = { workspace = true }
-log = { workspace = true }
 anyhow = { workspace = true }
 gwrdfa-container = { workspace = true }
 aegeri-message = { workspace = true }
-gwrdfa-resample = { workspace = true }
+aegeri-process = { workspace = true }
 
 
 [lints]
