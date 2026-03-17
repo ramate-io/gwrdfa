@@ -1,4 +1,13 @@
-use aegeri_message::{AegeriSubcommittee, Index, PublicKey};
+use crate::AegeriParabyzantineData;
+use aegeri_message::{
+	AegeriSubcommittee, Index as AegeriIndex, Proposal as AegeriProposal, PublicKey,
+};
+use gwrdfa_container::query::matching_tuple::MatchingTuple;
+use gwrdfa_resample::{
+	agreement::std::{Index as ResampleIndex, Subcom, Value as ResampleValue},
+	ForResample,
+};
+use parabyzantine::agreement::{Agreement, AgreementWorld, ParabyzantineAgreement};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug)]
@@ -6,7 +15,7 @@ pub struct Bootstrap {
 	bootstrapped: bool,
 	peer_count_required: usize,
 	bootstrap_peers: HashSet<PublicKey>,
-	counts: HashMap<(Index, AegeriSubcommittee), HashSet<PublicKey>>,
+	counts: HashMap<(AegeriIndex, AegeriSubcommittee), HashSet<PublicKey>>,
 }
 
 impl Bootstrap {
@@ -47,5 +56,59 @@ impl Bootstrap {
 	) -> Self {
 		self.bootstrap_peers.extend(bootstrap_peers);
 		self
+	}
+}
+
+impl ParabyzantineAgreement<AegeriParabyzantineData> for Bootstrap {
+	fn update_parabyzantine_agreement(
+		&mut self,
+		world: &mut AgreementWorld<AegeriParabyzantineData>,
+	) {
+		for (entity, (_marker, index, proposal, sending_subcommittee)) in
+			world.certificate_facts.query(MatchingTuple::<(
+				ForResample,
+				ResampleIndex<AegeriIndex>,
+				ResampleValue<AegeriProposal>,
+				Subcom<AegeriSubcommittee>,
+			)>::new())
+		{
+			match &proposal.0 {
+				AegeriProposal::SubcommitteeBroadcast(subcommittee) => {
+					for peer in sending_subcommittee.0.senders() {
+						self.counts
+							.entry((index.0, subcommittee.clone()))
+							.or_insert(HashSet::new())
+							.insert(peer.clone());
+					}
+
+					if !self.bootstrapped
+						&& self
+							.counts
+							.get(&(index.0, subcommittee.clone()))
+							.unwrap_or(&HashSet::new())
+							.len() >= self.peer_count_required
+					{
+						world.agreement_inferences.insert(
+							None,
+							(
+								Agreement,
+								ResampleIndex::new(index.0),
+								Subcom::new(subcommittee.clone()),
+							),
+						);
+						// Technically, this would be safer to
+						// insert as an inference
+						// or to check the length of the agreements buffer.
+						// But, the current implementation is for simplicity.
+						self.bootstrapped = true;
+					}
+
+					// We can remove the certificat inference.
+					// This is a consuming stage in the parabyzantine tick.
+					world.certificate_inferences.remove_entity(entity);
+				}
+				_ => {}
+			}
+		}
 	}
 }
