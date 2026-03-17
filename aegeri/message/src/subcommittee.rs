@@ -1,6 +1,7 @@
 use crate::PublicKey;
 use crate::{ByzantineRequirement, Index, Proposal};
 use gwrdfa_resample::agreement::{std::join_set_committee::TakesJoinSet, Condition, Subcommittee};
+use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::{
 	collections::{BTreeSet, HashMap},
@@ -11,7 +12,7 @@ use std::{
 ///
 /// Consensus evaluation mirrors `VoterSet` sender-accounting, then delegates
 /// stage-specific aggregation to `Proposal::consensus_condition_for_index`.
-#[derive(Debug, Eq, PartialEq, Clone, Hash, PartialOrd, Ord)]
+#[derive(Debug, Eq, Serialize, Deserialize, PartialEq, Clone, Hash, PartialOrd, Ord)]
 pub struct AegeriSubcommittee {
 	// Inclduding the index in the subcommittee is not strictly necessary,
 	// but it serves as a final safety measure.

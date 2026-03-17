@@ -26,6 +26,8 @@ pub enum AegeriTaskError {
 	StageMismatch,
 	#[error("provided index is not the next round of the provided proposal index")]
 	NotNextRound,
+	#[error("subcommittee broadcast not supported")]
+	SubcommitteeBroadcastNotSupported,
 }
 
 impl AegeriTask {
@@ -95,6 +97,9 @@ impl AegeriTask {
 				let availability_proposal =
 					self.mempool.build_availability_proposal(now_epoch_ms, 128, &next_index)?;
 				Ok((next_index, Proposal::Availability(availability_proposal)))
+			}
+			Proposal::SubcommitteeBroadcast(_subcommittee) => {
+				Err(AegeriTaskError::SubcommitteeBroadcastNotSupported)
 			}
 		}
 	}
