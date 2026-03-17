@@ -95,5 +95,38 @@ impl ParabyzantineTask<AegeriParabyzantineData> for AegeriTask {
 				}
 			}
 		}
+
+		// Receive all the transactions on the receiver and send the statuses.
+		for transaction_result in self.receive_transaction_batch() {
+			match transaction_result {
+				Ok(transaction) => {
+					self.add_inflight_transaction_id(*transaction.id());
+					data.task_inferences.insert(None, transaction);
+				}
+				Err(e) => {
+					data.task_inferences.insert(None, e);
+				}
+			}
+		}
+
+		// For each agreement, check if our inflight transaction ids are included in the agreement.
+		for (_container_entity, (_resample, index, value)) in data
+			.agreement_facts
+			.query(MatchingTuple::<(Resample, Index<AegeriIndex>, Value<AegeriProposal>)>::new())
+		{
+			// TODO: we can optimize out this clone via disjoint borrows,
+			// but we'll move this into a module refactor first.
+			let inflight_transaction_ids = self.inflight_transaction_ids().clone();
+			for inflight_transaction_id in inflight_transaction_ids.iter() {
+				if value.0.contains_transaction_id(inflight_transaction_id) {
+					if let Err(e) =
+						self.try_send_transaction_status(index.0.clone(), *inflight_transaction_id)
+					{
+						data.task_inferences.insert(None, e);
+					}
+					self.remove_inflight_transaction_id(inflight_transaction_id);
+				}
+			}
+		}
 	}
 }

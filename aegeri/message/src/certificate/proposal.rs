@@ -8,6 +8,7 @@ pub use block_header::BlockHeader;
 pub use confirmation::Confirmation;
 
 use super::{Index, Transition};
+use crate::Id;
 use gwrdfa_resample::agreement::Condition;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -102,6 +103,16 @@ impl GivesJoinSet<AegeriSubcommittee> for Proposal {
 impl Proposal {
 	pub fn genesis() -> Self {
 		Proposal::Availability(Availability::genesis())
+	}
+
+	pub fn contains_transaction_id(&self, id: &Id) -> bool {
+		match self {
+			Proposal::Availability(value) => value.transactions().contains(id),
+			Proposal::Confirmation(value) => value.transactions().contains(id),
+			Proposal::BlockHeader(value) => value.transactions().contains(id),
+			Proposal::Transition(value) => value.block().contains(id),
+			Proposal::SubcommitteeBroadcast(_value) => false,
+		}
 	}
 
 	/// Aggregates proposals for the given stage index.

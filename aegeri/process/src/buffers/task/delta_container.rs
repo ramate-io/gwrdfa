@@ -1,6 +1,6 @@
 use super::container::TaskContainer;
 use crate::task::AegeriTaskError;
-use aegeri_message::{Index, Proposal, Transaction};
+use aegeri_message::{Index, Message, Proposal, Transaction};
 use gwrdfa_container::{ContainerStores, Delta, DeltasContainer};
 
 #[derive(Debug, Default)]
@@ -10,7 +10,7 @@ pub struct TaskDeltasContainer {
 	/// Delta for index.
 	pub index: Delta<Index>,
 	/// Delta for transaction.
-	pub transaction: Delta<Transaction>,
+	pub transaction: Delta<Message<Transaction>>,
 	/// Delta for task error.
 	pub task_error: Delta<AegeriTaskError>,
 }
@@ -87,8 +87,8 @@ impl ContainerStores<Index> for TaskDeltasContainer {
 	}
 }
 
-impl ContainerStores<Transaction> for TaskDeltasContainer {
-	fn from_data(data: Transaction) -> Self {
+impl ContainerStores<Message<Transaction>> for TaskDeltasContainer {
+	fn from_data(data: Message<Transaction>) -> Self {
 		Self {
 			index: Delta::Unchanged,
 			proposal: Delta::Unchanged,
@@ -106,7 +106,7 @@ impl ContainerStores<Transaction> for TaskDeltasContainer {
 		}
 	}
 
-	fn update_with_data(&mut self, data: Transaction) {
+	fn update_with_data(&mut self, data: Message<Transaction>) {
 		self.transaction = Delta::Modified(data);
 	}
 

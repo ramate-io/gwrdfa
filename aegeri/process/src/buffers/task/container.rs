@@ -1,5 +1,5 @@
 use crate::task::AegeriTaskError;
-use aegeri_message::{Index, Proposal, Transaction};
+use aegeri_message::{Index, Message, Proposal, Transaction};
 use gwrdfa_container::{Component, ContainerGiving};
 
 /// Container for tasks.
@@ -10,7 +10,7 @@ use gwrdfa_container::{Component, ContainerGiving};
 pub struct TaskContainer {
 	pub index: Component<Index>,
 	pub proposal: Component<Proposal>,
-	pub transaction: Component<Transaction>,
+	pub transaction: Component<Message<Transaction>>,
 	pub task_error: Component<AegeriTaskError>,
 }
 
@@ -26,8 +26,8 @@ impl ContainerGiving<Index> for TaskContainer {
 	}
 }
 
-impl ContainerGiving<Transaction> for TaskContainer {
-	fn as_component(&self) -> Component<&Transaction> {
+impl ContainerGiving<Message<Transaction>> for TaskContainer {
+	fn as_component(&self) -> Component<&Message<Transaction>> {
 		self.transaction.as_ref()
 	}
 }

@@ -2,7 +2,9 @@ use super::{
 	AegeriExecutionError, AegeriExecutor, Mempool, MempoolError, TransactionStore,
 	TransactionStoreError,
 };
-use aegeri_message::{AegeriSubcommittee, Id, Index, Proposal, Transaction, VerifiedMessage};
+use aegeri_message::{
+	AegeriSubcommittee, Id, Index, Message, Proposal, Transaction, VerifiedMessage,
+};
 use gwrdfa_resample::agreement::std::NextRound;
 use std::collections::HashSet;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
@@ -23,7 +25,10 @@ pub struct AegeriTask {
 	inflight_transaction_ids: HashSet<Id>,
 	// Here we receive transactions that are meant to be broadcasted.
 	// They are signed later.
-	broadcast_transaction_receiver: UnboundedReceiver<Transaction>,
+	//
+	// Using Message<Transaction> makes it simpler to derive the id
+	// and supports the user sending in transactions from different signers.
+	broadcast_transaction_receiver: UnboundedReceiver<Message<Transaction>>,
 	// Here we send back transactions by index.
 	transaction_status_sender: UnboundedSender<(Index, Id)>,
 }
@@ -81,7 +86,9 @@ impl AegeriTask {
 		self.max_transaction_batch_size
 	}
 
-	pub fn receive_transaction_batch(&mut self) -> Vec<Result<Transaction, AegeriTaskError>> {
+	pub fn receive_transaction_batch(
+		&mut self,
+	) -> Vec<Result<Message<Transaction>, AegeriTaskError>> {
 		let mut transactions = Vec::new();
 		for _ in 0..self.max_transaction_batch_size {
 			match self.broadcast_transaction_receiver.try_recv() {
@@ -99,12 +106,16 @@ impl AegeriTask {
 		self.inflight_transaction_ids.insert(id);
 	}
 
-	pub fn remove_inflight_transaction_id(&mut self, id: Id) {
-		self.inflight_transaction_ids.remove(&id);
+	pub fn remove_inflight_transaction_id(&mut self, id: &Id) {
+		self.inflight_transaction_ids.remove(id);
 	}
 
 	pub fn has_inflight_transaction_id(&self, id: &Id) -> bool {
 		self.inflight_transaction_ids.contains(id)
+	}
+
+	pub fn inflight_transaction_ids(&self) -> &HashSet<Id> {
+		&self.inflight_transaction_ids
 	}
 
 	pub fn try_send_transaction_status(
