@@ -40,7 +40,8 @@ impl AegeriTask {
 			mempool: Mempool::new(slot_width_ms)?,
 			transaction_store: TransactionStore::new(),
 			executor: AegeriExecutor::new(),
-			pings: false,
+			// Typically, we want to have the node pinging.
+			pings: true,
 			last_ping: None,
 			ping_frequency_ms: 1000,
 			last_ping_time_ms: 0,
