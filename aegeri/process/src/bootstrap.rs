@@ -34,8 +34,17 @@ impl Bootstrap {
 		self
 	}
 
+	pub fn with_peer_count_required(mut self, peer_count_required: usize) -> Self {
+		self.peer_count_required = peer_count_required;
+		self
+	}
+
 	pub fn has_bootstrapped(&self) -> bool {
 		self.bootstrapped
+	}
+
+	pub fn peer_count_required(&self) -> usize {
+		self.peer_count_required
 	}
 
 	pub fn contains_peer(&self, peer: &PublicKey) -> bool {
