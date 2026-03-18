@@ -13,9 +13,12 @@ rust-version = { workspace = true }
 tokio = { workspace = true }
 ml-dsa = { workspace = true }
 anyhow = { workspace = true }
-gwrdfa-container = { workspace = true }
 aegeri-message = { workspace = true }
 aegeri-process = { workspace = true }
+log = { workspace = true }
+
+[dev-dependencies]
+env_logger = { workspace = true }
 
 
 [lints]

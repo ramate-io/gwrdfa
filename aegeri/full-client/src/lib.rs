@@ -1,75 +1,11 @@
 pub use aegeri_message::{Id, Index, Message, Transaction};
 use aegeri_process::aegeri::AegeriHart;
-use aegeri_process::gossamer::{GossamerChannels, GossamerConfig, Multiaddr};
-use gwrdfa_container::ContainerEntity;
 pub use ml_dsa;
 use std::collections::VecDeque;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
 use tokio::time::{Duration, Instant};
-
-#[derive(Debug)]
-pub struct FullClientConfig {
-	pub hart: FullClientHartConfig,
-	pub bootstrap_peers: Vec<Multiaddr>,
-	pub is_participant: bool,
-	pub tick_interval: Duration,
-}
-
-pub enum FullClientHartConfig {
-	Mock,
-	Gossamer,
-	Hart(AegeriHart),
-}
-
-impl std::fmt::Debug for FullClientHartConfig {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		match self {
-			Self::Mock => write!(f, "Mock"),
-			Self::Gossamer => write!(f, "Gossamer"),
-			Self::Hart(_) => write!(f, "Hart(..)"),
-		}
-	}
-}
-
-impl Default for FullClientConfig {
-	fn default() -> Self {
-		Self {
-			hart: FullClientHartConfig::Mock,
-			bootstrap_peers: Vec::new(),
-			is_participant: true,
-			tick_interval: Duration::from_millis(20),
-		}
-	}
-}
-
-impl FullClientConfig {
-	pub fn with_mocked(mut self, mocked: bool) -> Self {
-		self.hart = if mocked { FullClientHartConfig::Mock } else { FullClientHartConfig::Gossamer };
-		self
-	}
-
-	pub fn with_hart_config(mut self, hart: FullClientHartConfig) -> Self {
-		self.hart = hart;
-		self
-	}
-
-	pub fn with_bootstrap_peers(mut self, bootstrap_peers: Vec<Multiaddr>) -> Self {
-		self.bootstrap_peers = bootstrap_peers;
-		self
-	}
-
-	pub fn with_is_participant(mut self, is_participant: bool) -> Self {
-		self.is_participant = is_participant;
-		self
-	}
-
-	pub fn with_tick_interval(mut self, tick_interval: Duration) -> Self {
-		self.tick_interval = tick_interval;
-		self
-	}
-}
 
 pub struct FullClient {
 	transaction_sender: UnboundedSender<Message<Transaction>>,
@@ -89,52 +25,22 @@ impl Drop for FullClient {
 }
 
 impl FullClient {
-	pub async fn spawn(config: FullClientConfig) -> Result<Self, anyhow::Error> {
+	pub async fn spawn(hart: AegeriHart) -> Result<Self, anyhow::Error> {
 		let (transaction_sender, transaction_receiver) = unbounded_channel();
 		let (status_sender, status_receiver) = unbounded_channel();
 		let (shutdown_sender, mut shutdown_receiver) = oneshot::channel();
 
-		let (mut hart, mock_channels): (AegeriHart, Option<GossamerChannels<ContainerEntity>>) =
-			match config.hart {
-				FullClientHartConfig::Mock => {
-				let (hart, channels) = AegeriHart::mock()?;
-				(hart, Some(channels))
-				}
-				FullClientHartConfig::Gossamer => {
-				let gossamer_config =
-					GossamerConfig::default().with_bootstrap_peers(config.bootstrap_peers.clone());
-				let (hart, _listen_addr) = AegeriHart::spawn_tokio(gossamer_config).await?;
-				(hart, None)
-				}
-				FullClientHartConfig::Hart(hart) => (hart, None),
-			};
-
-		hart = hart
-			.with_is_participant(config.is_participant)
+		let mut hart = hart
 			.with_broadcast_transaction_receiver(transaction_receiver)
-			.with_transaction_status_sender(status_sender)
-			.with_report_transaction_channel_errors(false)
-			.with_loopback(false);
+			.with_transaction_status_sender(status_sender);
 
-		let tick_interval = config.tick_interval;
 		let tick_handle = tokio::spawn(async move {
-			let mut mock_channels = mock_channels;
 			loop {
 				if shutdown_receiver.try_recv().is_ok() {
 					break;
 				}
-
 				hart.tick();
-				if let Some(channels) = mock_channels.as_mut() {
-					// In mocked mode, emulate gossamer publish confirmations and network loopback.
-					while let Ok((entity, bytes)) =
-						channels.entity_message_from_gossamer_receiver.try_recv()
-					{
-						let _ = channels.entity_into_gossamer_sender.send(Ok(entity));
-						let _ = channels.message_into_gossamer_sender.send(bytes);
-					}
-				}
-				tokio::time::sleep(tick_interval).await;
+				tokio::time::sleep(Duration::from_millis(20)).await;
 			}
 		});
 
@@ -161,11 +67,10 @@ impl FullClient {
 	) -> Result<Index, anyhow::Error> {
 		let deadline = Instant::now() + timeout;
 		loop {
-			if let Some(position) = self
-				.buffered_statuses
-				.iter()
-				.position(|(index, tx_id)| *tx_id == id && matcher(*index))
-			{
+			if let Some(position) = self.buffered_statuses.iter().position(|(index, tx_id)| {
+				log::debug!("index: {:?} for id: {:?}", index, id);
+				*tx_id == id && matcher(*index)
+			}) {
 				let (index, _id) =
 					self.buffered_statuses.remove(position).expect("checked position");
 				return Ok(index);
@@ -237,12 +142,30 @@ impl FullClient {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use aegeri_message::{AegeriSubcommittee, Availability, IndexValue, Nonce, PublicKey, TransactionSet};
+	use aegeri_message::{
+		AegeriSubcommittee, Availability, IndexValue, Nonce, PublicKey, TransactionSet,
+	};
 	use ml_dsa::{MlDsa44, SigningKey, B32};
+	use std::sync::Once;
 
 	fn tx_message(seed: u8, nonce: &[u8]) -> Result<Message<Transaction>, anyhow::Error> {
 		let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![seed; 32]));
-		Ok(Message::<Transaction>::try_new(&signer, Transaction::Join, Nonce::new(nonce))?)
+		Ok(Message::<Transaction>::try_new(&signer, Transaction::Leave, Nonce::new(nonce))?)
+	}
+
+	static LOG_INIT: Once = Once::new();
+
+	fn init_test_logger() {
+		LOG_INIT.call_once(|| {
+			let _ = env_logger::Builder::from_env(
+				env_logger::Env::default()
+					.default_filter_or("aegeri_full_client=debug,aegeri_process*client"),
+			)
+			.is_test(true)
+			.try_init();
+
+			//gossamer=debug,aegeri_process=debug,aegeri_message=debug
+		});
 	}
 
 	#[tokio::test]
@@ -265,12 +188,7 @@ mod tests {
 			.with_pings(false)
 			.with_loopback(true);
 
-		let mut client = FullClient::spawn(
-			FullClientConfig::default()
-				.with_hart_config(FullClientHartConfig::Hart(hart))
-				.with_is_participant(false),
-		)
-		.await?;
+		let mut client = FullClient::spawn(hart).await?;
 
 		let sent_id = client.send_transaction(tx)?;
 		assert_eq!(sent_id, tx_id);
@@ -282,6 +200,8 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_mocked_hart_buffers_non_matching_statuses() -> Result<(), anyhow::Error> {
+		init_test_logger();
+
 		let tx_a = tx_message(8, b"tx-a")?;
 		let tx_b = tx_message(9, b"tx-b")?;
 		let tx_a_id = *tx_a.id();
@@ -303,25 +223,29 @@ mod tests {
 			.with_pings(false)
 			.with_loopback(true);
 
-		let mut client = FullClient::spawn(
-			FullClientConfig::default()
-				.with_hart_config(FullClientHartConfig::Hart(hart))
-				.with_is_participant(false),
-		)
-		.await?;
+		let mut client = FullClient::spawn(hart).await?;
 
 		// Send in reverse and then await in original order to force buffering.
 		client.send_transaction(tx_b)?;
 		client.send_transaction(tx_a)?;
 
-		let index_a = client
-			.wait_for_availability(tx_a_id, Duration::from_secs(2))
-			.await?;
-		let index_b = client
-			.wait_for_availability(tx_b_id, Duration::from_secs(2))
-			.await?;
+		let index_a = client.wait_for_availability(tx_a_id, Duration::from_secs(2)).await?;
+		let index_b = client.wait_for_availability(tx_b_id, Duration::from_secs(2)).await?;
 		assert_eq!(index_a, Index::Availability(IndexValue::genesis()));
 		assert_eq!(index_b, Index::Availability(IndexValue::genesis()));
+
+		// Wait for confirmation
+		let index = client.wait_for_confirmation(tx_a_id, Duration::from_secs(2)).await?;
+		assert_eq!(index, Index::Confirmation(IndexValue::genesis()));
+
+		// Wait for block
+		let index = client.wait_for_block(tx_a_id, Duration::from_secs(2)).await?;
+		assert_eq!(index, Index::Block(IndexValue::genesis()));
+
+		// Wait for transition
+		let index = client.wait_for_transition(tx_a_id, Duration::from_secs(2)).await?;
+		assert_eq!(index, Index::Transition(IndexValue::genesis()));
+
 		Ok(())
 	}
 }

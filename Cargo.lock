@@ -19,7 +19,8 @@ dependencies = [
  "aegeri-message",
  "aegeri-process",
  "anyhow",
- "gwrdfa-container",
+ "env_logger",
+ "log",
  "ml-dsa",
  "tokio",
 ]
