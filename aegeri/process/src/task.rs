@@ -125,7 +125,11 @@ impl ParabyzantineTask<AegeriParabyzantineData> for AegeriTask {
 			let inflight_transaction_ids = self.inflight_transaction_ids().clone();
 			for inflight_transaction_id in inflight_transaction_ids.iter() {
 				if value.0.contains_transaction_id(inflight_transaction_id) {
-					log::debug!("client: sending status for id: {:?}", inflight_transaction_id);
+					log::debug!(
+						"client: sending status for id: {:?} at index: {:?}",
+						inflight_transaction_id,
+						index.0
+					);
 					if let Err(e) =
 						self.try_send_transaction_status(index.0.clone(), *inflight_transaction_id)
 					{
