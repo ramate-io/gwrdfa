@@ -52,6 +52,7 @@ async fn test_bootstrap_non_participant_leave_reaches_transition() -> Result<(),
 	let hart_ticker = tokio::spawn(async move {
 		loop {
 			for hart in harts.iter_mut() {
+				log::debug!("\n\n===\nclient: hart: tick: {:?}\n====", hart.signer_public_key());
 				hart.tick();
 			}
 			tokio::time::sleep(Duration::from_millis(150)).await;
