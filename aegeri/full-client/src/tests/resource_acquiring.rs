@@ -31,6 +31,8 @@ fn leave_message(seed: u8, nonce: &[u8]) -> Result<Message<Transaction>, anyhow:
 async fn test_bootstrap_non_participant_leave_reaches_transition() -> Result<(), anyhow::Error> {
 	init_test_logger();
 
+	log::debug!("starting test_bootstrap_non_participant_leave_reaches_transition");
+
 	let topic = format!(
 		"aegeri-full-client-resource-{}",
 		SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos()
