@@ -13,6 +13,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "aegeri-full-client"
+version = "0.0.1"
+dependencies = [
+ "aegeri-message",
+ "aegeri-process",
+ "anyhow",
+ "env_logger",
+ "gossamer",
+ "log",
+ "ml-dsa",
+ "tokio",
+]
+
+[[package]]
 name = "aegeri-message"
 version = "0.0.1"
 dependencies = [

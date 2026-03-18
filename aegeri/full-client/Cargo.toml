@@ -1,0 +1,26 @@
+[package]
+name = "aegeri-full-client"
+version = { workspace = true }
+edition = "2021"
+license = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+publish = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+tokio = { workspace = true }
+ml-dsa = { workspace = true }
+anyhow = { workspace = true }
+aegeri-message = { workspace = true }
+aegeri-process = { workspace = true }
+log = { workspace = true }
+gossamer = { workspace = true }
+
+[dev-dependencies]
+env_logger = { workspace = true }
+
+
+[lints]
+workspace = true

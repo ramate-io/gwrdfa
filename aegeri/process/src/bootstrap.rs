@@ -73,6 +73,9 @@ impl ParabyzantineAgreement<AegeriParabyzantineData> for Bootstrap {
 		&mut self,
 		world: &mut AgreementWorld<AegeriParabyzantineData>,
 	) {
+		if !self.bootstrapped {
+			log::debug!("client: bootstrap: updating agreement");
+		}
 		for (entity, (_marker, index, proposal, sending_subcommittee)) in
 			world.certificate_facts.query(MatchingTuple::<(
 				ForResample,
@@ -81,6 +84,9 @@ impl ParabyzantineAgreement<AegeriParabyzantineData> for Bootstrap {
 				Subcom<AegeriSubcommittee>,
 			)>::new())
 		{
+			if !self.bootstrapped {
+				log::debug!("client: bootstrap: certificate: {:?}", index.0);
+			}
 			match &proposal.0 {
 				AegeriProposal::SubcommitteeBroadcast(subcommittee) => {
 					for peer in sending_subcommittee.0.senders() {
@@ -90,6 +96,13 @@ impl ParabyzantineAgreement<AegeriParabyzantineData> for Bootstrap {
 							.insert(peer.clone());
 					}
 
+					if !self.bootstrapped {
+						log::debug!(
+							"client: bootstrap: peer count required: {:?}",
+							self.peer_count_required
+						);
+					}
+
 					if !self.bootstrapped
 						&& self
 							.counts
@@ -97,6 +110,7 @@ impl ParabyzantineAgreement<AegeriParabyzantineData> for Bootstrap {
 							.unwrap_or(&HashSet::new())
 							.len() >= self.peer_count_required
 					{
+						log::debug!("client: bootstrap: inserting agreement {:?}", index.0);
 						world.agreement_inferences.insert(
 							None,
 							(

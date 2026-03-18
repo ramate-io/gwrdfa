@@ -30,6 +30,7 @@ use ml_dsa::{MlDsa44, SigningKey};
 use parabyzantine::{act::Act, agreement::Agreement, hart::Hart, task::Task};
 use parabyzantine::{message_in::MessageIn, message_out::MessageOut};
 use std::collections::BTreeSet;
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 /// A [AegeriHart] is a [Hart] that implements the Aegeri protocol.
 pub struct AegeriHart {
@@ -155,6 +156,40 @@ impl AegeriHart {
 	/// Enable or disable subcommittee ping broadcasts from task.
 	pub fn with_pings(mut self, pings: bool) -> Self {
 		self.task = self.task.with_pings(pings);
+		self
+	}
+
+	/// Enable or disable consensus participation logic.
+	pub fn with_is_participant(mut self, is_participant: bool) -> Self {
+		self.task = self.task.with_is_participant(is_participant);
+		self
+	}
+
+	/// Wire an external transaction broadcast receiver into task.
+	pub fn with_broadcast_transaction_receiver(
+		mut self,
+		broadcast_transaction_receiver: UnboundedReceiver<aegeri_message::Message<aegeri_message::Transaction>>,
+	) -> Self {
+		self.task = self.task.with_broadcast_transaction_receiver(broadcast_transaction_receiver);
+		self
+	}
+
+	/// Wire an external transaction status sender into task.
+	pub fn with_transaction_status_sender(
+		mut self,
+		transaction_status_sender: UnboundedSender<(AegeriIndex, aegeri_message::Id)>,
+	) -> Self {
+		self.task = self.task.with_transaction_status_sender(transaction_status_sender);
+		self
+	}
+
+	/// Control whether dropped transaction channels are reported as task errors.
+	pub fn with_report_transaction_channel_errors(
+		mut self,
+		report_transaction_channel_errors: bool,
+	) -> Self {
+		self.task =
+			self.task.with_report_transaction_channel_errors(report_transaction_channel_errors);
 		self
 	}
 

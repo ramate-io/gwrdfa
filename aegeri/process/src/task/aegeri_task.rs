@@ -2,8 +2,13 @@ use super::{
 	AegeriExecutionError, AegeriExecutor, Mempool, MempoolError, TransactionStore,
 	TransactionStoreError,
 };
-use aegeri_message::{AegeriSubcommittee, Index, Proposal, Transaction, VerifiedMessage};
+use aegeri_message::{
+	AegeriSubcommittee, Id, Index, Message, Proposal, Transaction, VerifiedMessage,
+};
 use gwrdfa_resample::agreement::std::NextRound;
+use std::collections::HashSet;
+use tokio::sync::mpsc::error::TryRecvError;
+use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
 /// High-level task flow that coordinates mempool, storage, and execution.
 pub struct AegeriTask {
@@ -14,6 +19,21 @@ pub struct AegeriTask {
 	last_ping: Option<(Index, AegeriSubcommittee)>,
 	ping_frequency_ms: u64,
 	last_ping_time_ms: u64,
+	is_participant: bool,
+	// The maximum number of transactions that should be received at a time.
+	max_transaction_batch_size: usize,
+	// Here we track transaction ids until they are included in a transition.
+	inflight_transaction_ids: HashSet<Id>,
+	// Here we receive transactions that are meant to be broadcasted.
+	// They are signed later.
+	//
+	// Using Message<Transaction> makes it simpler to derive the id
+	// and supports the user sending in transactions from different signers.
+	broadcast_transaction_receiver: UnboundedReceiver<Message<Transaction>>,
+	// Here we send back transactions by index.
+	transaction_status_sender: UnboundedSender<(Index, Id)>,
+	// Whether to report channel disconnects as task errors.
+	report_transaction_channel_errors: bool,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -32,10 +52,28 @@ pub enum AegeriTaskError {
 	NotNextRound,
 	#[error("subcommittee broadcast not supported")]
 	SubcommitteeBroadcastNotSupported,
+	#[error("receiving transactions: {0}")]
+	ReceivingTransactions(String),
+	#[error("sending transaction status: {0}")]
+	SendingTransactionStatus(String),
 }
 
 impl AegeriTask {
 	pub fn new(slot_width_ms: u64) -> Result<Self, AegeriTaskError> {
+		let (_broadcast_transaction_sender, broadcast_transaction_receiver) = unbounded_channel();
+		let (transaction_status_sender, _transaction_status_receiver) = unbounded_channel();
+		Self::new_with_transaction_channels(
+			slot_width_ms,
+			broadcast_transaction_receiver,
+			transaction_status_sender,
+		)
+	}
+
+	pub fn new_with_transaction_channels(
+		slot_width_ms: u64,
+		broadcast_transaction_receiver: UnboundedReceiver<Message<Transaction>>,
+		transaction_status_sender: UnboundedSender<(Index, Id)>,
+	) -> Result<Self, AegeriTaskError> {
 		Ok(Self {
 			mempool: Mempool::new(slot_width_ms)?,
 			transaction_store: TransactionStore::new(),
@@ -45,7 +83,103 @@ impl AegeriTask {
 			last_ping: None,
 			ping_frequency_ms: 1000,
 			last_ping_time_ms: 0,
+			is_participant: true,
+			max_transaction_batch_size: 128,
+			inflight_transaction_ids: HashSet::new(),
+			broadcast_transaction_receiver,
+			transaction_status_sender,
+			report_transaction_channel_errors: false,
 		})
+	}
+
+	pub fn with_broadcast_transaction_receiver(
+		mut self,
+		broadcast_transaction_receiver: UnboundedReceiver<Message<Transaction>>,
+	) -> Self {
+		self.broadcast_transaction_receiver = broadcast_transaction_receiver;
+		self
+	}
+
+	pub fn with_transaction_status_sender(
+		mut self,
+		transaction_status_sender: UnboundedSender<(Index, Id)>,
+	) -> Self {
+		self.transaction_status_sender = transaction_status_sender;
+		self
+	}
+
+	pub fn with_report_transaction_channel_errors(
+		mut self,
+		report_transaction_channel_errors: bool,
+	) -> Self {
+		self.report_transaction_channel_errors = report_transaction_channel_errors;
+		self
+	}
+
+	pub fn with_max_transaction_batch_size(mut self, max_transaction_batch_size: usize) -> Self {
+		self.max_transaction_batch_size = max_transaction_batch_size;
+		self
+	}
+
+	pub fn max_transaction_batch_size(&self) -> usize {
+		self.max_transaction_batch_size
+	}
+
+	pub fn receive_transaction_batch(
+		&mut self,
+	) -> Result<Vec<Message<Transaction>>, AegeriTaskError> {
+		let mut transactions = Vec::new();
+		for _ in 0..self.max_transaction_batch_size {
+			match self.broadcast_transaction_receiver.try_recv() {
+				Ok(transaction) => transactions.push(transaction),
+				Err(TryRecvError::Empty) => break,
+				Err(TryRecvError::Disconnected) => {
+					if self.report_transaction_channel_errors {
+						return Err(AegeriTaskError::ReceivingTransactions(
+							"broadcast transaction receiver disconnected".to_string(),
+						));
+					}
+					break;
+				}
+			}
+		}
+		Ok(transactions)
+	}
+
+	pub fn add_inflight_transaction_id(&mut self, id: Id) {
+		self.inflight_transaction_ids.insert(id);
+	}
+
+	pub fn remove_inflight_transaction_id(&mut self, id: &Id) {
+		self.inflight_transaction_ids.remove(id);
+	}
+
+	pub fn has_inflight_transaction_id(&self, id: &Id) -> bool {
+		self.inflight_transaction_ids.contains(id)
+	}
+
+	pub fn inflight_transaction_ids(&self) -> &HashSet<Id> {
+		&self.inflight_transaction_ids
+	}
+
+	pub fn try_send_transaction_status(
+		&mut self,
+		index: Index,
+		id: Id,
+	) -> Result<(), AegeriTaskError> {
+		self.transaction_status_sender
+			.send((index, id))
+			.map_err(|e| AegeriTaskError::SendingTransactionStatus(e.to_string()))?;
+		Ok(())
+	}
+
+	pub fn with_is_participant(mut self, is_participant: bool) -> Self {
+		self.is_participant = is_participant;
+		self
+	}
+
+	pub fn is_participant(&self) -> bool {
+		self.is_participant
 	}
 
 	pub fn with_pings(mut self, pings: bool) -> Self {
@@ -122,6 +256,8 @@ impl AegeriTask {
 					self.transaction_store.build_block_from_header_proposal(block_header)?;
 				let transition = self.executor.execute_block(&block)?;
 
+				// This may be in the wrong spot.
+				// We probably should come to consensus before we remove the transaction.
 				for id in block_header.transactions().iter_ids() {
 					self.transaction_store.remove(id);
 					self.mempool.remove(*id);
@@ -173,6 +309,12 @@ mod tests {
 		Ok(message.into_verified()?)
 	}
 
+	fn tx_message(seed: u8, nonce: &[u8]) -> Result<Message<Transaction>> {
+		let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![seed; 32]));
+		Message::<Transaction>::try_new(&signer, Transaction::Join, Nonce::new(nonce))
+			.map_err(|e| anyhow::anyhow!(e.to_string()))
+	}
+
 	#[test]
 	fn test_handle_agreement_returns_error_on_stage_mismatch() -> Result<()> {
 		let mut task = AegeriTask::new(100)?;
@@ -199,6 +341,72 @@ mod tests {
 		let output = task.handle_value_agreement(&index, &proposal)?;
 		assert!(matches!(output, (_, Proposal::Transition(_))));
 		assert!(task.transaction_store.get(&id).is_none());
+		Ok(())
+	}
+
+	#[test]
+	fn test_receive_transaction_batch_respects_max_batch_size() -> Result<()> {
+		let (tx_sender, tx_receiver) = unbounded_channel();
+		let (status_sender, _status_receiver) = unbounded_channel();
+		let mut task = AegeriTask::new_with_transaction_channels(100, tx_receiver, status_sender)?
+			.with_max_transaction_batch_size(2);
+
+		let tx0 = tx_message(1, b"n0")?;
+		let tx1 = tx_message(2, b"n1")?;
+		let tx2 = tx_message(3, b"n2")?;
+		tx_sender.send(tx0.clone())?;
+		tx_sender.send(tx1.clone())?;
+		tx_sender.send(tx2.clone())?;
+
+		let batch = task.receive_transaction_batch()?;
+		assert_eq!(batch.len(), 2);
+		assert_eq!(batch[0].id(), tx0.id());
+		assert_eq!(batch[1].id(), tx1.id());
+
+		let next_batch = task.receive_transaction_batch()?;
+		assert_eq!(next_batch.len(), 1);
+		assert_eq!(next_batch[0].id(), tx2.id());
+		Ok(())
+	}
+
+	#[test]
+	fn test_receive_transaction_batch_ignores_disconnected_receiver_by_default() -> Result<()> {
+		let (tx_sender, tx_receiver) = unbounded_channel();
+		let (status_sender, _status_receiver) = unbounded_channel();
+		let mut task = AegeriTask::new_with_transaction_channels(100, tx_receiver, status_sender)?;
+		drop(tx_sender);
+
+		let batch = task.receive_transaction_batch()?;
+		assert!(batch.is_empty());
+		Ok(())
+	}
+
+	#[test]
+	fn test_receive_transaction_batch_reports_disconnect_when_enabled() -> Result<()> {
+		let (tx_sender, tx_receiver) = unbounded_channel();
+		let (status_sender, _status_receiver) = unbounded_channel();
+		let mut task = AegeriTask::new_with_transaction_channels(100, tx_receiver, status_sender)?
+			.with_report_transaction_channel_errors(true);
+		drop(tx_sender);
+
+		let err = task.receive_transaction_batch().expect_err("expected disconnect error");
+		assert!(matches!(err, AegeriTaskError::ReceivingTransactions(_)));
+		Ok(())
+	}
+
+	#[test]
+	fn test_try_send_transaction_status_emits_status() -> Result<()> {
+		let (_tx_sender, tx_receiver) = unbounded_channel();
+		let (status_sender, mut status_receiver) = unbounded_channel();
+		let mut task = AegeriTask::new_with_transaction_channels(100, tx_receiver, status_sender)?;
+		let transaction = tx(9, b"status")?;
+		let id = *transaction.id();
+		let index = Index::Confirmation(IndexValue(7));
+
+		task.try_send_transaction_status(index, id)?;
+		let (received_index, received_id) = status_receiver.try_recv()?;
+		assert_eq!(received_index, index);
+		assert_eq!(received_id, id);
 		Ok(())
 	}
 }

@@ -7,7 +7,7 @@ pub struct TransactionStore {
 	by_id: HashMap<Id, VerifiedMessage<Transaction>>,
 }
 
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+#[derive(Debug, thiserror::Error, PartialEq, Eq, Clone)]
 pub enum TransactionStoreError {
 	#[error("missing transaction for id {0:?}")]
 	MissingTransaction(Id),
@@ -38,7 +38,12 @@ impl TransactionStore {
 		let transactions = block_header
 			.transactions()
 			.iter_ids()
-			.map(|id| self.by_id.get(id).cloned().ok_or(TransactionStoreError::MissingTransaction(*id)))
+			.map(|id| {
+				self.by_id
+					.get(id)
+					.cloned()
+					.ok_or(TransactionStoreError::MissingTransaction(*id))
+			})
 			.collect::<Result<Vec<_>, _>>()?;
 		Ok(Block::new(transactions))
 	}
@@ -49,7 +54,7 @@ mod tests {
 	use super::*;
 	use aegeri_message::{Message, Nonce};
 	use anyhow::Result;
-	use ml_dsa::{B32, MlDsa44, SigningKey};
+	use ml_dsa::{MlDsa44, SigningKey, B32};
 	use std::collections::BTreeSet;
 
 	fn tx(seed: u8, payload: Transaction, nonce: &[u8]) -> Result<VerifiedMessage<Transaction>> {
@@ -90,10 +95,7 @@ mod tests {
 		let header = BlockHeader::from_transactions(ids);
 
 		let result = store.build_block_from_header_proposal(&header);
-		assert_eq!(
-			result.err(),
-			Some(TransactionStoreError::MissingTransaction(*tx_missing.id()))
-		);
+		assert_eq!(result.err(), Some(TransactionStoreError::MissingTransaction(*tx_missing.id())));
 		Ok(())
 	}
 }
