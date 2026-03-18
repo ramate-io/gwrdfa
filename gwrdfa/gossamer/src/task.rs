@@ -1,4 +1,5 @@
 use crate::{GossamerBehaviour, GossamerBehaviourEvent};
+use futures::StreamExt;
 use futures::{
 	task::{Context, Poll},
 	Future, Stream,
@@ -279,5 +280,160 @@ impl<Entity: Send + Sync + 'static> Future for GossamerTask<Entity> {
 		}
 
 		Poll::Pending
+	}
+}
+
+impl<Entity: Send + Sync + 'static> GossamerTask<Entity> {
+	pub async fn run(mut self: GossamerTask<Entity>) -> Result<(), GossamerTaskError>
+	where
+		Entity: Send + Sync + 'static,
+	{
+		fn try_publish<Entity: Send + Sync + 'static>(
+			task: &mut GossamerTask<Entity>,
+			entity: Entity,
+			msg: Vec<u8>,
+		) -> Result<bool, GossamerTaskError> {
+			gossamer_debug!("gossamer: try_publish (bytes={})", msg.len());
+
+			match task
+				.swarm
+				.behaviour_mut()
+				.gossipsub
+				.publish(task.topic_hash.clone(), msg.clone())
+			{
+				Ok(_) => {
+					gossamer_debug!("gossamer: publish accepted");
+
+					task.entity_into_gossamer_sender
+						.send(Ok(entity))
+						.map_err(|e| GossamerTaskError::BroadcastResultRelayError(e.to_string()))?;
+
+					Ok(true)
+				}
+
+				Err(gossipsub::PublishError::InsufficientPeers) => {
+					gossamer_debug!(
+						"gossamer: insufficient peers, deferring outbound (bytes={})",
+						msg.len()
+					);
+
+					if let Err((entity, e)) = task.pending_outbound.push(entity, msg) {
+						task.entity_into_gossamer_sender.send(Err((entity, e))).map_err(|e| {
+							GossamerTaskError::BroadcastResultRelayError(e.to_string())
+						})?;
+						return Ok(true);
+					}
+
+					Ok(false)
+				}
+
+				Err(e) => {
+					gossamer_log!("gossamer: publish failed for entity due to: {e}");
+
+					task.entity_into_gossamer_sender
+						.send(Err((entity, GossamerTaskError::BroadcastError(e.to_string()))))
+						.map_err(|e| GossamerTaskError::BroadcastResultRelayError(e.to_string()))?;
+
+					Ok(true)
+				}
+			}
+		}
+
+		// Optional: retry ticker to avoid tight retry loops
+		let mut retry_interval = tokio::time::interval(std::time::Duration::from_millis(50));
+
+		loop {
+			tokio::select! {
+
+				// --- Retry deferred outbound (bounded naturally by tick rate) ---
+				_ = retry_interval.tick() => {
+					if let Some((entity, msg)) = self.pending_outbound.pop() {
+						gossamer_debug!("gossamer: retry deferred outbound (bytes={})", msg.len());
+						let _ = try_publish(&mut self, entity, msg)?;
+					}
+				}
+
+				// --- Outbound messages ---
+				maybe_msg = self.entity_message_from_gossamer_receiver.recv() => {
+					match maybe_msg {
+						Some((entity, msg)) => {
+							gossamer_debug!(
+								"gossamer: outbound channel received message (bytes={})",
+								msg.len()
+							);
+
+							let _ = try_publish(&mut self, entity, msg)?;
+						}
+
+						None => {
+							return Err(GossamerTaskError::BroadcastReceiverDisconnected);
+						}
+					}
+				}
+
+				// --- Swarm events ---
+				event = self.swarm.select_next_some() => {
+					match event {
+						SwarmEvent::Behaviour(GossamerBehaviourEvent::Gossipsub(
+							gossipsub::Event::Message { message, .. },
+						)) => {
+							gossamer_debug!(
+								"gossamer: inbound gossipsub message received (bytes={})",
+								message.data.len()
+							);
+
+							if let Err(e) = self.message_into_gossamer_sender.send(message.data) {
+								return Err(GossamerTaskError::RelayToGossamerError(e));
+							}
+						}
+
+						SwarmEvent::ConnectionEstablished { peer_id, .. } => {
+							gossamer_debug!("gossamer: connection established with peer {peer_id}");
+
+							let behaviour = self.swarm.behaviour_mut();
+
+							behaviour.gossipsub.add_explicit_peer(&peer_id);
+
+							// ⚠️ Still consider removing or rate-limiting this
+							if let Err(e) = behaviour.kad.bootstrap() {
+								gossamer_log!(
+									"gossamer: kademlia bootstrap not started after connection to {peer_id}: {e}"
+								);
+							}
+						}
+
+						SwarmEvent::ConnectionClosed { peer_id, .. } => {
+							gossamer_debug!("gossamer: connection closed with peer {peer_id}");
+
+							self.swarm
+								.behaviour_mut()
+								.gossipsub
+								.remove_explicit_peer(&peer_id);
+						}
+
+						SwarmEvent::OutgoingConnectionError { peer_id, error, .. } => {
+							gossamer_log!(
+								"gossamer: outgoing connection error to {:?}: {error}",
+								peer_id
+							);
+						}
+
+						SwarmEvent::NewListenAddr { address, .. } => {
+							gossamer_debug!("gossamer: new listen address {address}");
+
+							if let Some(sender) = self.listen_addr_sender.take() {
+								let _ = sender
+									.send(address)
+									.map_err(|e| {
+										GossamerTaskError::ListenAddrSenderError(e.to_string())
+									})?;
+							}
+						}
+
+						_ => {}
+					}
+				}
+			}
+		}
 	}
 }

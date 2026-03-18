@@ -53,6 +53,7 @@ async fn test_bootstrap_non_participant_leave_reaches_transition() -> Result<(),
 		loop {
 			for hart in harts.iter_mut() {
 				log::debug!("\n\n===\nclient: hart: tick: {}\n====", hart.signer_public_key());
+				log::debug!("client: hart: buffer sizes: {:?}", hart.buffer_sizes());
 				hart.tick();
 			}
 			tokio::time::sleep(Duration::from_millis(150)).await;
