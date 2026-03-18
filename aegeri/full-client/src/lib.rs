@@ -86,6 +86,7 @@ impl FullClient {
 			let Some((index, tx_id)) = received else {
 				anyhow::bail!("transaction status channel closed");
 			};
+			log::debug!("client: received status for id: {:?} index: {:?}", tx_id, index);
 			if tx_id == id && matcher(index) {
 				return Ok(index);
 			}
@@ -197,7 +198,8 @@ mod tests {
 			.wait_for_availability(tx_id, Duration::from_secs(2))
 			.await
 			.map_err(|e| anyhow::anyhow!("failed to wait for availability: {}", e))?;
-		assert_eq!(index, Index::Availability(IndexValue::genesis()));
+		assert!(index.is_availability(), "index is not availability");
+		assert!(index.value() == IndexValue::genesis(), "index value is not genesis");
 		Ok(())
 	}
 

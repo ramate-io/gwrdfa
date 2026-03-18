@@ -130,7 +130,13 @@ impl ParabyzantineTask<AegeriParabyzantineData> for AegeriTask {
 					{
 						data.task_inferences.insert(None, e);
 					}
-					self.remove_inflight_transaction_id(inflight_transaction_id);
+					if matches!(index.0, AegeriIndex::Transition(_)) {
+						log::debug!(
+							"client: removing inflight transaction id: {:?}",
+							inflight_transaction_id
+						);
+						self.remove_inflight_transaction_id(inflight_transaction_id);
+					}
 				}
 			}
 		}
