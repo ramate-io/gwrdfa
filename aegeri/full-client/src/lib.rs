@@ -59,6 +59,15 @@ impl FullClient {
 			.with_broadcast_transaction_receiver(transaction_receiver)
 			.with_transaction_status_sender(status_sender);
 
+		// First bootstrap the hart
+		while !hart.has_bootstrapped() {
+			if shutdown_receiver.try_recv().is_ok() {
+				anyhow::bail!("shutdown received while bootstrapping");
+			}
+			hart.tick();
+			tokio::time::sleep(Duration::from_millis(20)).await;
+		}
+
 		let tick_handle = tokio::spawn(async move {
 			loop {
 				if shutdown_receiver.try_recv().is_ok() {
