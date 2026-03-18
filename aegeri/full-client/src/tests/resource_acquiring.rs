@@ -66,7 +66,10 @@ async fn test_bootstrap_non_participant_leave_reaches_transition() -> Result<(),
 		let index = client
 			.send_and_wait_for_transition(leave, Duration::from_secs(60))
 			.await
-			.map_err(|e| anyhow::anyhow!("failed to send and wait for transition: {}", e))?;
+			.map_err(|e| {
+				log::error!("failed to send and wait for transition: {}", e);
+				anyhow::anyhow!("failed to send and wait for transition: {}", e)
+			})?;
 		assert!(matches!(index, Index::Transition(_)));
 		Ok(()) as Result<(), anyhow::Error>
 	}
