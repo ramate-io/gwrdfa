@@ -47,6 +47,7 @@ pub struct GossamerTask<Entity: Send + Sync + 'static> {
 	pub(crate) topic_hash: TopicHash,
 	pub(crate) swarm: Swarm<GossamerBehaviour>,
 	pub(crate) listen_addr_sender: Option<Sender<Multiaddr>>,
+	pub(crate) max_steps: usize,
 }
 
 impl<Entity: Send + Sync + 'static> Unpin for GossamerTask<Entity> {}
@@ -186,7 +187,7 @@ impl<Entity: Send + Sync + 'static> Future for GossamerTask<Entity> {
 
 		// Ingest messages from the swarm.
 		let this = self.get_mut();
-		loop {
+		for _ in 0..this.max_steps {
 			let mut progressed = false;
 
 			if let Some((entity, msg)) = this.pending_outbound.pop() {
@@ -276,5 +277,7 @@ impl<Entity: Send + Sync + 'static> Future for GossamerTask<Entity> {
 				return Poll::Pending;
 			}
 		}
+
+		Poll::Pending
 	}
 }

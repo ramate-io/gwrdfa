@@ -93,7 +93,9 @@ impl GossamerConfig {
 			MessageAuthenticity::Signed(self.identity.clone()),
 			gossipsub_config,
 		)
-		.map_err(|e| GossamerConfigError::BuildError(format!("create gossipsub behaviour: {e:?}")))?;
+		.map_err(|e| {
+			GossamerConfigError::BuildError(format!("create gossipsub behaviour: {e:?}"))
+		})?;
 
 		let topic = IdentTopic::new(self.topic);
 		gossipsub.subscribe(&topic).map_err(|e| {
@@ -111,24 +113,28 @@ impl GossamerConfig {
 		let mut swarm = libp2p::SwarmBuilder::with_existing_identity(self.identity)
 			.with_async_std()
 			.with_tcp(tcp::Config::default(), noise::Config::new, yamux::Config::default)
-			.map_err(|e| GossamerConfigError::BuildError(format!("configure tcp/noise/yamux: {e:?}")))?
+			.map_err(|e| {
+				GossamerConfigError::BuildError(format!("configure tcp/noise/yamux: {e:?}"))
+			})?
 			.with_dns()
 			.await
 			.map_err(|e| GossamerConfigError::BuildError(format!("enable DNS transport: {e:?}")))?
 			.with_behaviour(|_| behaviour)
-			.map_err(|e| GossamerConfigError::BuildError(format!("attach network behaviour: {e:?}")))?
+			.map_err(|e| {
+				GossamerConfigError::BuildError(format!("attach network behaviour: {e:?}"))
+			})?
 			.build();
 
 		// Listen on local port
-		swarm
-			.listen_on(self.listen_on)
-			.map_err(|e| GossamerConfigError::BuildError(format!("listen on configured address: {e:?}")))?;
+		swarm.listen_on(self.listen_on).map_err(|e| {
+			GossamerConfigError::BuildError(format!("listen on configured address: {e:?}"))
+		})?;
 
 		// Bootstrap with the provided peers
 		for peer in self.bootstrap_peers {
-			swarm
-				.dial(peer.clone())
-				.map_err(|e| GossamerConfigError::BuildError(format!("dial bootstrap peer {peer}: {e:?}")))?;
+			swarm.dial(peer.clone()).map_err(|e| {
+				GossamerConfigError::BuildError(format!("dial bootstrap peer {peer}: {e:?}"))
+			})?;
 
 			// Extract peer id from multiaddr
 			if let Some(Protocol::P2p(peer_id)) = peer.iter().last() {
@@ -150,10 +156,13 @@ impl GossamerConfig {
 				message_into_gossamer_sender,
 				entity_message_from_gossamer_receiver,
 				entity_into_gossamer_sender,
-				pending_outbound: crate::task::PendingOutbound::new(self.max_pending_outbound_bytes),
+				pending_outbound: crate::task::PendingOutbound::new(
+					self.max_pending_outbound_bytes,
+				),
 				topic_hash: topic.hash(),
 				swarm,
 				listen_addr_sender: Some(listen_addr_sender),
+				max_steps: 128,
 			},
 			listen_addr_receiver,
 			Gossamer {

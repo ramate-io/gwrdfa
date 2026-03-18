@@ -60,14 +60,14 @@ gwrdfa-resample = { path = "gwrdfa/resample/core" }
 aegeri-message = { path = "aegeri/message" }
 aegeri-process = { path = "aegeri/process" }
 
-fuste-ecall-dispatcher = { git = "https://github.com/ramate-io/fuste.git", rev = "07b6e5e79e79449eca05ad5f0acac09f8f41e125" }
-fuste-exit = { git = "https://github.com/ramate-io/fuste.git", rev = "07b6e5e79e79449eca05ad5f0acac09f8f41e125" }
-fuste-exit-system = { git = "https://github.com/ramate-io/fuste.git", rev = "07b6e5e79e79449eca05ad5f0acac09f8f41e125" }
-fuste-interrupt-handler = { git = "https://github.com/ramate-io/fuste.git", rev = "07b6e5e79e79449eca05ad5f0acac09f8f41e125" }
-fuste-lilbug = { git = "https://github.com/ramate-io/fuste.git", rev = "07b6e5e79e79449eca05ad5f0acac09f8f41e125" }
-fuste-riscv-core = { git = "https://github.com/ramate-io/fuste.git", rev = "07b6e5e79e79449eca05ad5f0acac09f8f41e125" }
-fuste-riscv-elf = { git = "https://github.com/ramate-io/fuste.git", rev = "07b6e5e79e79449eca05ad5f0acac09f8f41e125" }
-fuste-std-output-system = { git = "https://github.com/ramate-io/fuste.git", rev = "07b6e5e79e79449eca05ad5f0acac09f8f41e125" }
+fuste-ecall-dispatcher = { git = "https://github.com/ramate-io/fuste.git", rev = "e6fba8cc663ffbc42ebc6c7a00f179578b45145b" }
+fuste-exit = { git = "https://github.com/ramate-io/fuste.git", rev = "e6fba8cc663ffbc42ebc6c7a00f179578b45145b" }
+fuste-exit-system = { git = "https://github.com/ramate-io/fuste.git", rev = "e6fba8cc663ffbc42ebc6c7a00f179578b45145b" }
+fuste-interrupt-handler = { git = "https://github.com/ramate-io/fuste.git", rev = "e6fba8cc663ffbc42ebc6c7a00f179578b45145b" }
+fuste-lilbug = { git = "https://github.com/ramate-io/fuste.git", rev = "e6fba8cc663ffbc42ebc6c7a00f179578b45145b" }
+fuste-riscv-core = { git = "https://github.com/ramate-io/fuste.git", rev = "e6fba8cc663ffbc42ebc6c7a00f179578b45145b" }
+fuste-riscv-elf = { git = "https://github.com/ramate-io/fuste.git", rev = "e6fba8cc663ffbc42ebc6c7a00f179578b45145b" }
+fuste-std-output-system = { git = "https://github.com/ramate-io/fuste.git", rev = "e6fba8cc663ffbc42ebc6c7a00f179578b45145b" }
 
 
 

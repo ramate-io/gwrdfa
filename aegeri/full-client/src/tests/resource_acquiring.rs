@@ -52,7 +52,7 @@ async fn test_bootstrap_non_participant_leave_reaches_transition() -> Result<(),
 	let hart_ticker = tokio::spawn(async move {
 		loop {
 			for hart in harts.iter_mut() {
-				log::debug!("\n\n===\nclient: hart: tick: {:?}\n====", hart.signer_public_key());
+				log::debug!("\n\n===\nclient: hart: tick: {}\n====", hart.signer_public_key());
 				hart.tick();
 			}
 			tokio::time::sleep(Duration::from_millis(150)).await;
@@ -73,6 +73,18 @@ async fn test_bootstrap_non_participant_leave_reaches_transition() -> Result<(),
 				anyhow::anyhow!("failed to send and wait for transition: {}", e)
 			})?;
 		assert!(matches!(index, Index::Transition(_)));
+
+		// Second send should be faster
+		let new_leave = leave_message(99, b"resource-acquiring-leave-2")?;
+		let new_index = client
+			.send_and_wait_for_transition(new_leave, Duration::from_secs(15))
+			.await
+			.map_err(|e| {
+				log::debug!("client: failed to send and wait for transition: {}", e);
+				anyhow::anyhow!("failed to send and wait for transition: {}", e)
+			})?;
+		assert!(matches!(new_index, Index::Transition(_)));
+		assert!(new_index.value() > index.value());
 		Ok(()) as Result<(), anyhow::Error>
 	}
 	.await;
