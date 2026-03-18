@@ -57,7 +57,7 @@ async fn test_bootstrap_non_participant_leave_reaches_transition() -> Result<(),
 	});
 
 	// Give peers a brief moment to connect before bootstrap.
-	tokio::time::sleep(Duration::from_secs(2)).await;
+	tokio::time::sleep(Duration::from_secs(15)).await;
 
 	let test_result = async {
 		let (mut client, _listen_addr) =

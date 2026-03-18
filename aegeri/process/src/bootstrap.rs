@@ -110,7 +110,7 @@ impl ParabyzantineAgreement<AegeriParabyzantineData> for Bootstrap {
 							.unwrap_or(&HashSet::new())
 							.len() >= self.peer_count_required
 					{
-						log::debug!("client: bootstrap: inserting agreement");
+						log::debug!("client: bootstrap: inserting agreement {:?}", index.0);
 						world.agreement_inferences.insert(
 							None,
 							(
