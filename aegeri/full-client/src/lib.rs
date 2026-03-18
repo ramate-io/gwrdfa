@@ -297,3 +297,7 @@ mod tests {
 		Ok(())
 	}
 }
+
+#[cfg(test)]
+#[path = "tests/resource_acquiring.rs"]
+mod resource_acquiring;
