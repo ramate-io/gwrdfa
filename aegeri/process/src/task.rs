@@ -97,10 +97,12 @@ impl ParabyzantineTask<AegeriParabyzantineData> for AegeriTask {
 			}
 		}
 
+		log::debug!("client: receiving transaction batch");
 		// Receive all broadcast transactions and route them to message_out.
 		match self.receive_transaction_batch() {
 			Ok(transactions) => {
 				for transaction in transactions {
+					log::debug!("client: received transaction: {:?}", transaction.id());
 					self.add_inflight_transaction_id(*transaction.id());
 					data.task_inferences.insert(None, transaction);
 				}
@@ -110,16 +112,19 @@ impl ParabyzantineTask<AegeriParabyzantineData> for AegeriTask {
 			}
 		}
 
+		log::debug!("client: checking for inflight transaction ids");
 		// For each agreement, check if our inflight transaction ids are included in the agreement.
 		for (_container_entity, (_resample, index, value)) in data
 			.agreement_facts
 			.query(MatchingTuple::<(Resample, Index<AegeriIndex>, Value<AegeriProposal>)>::new())
 		{
+			log::debug!("client: agreement: {:?} for index: {:?}", value.0, index.0);
 			// TODO: we can optimize out this clone via disjoint borrows,
 			// but we'll move this into a module refactor first.
 			let inflight_transaction_ids = self.inflight_transaction_ids().clone();
 			for inflight_transaction_id in inflight_transaction_ids.iter() {
 				if value.0.contains_transaction_id(inflight_transaction_id) {
+					log::debug!("client: sending status for id: {:?}", inflight_transaction_id);
 					if let Err(e) =
 						self.try_send_transaction_status(index.0.clone(), *inflight_transaction_id)
 					{

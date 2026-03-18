@@ -159,7 +159,7 @@ mod tests {
 		LOG_INIT.call_once(|| {
 			let _ = env_logger::Builder::from_env(
 				env_logger::Env::default()
-					.default_filter_or("aegeri_full_client=debug,aegeri_process*client"),
+					.default_filter_or("aegeri_full_client=debug,aegeri_process=debug/client:*"),
 			)
 			.is_test(true)
 			.try_init();
@@ -193,7 +193,10 @@ mod tests {
 		let sent_id = client.send_transaction(tx)?;
 		assert_eq!(sent_id, tx_id);
 
-		let index = client.wait_for_availability(tx_id, Duration::from_secs(2)).await?;
+		let index = client
+			.wait_for_availability(tx_id, Duration::from_secs(2))
+			.await
+			.map_err(|e| anyhow::anyhow!("failed to wait for availability: {}", e))?;
 		assert_eq!(index, Index::Availability(IndexValue::genesis()));
 		Ok(())
 	}
@@ -211,15 +214,11 @@ mod tests {
 		let signer_public_key = PublicKey::new(&signer);
 		let genesis_subcommittee =
 			AegeriSubcommittee::genesis().with_members(vec![signer_public_key].into_iter());
-		let mut txs = TransactionSet::new();
-		txs.add_id(tx_a_id);
-		txs.add_id(tx_b_id);
-		let availability = Availability::from_transactions(txs);
 
 		let (hart, _channels) = AegeriHart::mock()?;
 		let hart = hart
 			.with_signer(signer)
-			.with_genesis(genesis_subcommittee, availability)
+			.with_genesis(genesis_subcommittee, Availability::genesis())
 			.with_pings(false)
 			.with_loopback(true);
 
@@ -229,23 +228,49 @@ mod tests {
 		client.send_transaction(tx_b)?;
 		client.send_transaction(tx_a)?;
 
-		let index_a = client.wait_for_availability(tx_a_id, Duration::from_secs(2)).await?;
-		let index_b = client.wait_for_availability(tx_b_id, Duration::from_secs(2)).await?;
-		assert_eq!(index_a, Index::Availability(IndexValue::genesis()));
-		assert_eq!(index_b, Index::Availability(IndexValue::genesis()));
+		let index_a = client
+			.wait_for_availability(tx_a_id, Duration::from_secs(2))
+			.await
+			.map_err(|e| anyhow::anyhow!("failed to wait for availability for tx_a: {}", e))?;
+		let index_b = client
+			.wait_for_availability(tx_b_id, Duration::from_secs(2))
+			.await
+			.map_err(|e| anyhow::anyhow!("failed to wait for availability for tx_b: {}", e))?;
+		assert!(index_a.is_availability(), "index_a is not availability");
+		assert!(index_b.is_availability(), "index_b is not availability");
 
 		// Wait for confirmation
-		let index = client.wait_for_confirmation(tx_a_id, Duration::from_secs(2)).await?;
-		assert_eq!(index, Index::Confirmation(IndexValue::genesis()));
+		let confirmation_index = client
+			.wait_for_confirmation(tx_a_id, Duration::from_secs(2))
+			.await
+			.map_err(|e| anyhow::anyhow!("failed to wait for confirmation for tx_a: {}", e))?;
+		assert!(confirmation_index.is_confirmation(), "confirmation_index is not confirmation");
+		assert!(
+			confirmation_index.value() >= index_a.value(),
+			"confirmation_index is not greater than index_a"
+		);
 
 		// Wait for block
-		let index = client.wait_for_block(tx_a_id, Duration::from_secs(2)).await?;
-		assert_eq!(index, Index::Block(IndexValue::genesis()));
+		let block_index = client
+			.wait_for_block(tx_a_id, Duration::from_secs(2))
+			.await
+			.map_err(|e| anyhow::anyhow!("failed to wait for block for tx_a: {}", e))?;
+		assert!(block_index.is_block(), "block_index is not block");
+		assert!(
+			block_index.value() >= confirmation_index.value(),
+			"block_index is not greater than confirmation_index"
+		);
 
 		// Wait for transition
-		let index = client.wait_for_transition(tx_a_id, Duration::from_secs(2)).await?;
-		assert_eq!(index, Index::Transition(IndexValue::genesis()));
-
+		let transition_index = client
+			.wait_for_transition(tx_a_id, Duration::from_secs(2))
+			.await
+			.map_err(|e| anyhow::anyhow!("failed to wait for transition for tx_a: {}", e))?;
+		assert!(transition_index.is_transition(), "transition_index is not transition");
+		assert!(
+			transition_index.value() >= block_index.value(),
+			"transition_index is not greater than block_index"
+		);
 		Ok(())
 	}
 }

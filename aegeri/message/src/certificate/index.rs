@@ -50,6 +50,14 @@ impl Index {
 		matches!(self, Index::Transition(_))
 	}
 
+	pub fn is_confirmation(&self) -> bool {
+		matches!(self, Index::Confirmation(_))
+	}
+
+	pub fn is_block(&self) -> bool {
+		matches!(self, Index::Block(_))
+	}
+
 	pub fn value(&self) -> IndexValue {
 		match self {
 			Index::Availability(index)
