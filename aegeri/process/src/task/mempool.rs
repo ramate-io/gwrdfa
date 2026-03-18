@@ -58,6 +58,7 @@ impl Mempool {
 	}
 
 	fn insert_entry(&mut self, received_at_epoch_ms: u64, id: Id) {
+		log::debug!("client: mempool: inserting id: {:?} at epoch: {:?}", id, received_at_epoch_ms);
 		if self.by_id.contains_key(&id) {
 			return;
 		}
@@ -81,6 +82,7 @@ impl Mempool {
 
 	/// Marks an id as inflight at a given index value.
 	pub fn mark_inflight(&mut self, id: Id, index_value: IndexValue) {
+		log::debug!("client: mempool: marking id: {:?} at index: {:?}", id, index_value);
 		// Make sure to get rid of the id in the old index value mapping.
 		if let Some(existing_index_value) = self.inflight_by_id.get(&id) {
 			if existing_index_value != &index_value {
