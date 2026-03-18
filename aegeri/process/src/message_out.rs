@@ -66,7 +66,7 @@ impl ParabyzantineMessageOut<AegeriParabyzantineData> for AegeriMessageOut {
 					log::debug!("client: message out: transaction: {:?}", tx.id());
 				}
 				UnifiedMessage::Certificate(cert) => {
-					// log::debug!("client: message out: certificate: {:?}", cert.id());
+					log::debug!("participant: message out: certificate: {:?}", cert.id());
 				}
 			}
 			data.message_inferences.remove_entity(entity);
