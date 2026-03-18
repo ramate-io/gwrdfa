@@ -58,12 +58,11 @@ async fn test_bootstrap_non_participant_leave_reaches_transition() -> Result<(),
 		}
 	});
 
-	// Give peers a brief moment to connect before bootstrap.
-	tokio::time::sleep(Duration::from_secs(15)).await;
-
 	let test_result = async {
+		// Waiting for 5 peers instead of 1 should make this wait deeper into the
+		// network startup before attempting to send transactions.
 		let (mut client, _listen_addr) =
-			FullClient::bootstrap_non_participant(topic, 1, bootstrap_peers).await?;
+			FullClient::bootstrap_non_participant(topic, 5, bootstrap_peers).await?;
 		let leave = leave_message(99, b"resource-acquiring-leave")?;
 		let index = client
 			.send_and_wait_for_transition(leave, Duration::from_secs(60))
