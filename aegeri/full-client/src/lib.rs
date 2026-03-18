@@ -1,5 +1,6 @@
-pub use aegeri_message::{Id, Index, Message, Transaction};
+pub use aegeri_message::{Id, Index, Message, PublicKey, Transaction};
 use aegeri_process::aegeri::AegeriHart;
+use gossamer::{Gossamer, GossamerConfig, Multiaddr};
 pub use ml_dsa;
 use std::collections::VecDeque;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
@@ -25,6 +26,26 @@ impl Drop for FullClient {
 }
 
 impl FullClient {
+	pub async fn bootstrap_non_participant(
+		bootstrap_count: usize,
+		bootstrap_peers: impl IntoIterator<Item = (Multiaddr, PublicKey)>,
+	) -> Result<(Self, Multiaddr), anyhow::Error> {
+		// Collect all the bootstrap peers into a vector.
+		let bootstrap_peers = bootstrap_peers.into_iter().collect::<Vec<_>>();
+
+		let gossamer_config = GossamerConfig::default().with_bootstrap_peers(
+			bootstrap_peers.iter().map(|(addr, _)| addr).cloned().collect::<Vec<_>>(),
+		);
+		let (gossamer, listen_addr) = Gossamer::spawn_tokio(gossamer_config).await?;
+
+		let hart = AegeriHart::from_gossamer(gossamer)?
+			.with_bootstrap_peer_count_required(bootstrap_count)
+			.with_bootstrap_peers(bootstrap_peers.into_iter().map(|(_, pk)| pk).collect::<Vec<_>>())
+			.with_is_participant(false);
+
+		Ok((Self::spawn(hart).await?, listen_addr))
+	}
+
 	pub async fn spawn(hart: AegeriHart) -> Result<Self, anyhow::Error> {
 		let (transaction_sender, transaction_receiver) = unbounded_channel();
 		let (status_sender, status_receiver) = unbounded_channel();

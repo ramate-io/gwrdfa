@@ -20,6 +20,7 @@ dependencies = [
  "aegeri-process",
  "anyhow",
  "env_logger",
+ "gossamer",
  "log",
  "ml-dsa",
  "tokio",

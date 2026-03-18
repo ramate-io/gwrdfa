@@ -16,6 +16,7 @@ anyhow = { workspace = true }
 aegeri-message = { workspace = true }
 aegeri-process = { workspace = true }
 log = { workspace = true }
+gossamer = { workspace = true }
 
 [dev-dependencies]
 env_logger = { workspace = true }
