@@ -189,6 +189,7 @@ impl<Entity: Send + Sync + 'static> Future for GossamerTask<Entity> {
 		// Ingest messages from the swarm.
 		let this = self.get_mut();
 		for _ in 0..this.max_steps {
+			log::debug!("client: task: poll: max_steps={}", this.max_steps);
 			let mut progressed = false;
 
 			if let Some((entity, msg)) = this.pending_outbound.pop() {
