@@ -47,6 +47,7 @@ impl ParabyzantineTask<AegeriParabyzantineData> for AegeriTask {
 				// If there's an error handling the agreement, for now just log it.
 				match self.handle_value_agreement(&index.0, &value.0) {
 					Ok((index, proposal)) => {
+						log::debug!("client: task: handling agreement: {:?}", index);
 						// If we got a proposal, insert it into the task inferences.
 						data.task_inferences.insert(None, (index, proposal));
 
