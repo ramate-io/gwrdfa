@@ -74,7 +74,6 @@ impl AegeriTask {
 		broadcast_transaction_receiver: UnboundedReceiver<Message<Transaction>>,
 		transaction_status_sender: UnboundedSender<(Index, Id)>,
 	) -> Result<Self, AegeriTaskError> {
-
 		Ok(Self {
 			mempool: Mempool::new(slot_width_ms)?,
 			transaction_store: TransactionStore::new(),
@@ -126,7 +125,9 @@ impl AegeriTask {
 		self.max_transaction_batch_size
 	}
 
-	pub fn receive_transaction_batch(&mut self) -> Result<Vec<Message<Transaction>>, AegeriTaskError> {
+	pub fn receive_transaction_batch(
+		&mut self,
+	) -> Result<Vec<Message<Transaction>>, AegeriTaskError> {
 		let mut transactions = Vec::new();
 		for _ in 0..self.max_transaction_batch_size {
 			match self.broadcast_transaction_receiver.try_recv() {
@@ -255,6 +256,8 @@ impl AegeriTask {
 					self.transaction_store.build_block_from_header_proposal(block_header)?;
 				let transition = self.executor.execute_block(&block)?;
 
+				// This may be in the wrong spot.
+				// We probably should come to consensus before we remove the transaction.
 				for id in block_header.transactions().iter_ids() {
 					self.transaction_store.remove(id);
 					self.mempool.remove(*id);

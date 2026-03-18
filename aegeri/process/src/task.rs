@@ -35,7 +35,7 @@ impl ParabyzantineTask<AegeriParabyzantineData> for AegeriTask {
 					data.transaction_inferences.insert(Some(container_entity), e);
 				} else {
 					// Otherwise, remove the transaction.
-					data.task_inferences.remove_entity(container_entity);
+					data.transaction_inferences.remove_entity(container_entity);
 				}
 			}
 
