@@ -63,7 +63,7 @@ impl ParabyzantineMessageOut<AegeriParabyzantineData> for AegeriMessageOut {
 		{
 			match message {
 				UnifiedMessage::Transaction(tx) => {
-					log::debug!("client: message out: transaction: {:?}", tx.id());
+					log::debug!("client: message broadcast: transaction: {:?}", tx.id());
 				}
 				UnifiedMessage::Certificate(cert) => {
 					log::debug!("participant: message out: certificate: {:?}", cert.id());
