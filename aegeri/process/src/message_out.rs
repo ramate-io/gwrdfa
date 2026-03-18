@@ -58,9 +58,17 @@ impl ParabyzantineMessageOut<AegeriParabyzantineData> for AegeriMessageOut {
 		data: &mut MessageOutWorld<AegeriParabyzantineData>,
 	) {
 		// Remove all of the messages that were broadcasted.
-		for (entity, (Broadcast, _message)) in
+		for (entity, (Broadcast, message)) in
 			data.message_facts.query(MatchingTuple::<(Broadcast, UnifiedMessage)>::new())
 		{
+			match message {
+				UnifiedMessage::Transaction(tx) => {
+					log::debug!("client: message out: transaction: {:?}", tx.id());
+				}
+				UnifiedMessage::Certificate(cert) => {
+					// log::debug!("client: message out: certificate: {:?}", cert.id());
+				}
+			}
 			data.message_inferences.remove_entity(entity);
 		}
 

@@ -1,6 +1,6 @@
 use crate::{FullClient, Index, Message, Transaction};
 use aegeri_process::local_cluster::AegeriLocalClusterConfig;
-use ml_dsa::{B32, MlDsa44, SigningKey};
+use ml_dsa::{MlDsa44, SigningKey, B32};
 use std::sync::Once;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -10,7 +10,7 @@ fn init_test_logger() {
 	LOG_INIT.call_once(|| {
 		let _ = env_logger::Builder::from_env(
 			env_logger::Env::default()
-				.default_filter_or("aegeri_full_client=debug,aegeri_process=debug,gossamer=info"),
+				.default_filter_or("aegeri_full_client=debug,aegeri_process=debug/client:*"),
 		)
 		.is_test(true)
 		.try_init();
@@ -37,12 +37,13 @@ async fn test_bootstrap_non_participant_leave_reaches_transition() -> Result<(),
 	);
 	let cluster = AegeriLocalClusterConfig::default()
 		.with_count(7)
-		.with_topic(topic)
+		.with_topic(topic.clone())
 		.build()
 		.await?;
 
 	// Use one live peer for bootstrap.
-	let bootstrap_peers = vec![(cluster.listen_addrs[0].clone(), cluster.harts[0].signer_public_key())];
+	let bootstrap_peers =
+		vec![(cluster.listen_addrs[0].clone(), cluster.harts[0].signer_public_key())];
 
 	// Keep consensus progressing in the cluster while the client watches as a non-participant.
 	let mut harts = cluster.harts;
@@ -59,11 +60,10 @@ async fn test_bootstrap_non_participant_leave_reaches_transition() -> Result<(),
 	tokio::time::sleep(Duration::from_secs(2)).await;
 
 	let test_result = async {
-		let (mut client, _listen_addr) = FullClient::bootstrap_non_participant(1, bootstrap_peers).await?;
+		let (mut client, _listen_addr) =
+			FullClient::bootstrap_non_participant(topic, 1, bootstrap_peers).await?;
 		let leave = leave_message(99, b"resource-acquiring-leave")?;
-		let index = client
-			.send_and_wait_for_transition(leave, Duration::from_secs(90))
-			.await?;
+		let index = client.send_and_wait_for_transition(leave, Duration::from_secs(15)).await?;
 		assert!(matches!(index, Index::Transition(_)));
 		Ok(()) as Result<(), anyhow::Error>
 	}
