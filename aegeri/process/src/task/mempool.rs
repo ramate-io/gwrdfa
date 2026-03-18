@@ -192,6 +192,11 @@ impl Mempool {
 		for id in selected_ids {
 			ids.add_id(id);
 		}
+		log::debug!(
+			"client: mempool: building availability proposal with ids: {:?} at index: {:?}",
+			ids.ids(),
+			index
+		);
 		Ok(Availability::from_transactions(ids))
 	}
 
