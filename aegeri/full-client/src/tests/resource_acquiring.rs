@@ -63,7 +63,10 @@ async fn test_bootstrap_non_participant_leave_reaches_transition() -> Result<(),
 		let (mut client, _listen_addr) =
 			FullClient::bootstrap_non_participant(topic, 1, bootstrap_peers).await?;
 		let leave = leave_message(99, b"resource-acquiring-leave")?;
-		let index = client.send_and_wait_for_transition(leave, Duration::from_secs(30)).await?;
+		let index = client
+			.send_and_wait_for_transition(leave, Duration::from_secs(30))
+			.await
+			.map_err(|e| anyhow::anyhow!("failed to send and wait for transition: {}", e))?;
 		assert!(matches!(index, Index::Transition(_)));
 		Ok(()) as Result<(), anyhow::Error>
 	}
