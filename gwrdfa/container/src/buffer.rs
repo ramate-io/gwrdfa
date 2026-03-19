@@ -13,6 +13,10 @@ impl<T: Sized> ContainerEntityBuffer<T> {
 		Self { next_entity: ContainerEntity::new(0), entities: HashMap::new() }
 	}
 
+	pub fn len(&self) -> usize {
+		self.entities.len()
+	}
+
 	/// Iterates over the entities in the buffer.
 	pub fn iter<'a>(&'a self) -> std::collections::hash_map::Iter<'a, ContainerEntity, T> {
 		self.entities.iter()

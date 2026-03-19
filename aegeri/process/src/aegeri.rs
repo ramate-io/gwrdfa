@@ -67,6 +67,15 @@ pub enum AegeriHartError {
 	Gossamer(#[from] GossamerConfigError),
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct AegeriBufferSizes {
+	pub messages: usize,
+	pub transaction: usize,
+	pub certificate: usize,
+	pub agreement: usize,
+	pub task: usize,
+}
+
 impl AegeriHart {
 	pub fn from_gossamer(gossamer: Gossamer<ContainerEntity>) -> Result<Self, AegeriHartError> {
 		Ok(Self {
@@ -168,7 +177,9 @@ impl AegeriHart {
 	/// Wire an external transaction broadcast receiver into task.
 	pub fn with_broadcast_transaction_receiver(
 		mut self,
-		broadcast_transaction_receiver: UnboundedReceiver<aegeri_message::Message<aegeri_message::Transaction>>,
+		broadcast_transaction_receiver: UnboundedReceiver<
+			aegeri_message::Message<aegeri_message::Transaction>,
+		>,
 	) -> Self {
 		self.task = self.task.with_broadcast_transaction_receiver(broadcast_transaction_receiver);
 		self
@@ -188,8 +199,9 @@ impl AegeriHart {
 		mut self,
 		report_transaction_channel_errors: bool,
 	) -> Self {
-		self.task =
-			self.task.with_report_transaction_channel_errors(report_transaction_channel_errors);
+		self.task = self
+			.task
+			.with_report_transaction_channel_errors(report_transaction_channel_errors);
 		self
 	}
 
@@ -248,6 +260,16 @@ impl AegeriHart {
 	pub fn run(&mut self) {
 		loop {
 			self.tick();
+		}
+	}
+
+	pub fn buffer_sizes(&self) -> AegeriBufferSizes {
+		AegeriBufferSizes {
+			messages: self.data.messages.len(),
+			transaction: self.data.transactions.len(),
+			certificate: self.data.certificates.len(),
+			agreement: self.data.agreements.len(),
+			task: self.data.tasks.len(),
 		}
 	}
 

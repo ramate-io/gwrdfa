@@ -65,6 +65,7 @@ impl FullClient {
 				anyhow::bail!("shutdown received while bootstrapping");
 			}
 			hart.tick();
+			log::debug!("client: hart: buffer sizes: {:?}", hart.buffer_sizes());
 			tokio::time::sleep(Duration::from_millis(20)).await;
 		}
 
@@ -74,6 +75,7 @@ impl FullClient {
 					break;
 				}
 				hart.tick();
+				log::debug!("client: hart: buffer sizes: {:?}", hart.buffer_sizes());
 				tokio::time::sleep(Duration::from_millis(20)).await;
 			}
 		});

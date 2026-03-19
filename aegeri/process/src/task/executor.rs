@@ -12,7 +12,7 @@ use fuste_riscv_elf::{Elf32Loader, ElfLoaderError};
 use fuste_std_output_system::StdOutputSystem;
 use std::ops::ControlFlow;
 
-const TASK_MACHINE_MEMORY_SIZE: usize = 1024 * 1024 * 2;
+const TASK_MACHINE_MEMORY_SIZE: usize = 1024 * 1024;
 
 #[derive(Debug, thiserror::Error)]
 pub enum AegeriExecutionError {

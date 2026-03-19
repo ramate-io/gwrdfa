@@ -10,6 +10,6 @@ jobs:
   cargo-test:
     uses: ./.github/workflows/nix-command.yml
     with:
-      command: cargo test -- --ignored
+      command: RUST_BACKTRACE=full cargo test --release -- --ignored
       nix_flake_path: '.'
       runner: 'ubuntu-latest'

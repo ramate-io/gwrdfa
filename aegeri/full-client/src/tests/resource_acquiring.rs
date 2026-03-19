@@ -9,8 +9,7 @@ static LOG_INIT: Once = Once::new();
 fn init_test_logger() {
 	LOG_INIT.call_once(|| {
 		let _ = env_logger::Builder::from_env(
-			env_logger::Env::default()
-				.default_filter_or("aegeri_full_client=debug,aegeri_process=debug/client:*"),
+			env_logger::Env::default().default_filter_or("aegeri_full_client=debug"),
 		)
 		.is_test(true)
 		.try_init();
@@ -52,7 +51,8 @@ async fn test_bootstrap_non_participant_leave_reaches_transition() -> Result<(),
 	let hart_ticker = tokio::spawn(async move {
 		loop {
 			for hart in harts.iter_mut() {
-				log::debug!("\n\n===\nclient: hart: tick: {:?}\n====", hart.signer_public_key());
+				log::debug!("\n\n===\nclient: hart: tick: {}\n====", hart.signer_public_key());
+				log::debug!("client: hart: buffer sizes: {:?}", hart.buffer_sizes());
 				hart.tick();
 			}
 			tokio::time::sleep(Duration::from_millis(150)).await;
@@ -66,13 +66,26 @@ async fn test_bootstrap_non_participant_leave_reaches_transition() -> Result<(),
 			FullClient::bootstrap_non_participant(topic, 6, bootstrap_peers).await?;
 		let leave = leave_message(99, b"resource-acquiring-leave")?;
 		let index = client
-			.send_and_wait_for_transition(leave, Duration::from_secs(120))
+			.send_and_wait_for_transition(leave, Duration::from_secs(60))
 			.await
 			.map_err(|e| {
 				log::debug!("client: failed to send and wait for transition: {}", e);
 				anyhow::anyhow!("failed to send and wait for transition: {}", e)
 			})?;
 		assert!(matches!(index, Index::Transition(_)));
+
+		// Second send should be faster
+		let new_leave = leave_message(99, b"resource-acquiring-leave-2")?;
+		// This works pretty reliably with 2 seconds, but we'll give a budget.
+		let new_index = client
+			.send_and_wait_for_transition(new_leave, Duration::from_secs(3))
+			.await
+			.map_err(|e| {
+				log::debug!("client: failed to send and wait for transition: {}", e);
+				anyhow::anyhow!("failed to send and wait for transition: {}", e)
+			})?;
+		assert!(matches!(new_index, Index::Transition(_)));
+		assert!(new_index.value() > index.value());
 		Ok(()) as Result<(), anyhow::Error>
 	}
 	.await;
