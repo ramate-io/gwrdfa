@@ -21,6 +21,8 @@ clap = { workspace = true }
 orfile = { workspace = true }
 clap-markdown-ext = { workspace = true }
 serde = { workspace = true }
+dotenv = { workspace = true }
+env_logger = { workspace = true }
 
 
 [dev-dependencies]
