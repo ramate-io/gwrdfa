@@ -11,6 +11,8 @@ pub enum FullClient {
 	Join(join::or_file::Join),
 	#[clap(subcommand)]
 	Leave(leave::or_file::Leave),
+	#[clap(subcommand)]
+	SendElf(send_elf::or_file::SendElf),
 }
 
 impl FullClient {
@@ -18,6 +20,7 @@ impl FullClient {
 		match self {
 			FullClient::Join(join) => join.execute().await,
 			FullClient::Leave(leave) => leave.execute().await,
+			FullClient::SendElf(send_elf) => send_elf.execute().await,
 		}
 	}
 }
