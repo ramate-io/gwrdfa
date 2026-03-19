@@ -26,7 +26,7 @@ where
 	Data::MessageEntity: Send + Sync,
 {
 	pub fn new(gossamer: Gossamer<Data::MessageEntity>, messages: Messages) -> Self {
-		Self { messages, gossamer, max_batch_size: 512 }
+		Self { messages, gossamer, max_batch_size: 256 }
 	}
 
 	pub fn with_max_batch_size(mut self, max_batch_size: usize) -> Self {
