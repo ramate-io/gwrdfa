@@ -66,7 +66,7 @@ async fn test_bootstrap_non_participant_leave_reaches_transition() -> Result<(),
 			FullClient::bootstrap_non_participant(topic, 6, bootstrap_peers).await?;
 		let leave = leave_message(99, b"resource-acquiring-leave")?;
 		let index = client
-			.send_and_wait_for_transition(leave, Duration::from_secs(120))
+			.send_and_wait_for_transition(leave, Duration::from_secs(60))
 			.await
 			.map_err(|e| {
 				log::debug!("client: failed to send and wait for transition: {}", e);
@@ -76,8 +76,9 @@ async fn test_bootstrap_non_participant_leave_reaches_transition() -> Result<(),
 
 		// Second send should be faster
 		let new_leave = leave_message(99, b"resource-acquiring-leave-2")?;
+		// This works pretty reliably with 2 seconds, but we'll give a budget.
 		let new_index = client
-			.send_and_wait_for_transition(new_leave, Duration::from_secs(15))
+			.send_and_wait_for_transition(new_leave, Duration::from_secs(3))
 			.await
 			.map_err(|e| {
 				log::debug!("client: failed to send and wait for transition: {}", e);
