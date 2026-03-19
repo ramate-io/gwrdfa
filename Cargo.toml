@@ -45,6 +45,7 @@ paste = { version = "1.0", default-features = false }
 libp2p = { version = "0.53.2" }
 ml-dsa = { version = "0.1.0-rc.7" }
 sha3 = { version = "0.10.8" }
+hex = "0.4.3"
 env_logger = "0.11.9"
 dotenv = "0.15.0"
 
@@ -61,6 +62,7 @@ gwrdfa-resample = { path = "gwrdfa/resample/core" }
 
 aegeri-message = { path = "aegeri/message" }
 aegeri-process = { path = "aegeri/process" }
+aegeri-full-client = { path = "aegeri/full-client" }
 
 fuste-ecall-dispatcher = { git = "https://github.com/ramate-io/fuste.git", rev = "e6fba8cc663ffbc42ebc6c7a00f179578b45145b" }
 fuste-exit = { git = "https://github.com/ramate-io/fuste.git", rev = "e6fba8cc663ffbc42ebc6c7a00f179578b45145b" }

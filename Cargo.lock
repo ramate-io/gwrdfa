@@ -16,6 +16,7 @@ dependencies = [
 name = "aegeri"
 version = "0.0.1"
 dependencies = [
+ "aegeri-full-client",
  "aegeri-message",
  "aegeri-process",
  "anyhow",
@@ -24,7 +25,9 @@ dependencies = [
  "dotenv",
  "env_logger",
  "gossamer",
+ "hex",
  "log",
+ "ml-dsa",
  "orfile",
  "serde",
  "serde_json",
