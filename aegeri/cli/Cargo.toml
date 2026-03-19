@@ -10,11 +10,11 @@ publish = { workspace = true }
 rust-version = { workspace = true }
 
 [dependencies]
-# tokio = { workspace = true }
+tokio = { workspace = true }
 # ml-dsa = { workspace = true }
 anyhow = { workspace = true }
 # aegeri-message = { workspace = true }
-# aegeri-process = { workspace = true }
+aegeri-process = { workspace = true }
 # log = { workspace = true }
 # gossamer = { workspace = true }
 clap = { workspace = true }

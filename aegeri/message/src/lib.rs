@@ -23,6 +23,7 @@ use serde::{Deserialize, Serialize};
 use sha3::Digest;
 use std::fmt;
 use std::fmt::Write as _;
+use std::str::FromStr;
 
 fn write_lower_hex(f: &mut fmt::Formatter<'_>, bytes: &[u8]) -> fmt::Result {
 	const HEX: &[u8; 16] = b"0123456789abcdef";
@@ -33,6 +34,34 @@ fn write_lower_hex(f: &mut fmt::Formatter<'_>, bytes: &[u8]) -> fmt::Result {
 		f.write_char(lo)?;
 	}
 	Ok(())
+}
+
+fn bytes_to_lower_hex(bytes: &[u8]) -> String {
+	const HEX: &[u8; 16] = b"0123456789abcdef";
+	let mut out = String::with_capacity(bytes.len() * 2);
+	for &byte in bytes {
+		out.push(HEX[(byte >> 4) as usize] as char);
+		out.push(HEX[(byte & 0x0f) as usize] as char);
+	}
+	out
+}
+
+fn parse_lower_hex_bytes(hex: &str) -> Result<Vec<u8>, PublicKeyHexError> {
+	if hex.len() % 2 != 0 {
+		return Err(PublicKeyHexError::OddLength(hex.len()));
+	}
+	let mut bytes = Vec::with_capacity(hex.len() / 2);
+	let raw = hex.as_bytes();
+	for i in (0..raw.len()).step_by(2) {
+		let hi = (raw[i] as char)
+			.to_digit(16)
+			.ok_or(PublicKeyHexError::InvalidHexCharacter(raw[i] as char, i))?;
+		let lo = (raw[i + 1] as char)
+			.to_digit(16)
+			.ok_or(PublicKeyHexError::InvalidHexCharacter(raw[i + 1] as char, i + 1))?;
+		bytes.push(((hi << 4) | lo) as u8);
+	}
+	Ok(bytes)
 }
 
 /// The ID of a message
@@ -68,6 +97,14 @@ impl fmt::Display for Id {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PublicKey(Vec<u8>);
 
+#[derive(Debug, Clone, thiserror::Error, PartialEq, Eq)]
+pub enum PublicKeyHexError {
+	#[error("public key hex length must be even, got {0}")]
+	OddLength(usize),
+	#[error("invalid hex character '{0}' at position {1}")]
+	InvalidHexCharacter(char, usize),
+}
+
 impl PublicKey {
 	#[cfg(test)]
 	pub fn new_for_test(seed: u8) -> Self {
@@ -85,6 +122,16 @@ impl PublicKey {
 	/// Borrow the bytes of the signer.
 	fn as_bytes(&self) -> &[u8] {
 		&self.0
+	}
+
+	/// Encode the full key bytes as lowercase hex.
+	pub fn to_hex_string(&self) -> String {
+		bytes_to_lower_hex(self.as_bytes())
+	}
+
+	/// Decode a full lowercase/uppercase hex string into a public key.
+	pub fn from_hex_string(hex: &str) -> Result<Self, PublicKeyHexError> {
+		Ok(Self(parse_lower_hex_bytes(hex)?))
 	}
 
 	/// Convert the public key to an encoded verifying key.
@@ -105,6 +152,14 @@ impl PublicKey {
 impl fmt::Display for PublicKey {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		write_lower_hex(f, self.as_bytes())
+	}
+}
+
+impl FromStr for PublicKey {
+	type Err = PublicKeyHexError;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		Self::from_hex_string(s)
 	}
 }
 
@@ -388,6 +443,18 @@ mod tests {
 		assert!(id_hex.chars().all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()));
 		assert!(pk_hex.chars().all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()));
 		assert!(sig_hex.chars().all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()));
+		Ok(())
+	}
+
+	#[test]
+	fn test_public_key_hex_roundtrip_full_length() -> Result<(), anyhow::Error> {
+		let signer = SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![9; 32]));
+		let key = PublicKey::new(&signer);
+		let hex = key.to_hex_string();
+		let decoded = PublicKey::from_hex_string(&hex)?;
+		assert_eq!(decoded, key);
+		let parsed = PublicKey::from_str(&hex)?;
+		assert_eq!(parsed, key);
 		Ok(())
 	}
 }
