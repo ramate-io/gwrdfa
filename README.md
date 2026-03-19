@@ -15,7 +15,8 @@ Gwrdfa is a Rust implementation of Parabyzantine consensus protocols.
 > [!TIP]
 > Parabyzantine protocols are an area of nascent and active research for [Liam Monninger](mailto:liam@ramate.io). To learn more about the current approach to researching them, check out the [write-up](https://docs.google.com/gview?embedded=1&url=https://raw.githubusercontent.com/ramate-io/bfa/main/papers/memo/main.pdf).
 
-
+> [!TIP]
+> Check out [`aegeri`](./aegeri/README.md) to see `gwrdfa` in action with a programmable network.
 
 ## Organization
 
