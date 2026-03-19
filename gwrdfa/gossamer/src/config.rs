@@ -84,6 +84,7 @@ impl GossamerConfig {
 			// Allow publishes before the local node has fully entered the mesh.
 			// This reduces startup flakiness in small, fresh clusters.
 			.flood_publish(true)
+			.max_transmit_size(1024 * 1024 * 16)
 			.build()
 			.map_err(|e| {
 				GossamerConfigError::BuildError(format!("build gossipsub config: {e:?}"))

@@ -1,0 +1,8 @@
+[package]
+name = "my-fuste-heap-program"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+fuste = { workspace = true }
+fuste-galloc = { workspace = true }

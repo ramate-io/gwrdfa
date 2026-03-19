@@ -17,7 +17,7 @@ use tokio::sync::oneshot::Sender;
 #[cfg(feature = "gossamer-logging")]
 macro_rules! gossamer_log {
 	($($arg:tt)*) => {
-		log::error!($($arg)*)
+		log::warn!($($arg)*)
 	};
 }
 

@@ -1,0 +1,110 @@
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/a7abebc31a8f60011277437e000eebcc01702b9f";
+    rust-overlay.url = "github:oxalica/rust-overlay/02227ca8c229c968dbb5de95584cfb12b4313104";
+    flake-utils.url = "github:numtide/flake-utils";
+    crane.url = "github:ipetkov/crane";
+  };
+
+  outputs = { nixpkgs, rust-overlay, flake-utils, crane, ... }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ (import rust-overlay) ];
+        };
+        host = pkgs.stdenv.hostPlatform.config; # e.g., aarch64-apple-darwin
+
+        toolchain = p: (p.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml).override {
+          extensions = [ "rustfmt" "clippy" "rust-src" ];
+          targets = [ host "riscv32i-unknown-none-elf"];
+        };
+        craneLib = (crane.mkLib pkgs).overrideToolchain(toolchain);
+        frameworks = pkgs.darwin.apple_sdk.frameworks;
+
+        # An LLVM build environment
+        dependencies = with pkgs; [
+          cargo-machete
+          perl
+          llvmPackages.bintools
+          openssl
+          openssl.dev
+          libiconv 
+          pkg-config
+          libclang.lib
+          libz
+          clang
+          pkg-config
+          rustPlatform.bindgenHook
+          lld
+          coreutils
+          gcc
+          rust
+        ] ++ lib.optionals stdenv.isDarwin [
+          frameworks.Security
+          frameworks.CoreServices
+          frameworks.SystemConfiguration
+          frameworks.AppKit
+          libelf
+        ] ++ lib.optionals stdenv.isLinux [
+          udev
+          systemd
+          bzip2
+          elfutils
+          jemalloc
+          alsa-lib
+        ];
+
+        # Specific version of toolchain
+        rust = (pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml).override {
+          targets = [ host "wasm32-unknown-unknown" ];
+        };
+
+        rustPlatform = pkgs.makeRustPlatform {
+          cargo = rust;
+          rustc = rust;
+        };
+    
+      in {
+        devShells = rec {
+          default = docker-build;
+          docker-build = pkgs.mkShell {
+            ROCKSDB = pkgs.rocksdb;
+            OPENSSL_DEV = pkgs.openssl.dev;
+
+            hardeningDisable = ["fortify"];
+
+            buildInputs = with pkgs; [
+              # rust toolchain
+              (toolchain pkgs)
+            ] ++ dependencies;
+
+            LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib/";
+
+            shellHook = ''
+              #!/usr/bin/env ${pkgs.bash}
+
+              set -e
+
+              # Export linker flags if on Darwin (macOS)
+              if [[ "${pkgs.stdenv.hostPlatform.system}" =~ "darwin" ]]; then
+                export MACOSX_DEPLOYMENT_TARGET=$(sw_vers -productVersion)
+                export LDFLAGS="-L/opt/homebrew/opt/zlib/lib"
+                export CPPFLAGS="-I/opt/homebrew/opt/zlib/include"
+              fi
+
+              # Add ./target/debug/* to PATH
+              export PATH="$PATH:$(pwd)/target/debug"
+
+              # Add ./target/release/* to PATH
+              export PATH="$PATH:$(pwd)/target/release"
+
+              echo ""
+              echo "Fuste"
+              echo "A pluggable virtual machine for constrained environments."
+            '';
+          };
+        };
+      }
+    );
+}
