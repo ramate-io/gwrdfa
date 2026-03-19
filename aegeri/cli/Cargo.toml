@@ -13,10 +13,10 @@ rust-version = { workspace = true }
 tokio = { workspace = true }
 # ml-dsa = { workspace = true }
 anyhow = { workspace = true }
-# aegeri-message = { workspace = true }
+aegeri-message = { workspace = true }
 aegeri-process = { workspace = true }
 # log = { workspace = true }
-# gossamer = { workspace = true }
+gossamer = { workspace = true }
 clap = { workspace = true }
 orfile = { workspace = true }
 clap-markdown-ext = { workspace = true }

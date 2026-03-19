@@ -16,12 +16,14 @@ dependencies = [
 name = "aegeri"
 version = "0.0.1"
 dependencies = [
+ "aegeri-message",
  "aegeri-process",
  "anyhow",
  "clap",
  "clap-markdown-ext",
  "dotenv",
  "env_logger",
+ "gossamer",
  "log",
  "orfile",
  "serde",

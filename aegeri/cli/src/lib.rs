@@ -1,3 +1,4 @@
+pub mod full_client;
 pub mod local_cluster;
 
 use clap::Parser;
