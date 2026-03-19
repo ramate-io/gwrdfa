@@ -1,5 +1,5 @@
-use clap::Parser;
 use aegeri_process::local_cluster::AegeriLocalClusterConfig;
+use clap::Parser;
 use orfile::Orfile;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
@@ -20,6 +20,7 @@ pub struct QuickRun {
 
 impl QuickRun {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
+		log::info!("building cluster with count={} and topic={}", self.count, self.topic);
 		let mut cluster = AegeriLocalClusterConfig::default()
 			.with_count(self.count)
 			.with_topic(self.topic.clone())
@@ -28,12 +29,7 @@ impl QuickRun {
 
 		println!("topic: {}", self.topic);
 		println!("count: {}", cluster.harts.len());
-		for (i, (hart, addr)) in cluster
-			.harts
-			.iter()
-			.zip(cluster.listen_addrs.iter())
-			.enumerate()
-		{
+		for (i, (hart, addr)) in cluster.harts.iter().zip(cluster.listen_addrs.iter()).enumerate() {
 			println!(
 				"node[{i}] public_key={} address={}",
 				hart.signer_public_key().to_hex_string(),
@@ -51,6 +47,7 @@ impl QuickRun {
 				}
 				_ = tokio::time::sleep(Duration::from_millis(150)) => {
 					for hart in cluster.harts.iter_mut() {
+						log::info!("hart {} updated to consensus indices {:?}", hart.signer_public_key(), hart.index_subcommittee_agreement_set().iter().map(|(index, _)| index).collect::<Vec<_>>());
 						hart.tick();
 					}
 				}

@@ -23,6 +23,7 @@ clap-markdown-ext = { workspace = true }
 serde = { workspace = true }
 dotenv = { workspace = true }
 env_logger = { workspace = true }
+log = { workspace = true }
 
 
 [dev-dependencies]
