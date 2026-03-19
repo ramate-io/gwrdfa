@@ -59,6 +59,9 @@ impl ParabyzantineMessageIn<AegeriParabyzantineData> for AegeriMessageIn {
 
 			// Avoid reprocessing the same inbound record.
 			data.message_inferences.remove::<In>(entity);
+
+			// For now we will also evict the message entirely to avoid buffer bloat.
+			data.message_inferences.remove_entity(entity);
 		}
 	}
 }

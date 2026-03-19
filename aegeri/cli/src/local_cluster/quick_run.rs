@@ -12,7 +12,7 @@ use std::{fs::File, time::Duration};
 #[clap(help_expected = true)]
 pub struct QuickRun {
 	/// The number of nodes to start
-	#[clap(long, default_value = "7")]
+	#[clap(long, default_value = "4")]
 	count: usize,
 	/// The topic to use for the nodes
 	#[clap(long, default_value = "aegeri-local-cluster-quick-run")]
@@ -47,7 +47,15 @@ impl QuickRun {
 		}
 
 		// Write the peer list to the file
-		serde_json::to_writer_pretty(File::open(&self.output_file)?, &peer_list)?;
+		// Creating the file if it doesn't exist or clearing out the old file and overwriting it if it does.
+		if std::fs::exists(&self.output_file)? {
+			std::fs::remove_file(&self.output_file)?;
+		}
+
+		serde_json::to_writer_pretty(
+			File::options().create(true).write(true).open(&self.output_file)?,
+			&peer_list,
+		)?;
 		println!("wrote peer list to {}", self.output_file);
 
 		println!("cluster running; ticking {} harts (Ctrl-C to stop)", cluster.harts.len());

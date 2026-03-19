@@ -6,12 +6,15 @@ use clap::Parser;
 
 #[derive(Parser)]
 #[clap(rename_all = "kebab-case")]
-pub enum LocalCluster {}
+pub enum FullClient {
+	#[clap(subcommand)]
+	Join(join::or_file::Join),
+}
 
-impl LocalCluster {
+impl FullClient {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
 		match self {
-			_ => Ok(()),
+			FullClient::Join(join) => join.execute().await,
 		}
 	}
 }

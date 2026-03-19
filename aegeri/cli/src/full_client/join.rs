@@ -1,7 +1,7 @@
 use aegeri_full_client::FullClient;
 use aegeri_message::{Message, Nonce, Transaction};
 use clap::Parser;
-use ml_dsa::{B32, ExpandedSigningKey, MlDsa44, SigningKey};
+use ml_dsa::{ExpandedSigningKey, MlDsa44, SigningKey, B32};
 use orfile::Orfile;
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
@@ -24,13 +24,14 @@ pub struct Join {
 	#[clap(long, default_value = "1")]
 	seed: u64,
 	/// The peer list to join the cluster.
+	#[orfile(config)]
 	#[clap(flatten)]
 	peer_list: PeerList,
 	/// The number of peers to require during bootstrap.
-	#[clap(long, default_value = "6")]
+	#[clap(long, default_value = "3")]
 	peer_count_required: usize,
 	/// Timeout in seconds to wait for transition confirmation.
-	#[clap(long, default_value = "10")]
+	#[clap(long, default_value = "60")]
 	timeout_seconds: u64,
 }
 
@@ -56,11 +57,24 @@ impl Join {
 			})
 			.collect::<Vec<_>>();
 		let bootstrap_count = self.peer_count_required.min(bootstrap_peers.len());
-		let (mut client, listen_addr) =
-			FullClient::bootstrap_non_participant(self.topic.clone(), bootstrap_count, bootstrap_peers)
-				.await?;
-		let timeout = Duration::from_secs(self.timeout_seconds);
 
+		log::info!(
+			"bootstrapping with count={} and peers={:?}",
+			bootstrap_count,
+			bootstrap_peers
+				.iter()
+				.map(|(addr, pk)| format!("{}:{}", addr, pk))
+				.collect::<Vec<_>>()
+		);
+		let (mut client, listen_addr) = FullClient::bootstrap_non_participant(
+			self.topic.clone(),
+			bootstrap_count,
+			bootstrap_peers,
+		)
+		.await?;
+		log::info!("bootstrapped with client using listen address {}", listen_addr);
+
+		let timeout = Duration::from_secs(self.timeout_seconds);
 		let nonce = Nonce::new(
 			std::time::SystemTime::now()
 				.duration_since(std::time::UNIX_EPOCH)?
@@ -74,28 +88,30 @@ impl Join {
 
 		println!("client_listen_addr: {listen_addr}");
 		println!("transaction_id: {id}");
-		println!("transition_index: {transition_index:?}");
+		println!("transition included in transition: {transition_index:?}");
 		Ok(())
 	}
 
 	fn resolve_signer(&self) -> Result<SigningKey<MlDsa44>, anyhow::Error> {
 		if let Some(private_key_hex) = &self.private_key {
-			let bytes =
-				hex::decode(private_key_hex.strip_prefix("0x").unwrap_or(private_key_hex.as_str()))?;
+			let bytes = hex::decode(
+				private_key_hex.strip_prefix("0x").unwrap_or(private_key_hex.as_str()),
+			)?;
 			if bytes.len() == 32 {
 				return Ok(SigningKey::<MlDsa44>::from_seed(&B32::from_iter(bytes)));
 			}
 
-			let expanded = ExpandedSigningKey::<MlDsa44>::try_from(bytes.as_slice()).map_err(|_| {
-				anyhow::anyhow!(
+			let expanded =
+				ExpandedSigningKey::<MlDsa44>::try_from(bytes.as_slice()).map_err(|_| {
+					anyhow::anyhow!(
 					"--private-key must be either a 32-byte seed (64 hex chars) or an ML-DSA expanded signing key"
 				)
-			})?;
+				})?;
 			#[allow(deprecated)]
 			return Ok(SigningKey::<MlDsa44>::from_expanded(&expanded));
 		}
-		let seed_byte: u8 =
-			u8::try_from(self.seed).map_err(|_| anyhow::anyhow!("--seed must be in range 0..=255"))?;
+		let seed_byte: u8 = u8::try_from(self.seed)
+			.map_err(|_| anyhow::anyhow!("--seed must be in range 0..=255"))?;
 		Ok(SigningKey::<MlDsa44>::from_seed(&B32::from_iter(vec![seed_byte; 32])))
 	}
 }
