@@ -1,0 +1,7 @@
+[target.riscv32i-ramate-fuste-elf]
+rustflags = []
+runner = "fubox run elf --path"
+
+[unstable]
+build-std = ["core", "compiler_builtins", "alloc"]
+build-std-features = ["compiler-builtins-mem"]

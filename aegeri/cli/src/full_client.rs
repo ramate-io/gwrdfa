@@ -9,12 +9,15 @@ use clap::Parser;
 pub enum FullClient {
 	#[clap(subcommand)]
 	Join(join::or_file::Join),
+	#[clap(subcommand)]
+	Leave(leave::or_file::Leave),
 }
 
 impl FullClient {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
 		match self {
 			FullClient::Join(join) => join.execute().await,
+			FullClient::Leave(leave) => leave.execute().await,
 		}
 	}
 }

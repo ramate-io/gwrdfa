@@ -1,0 +1,79 @@
+[workspace]
+
+resolver = "2"
+
+members = [
+  
+  "my-program",
+  "my-fuste-program",
+  "my-fuste-heap-program",
+  "my-fuste-dlt-program",
+
+  "env/ecall",
+  "env/exit",
+  "env/write",
+  "env/channel",
+  "env/fuste",
+  "env/alloc",
+  "env/galloc",
+  "env/systems/write/std-output",
+  "env/systems/channel/serial-channel",
+  "env/systems/channel/std-signer-stores",
+  "env/systems/channel/std-transaction"
+
+]
+
+[workspace.package]
+version = "0.0.1"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+authors = ["Ramate LLC"]
+repository = "www.github.com/ramate/fuste"
+homepage = "www.github.com/ramate/fuste"
+publish = false
+rust-version = "1.85.0"
+
+[workspace.dependencies]
+syn = { version = "2.0", features = ["full"] }
+quote = "1.0.23"
+proc-macro2 = "1.0.32"
+fuste-proc-macro = { git = "https://github.com/ramate-io/fuste.git", rev = "e6fba8cc663ffbc42ebc6c7a00f179578b45145b" }
+fuste-ecall = { git = "https://github.com/ramate-io/fuste.git", rev = "e6fba8cc663ffbc42ebc6c7a00f179578b45145b" }
+fuste-exit = { git = "https://github.com/ramate-io/fuste.git", rev = "e6fba8cc663ffbc42ebc6c7a00f179578b45145b" }
+fuste-write = { git = "https://github.com/ramate-io/fuste.git", rev = "e6fba8cc663ffbc42ebc6c7a00f179578b45145b" }
+fuste-channel = { git = "https://github.com/ramate-io/fuste.git", rev = "e6fba8cc663ffbc42ebc6c7a00f179578b45145b" }
+fuste-alloc = { git = "https://github.com/ramate-io/fuste.git", rev = "e6fba8cc663ffbc42ebc6c7a00f179578b45145b" }
+fuste-galloc = { git = "https://github.com/ramate-io/fuste.git", rev = "e6fba8cc663ffbc42ebc6c7a00f179578b45145b" }
+fuste = { git = "https://github.com/ramate-io/fuste.git", rev = "e6fba8cc663ffbc42ebc6c7a00f179578b45145b" }
+fuste-std-output = { git = "https://github.com/ramate-io/fuste.git", rev = "e6fba8cc663ffbc42ebc6c7a00f179578b45145b" }
+fuste-serial-channel = { git = "https://github.com/ramate-io/fuste.git", rev = "e6fba8cc663ffbc42ebc6c7a00f179578b45145b" }
+fuste-std-signer-stores = { git = "https://github.com/ramate-io/fuste.git", rev = "e6fba8cc663ffbc42ebc6c7a00f179578b45145b" }
+fuste-std-transaction = { git = "https://github.com/ramate-io/fuste.git", rev = "e6fba8cc663ffbc42ebc6c7a00f179578b45145b" }
+
+
+[workspace.lints.clippy]
+debug_assert_with_mut_call = "deny"
+inefficient_to_string = "deny"
+map_flatten = "deny"
+manual_ok_or = "deny"
+doc_link_with_quotes = "deny"
+match_same_arms = "deny"
+semicolon_if_nothing_returned = "deny"
+unwrap_used = "warn"
+expect_used = "warn"
+
+[profile.dev]
+panic = "unwind"
+
+[profile.release.build-override]
+opt-level = 3
+
+[profile.wasm-dev]
+inherits = "dev"
+opt-level = 1
+
+[profile.server-dev]
+inherits = "dev"
+
+[profile.android-dev]
+inherits = "dev"

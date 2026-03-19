@@ -1,0 +1,28 @@
+{
+    "llvm-target": "riscv32",
+    "arch": "riscv32",
+    "llvm-abiname": "ilp32",
+    "target-endian": "little",
+    "target-pointer-width": "32",
+    "features": "+forced-atomics",
+    "target-c-int-width": "32",
+    "data-layout": "e-m:e-p:32:32-i64:64-n32-S128",
+    "os": "none",
+    "env": "fuste",
+    "vendor": "ramate",
+    "linker-flavor": "ld.lld",
+    "executables": true,
+    "linker": "rust-lld",
+    "panic-strategy": "abort",
+    "disable-redzone": true,
+    "max-atomic-width": 0,
+    "relocation-model": "static",
+    "code-model": "small",
+    "pre-link-args": {
+        "ld.lld": [
+            "--entry=_start",
+            "-Tlinker.lld"
+        ]
+    },
+    "target-family": "fuste"
+}
