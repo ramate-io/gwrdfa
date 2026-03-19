@@ -5,6 +5,7 @@ version = 4
 [[package]]
 name = "fuste"
 version = "0.0.1"
+source = "git+https://github.com/ramate-io/fuste.git?rev=e6fba8cc663ffbc42ebc6c7a00f179578b45145b#e6fba8cc663ffbc42ebc6c7a00f179578b45145b"
 dependencies = [
  "fuste-channel",
  "fuste-ecall",
@@ -20,10 +21,12 @@ dependencies = [
 [[package]]
 name = "fuste-alloc"
 version = "0.0.1"
+source = "git+https://github.com/ramate-io/fuste.git?rev=e6fba8cc663ffbc42ebc6c7a00f179578b45145b#e6fba8cc663ffbc42ebc6c7a00f179578b45145b"
 
 [[package]]
 name = "fuste-channel"
 version = "0.0.1"
+source = "git+https://github.com/ramate-io/fuste.git?rev=e6fba8cc663ffbc42ebc6c7a00f179578b45145b#e6fba8cc663ffbc42ebc6c7a00f179578b45145b"
 dependencies = [
  "fuste-ecall",
 ]
@@ -31,10 +34,12 @@ dependencies = [
 [[package]]
 name = "fuste-ecall"
 version = "0.0.1"
+source = "git+https://github.com/ramate-io/fuste.git?rev=e6fba8cc663ffbc42ebc6c7a00f179578b45145b#e6fba8cc663ffbc42ebc6c7a00f179578b45145b"
 
 [[package]]
 name = "fuste-exit"
 version = "0.0.1"
+source = "git+https://github.com/ramate-io/fuste.git?rev=e6fba8cc663ffbc42ebc6c7a00f179578b45145b#e6fba8cc663ffbc42ebc6c7a00f179578b45145b"
 dependencies = [
  "fuste-ecall",
 ]
@@ -42,6 +47,7 @@ dependencies = [
 [[package]]
 name = "fuste-galloc"
 version = "0.0.1"
+source = "git+https://github.com/ramate-io/fuste.git?rev=e6fba8cc663ffbc42ebc6c7a00f179578b45145b#e6fba8cc663ffbc42ebc6c7a00f179578b45145b"
 dependencies = [
  "fuste-alloc",
 ]
@@ -49,6 +55,7 @@ dependencies = [
 [[package]]
 name = "fuste-proc-macro"
 version = "0.0.1"
+source = "git+https://github.com/ramate-io/fuste.git?rev=e6fba8cc663ffbc42ebc6c7a00f179578b45145b#e6fba8cc663ffbc42ebc6c7a00f179578b45145b"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -58,6 +65,7 @@ dependencies = [
 [[package]]
 name = "fuste-serial-channel"
 version = "0.0.1"
+source = "git+https://github.com/ramate-io/fuste.git?rev=e6fba8cc663ffbc42ebc6c7a00f179578b45145b#e6fba8cc663ffbc42ebc6c7a00f179578b45145b"
 dependencies = [
  "fuste-channel",
 ]
@@ -65,6 +73,7 @@ dependencies = [
 [[package]]
 name = "fuste-std-output"
 version = "0.0.1"
+source = "git+https://github.com/ramate-io/fuste.git?rev=e6fba8cc663ffbc42ebc6c7a00f179578b45145b#e6fba8cc663ffbc42ebc6c7a00f179578b45145b"
 dependencies = [
  "fuste-write",
 ]
@@ -72,6 +81,7 @@ dependencies = [
 [[package]]
 name = "fuste-std-signer-stores"
 version = "0.0.1"
+source = "git+https://github.com/ramate-io/fuste.git?rev=e6fba8cc663ffbc42ebc6c7a00f179578b45145b#e6fba8cc663ffbc42ebc6c7a00f179578b45145b"
 dependencies = [
  "fuste-channel",
  "fuste-serial-channel",
@@ -81,6 +91,7 @@ dependencies = [
 [[package]]
 name = "fuste-std-transaction"
 version = "0.0.1"
+source = "git+https://github.com/ramate-io/fuste.git?rev=e6fba8cc663ffbc42ebc6c7a00f179578b45145b#e6fba8cc663ffbc42ebc6c7a00f179578b45145b"
 dependencies = [
  "fuste-channel",
  "fuste-serial-channel",
@@ -89,6 +100,7 @@ dependencies = [
 [[package]]
 name = "fuste-write"
 version = "0.0.1"
+source = "git+https://github.com/ramate-io/fuste.git?rev=e6fba8cc663ffbc42ebc6c7a00f179578b45145b#e6fba8cc663ffbc42ebc6c7a00f179578b45145b"
 dependencies = [
  "fuste-ecall",
 ]
