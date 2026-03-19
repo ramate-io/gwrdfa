@@ -122,7 +122,7 @@ impl FullClient {
 			let Some((index, tx_id)) = received else {
 				anyhow::bail!("transaction status channel closed");
 			};
-			log::debug!("client: received status for id: {:?} index: {:?}", tx_id, index);
+			log::debug!("client: received status for id: {} index: {:?}", tx_id, index);
 			if tx_id == id && matcher(index) {
 				return Ok(index);
 			}

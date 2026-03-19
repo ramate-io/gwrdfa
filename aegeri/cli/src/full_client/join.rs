@@ -21,7 +21,7 @@ pub struct Join {
 	#[clap(long)]
 	private_key: Option<String>,
 	/// The seed to use for the signer if no private key is provided.
-	#[clap(long, default_value = "1")]
+	#[clap(long, default_value = "42")]
 	seed: u64,
 	/// The peer list to join the cluster.
 	#[orfile(config)]
@@ -88,7 +88,7 @@ impl Join {
 
 		println!("client_listen_addr: {listen_addr}");
 		println!("transaction_id: {id}");
-		println!("transition included in transition: {transition_index:?}");
+		println!("transaction included in transition: {transition_index:?}");
 		Ok(())
 	}
 
