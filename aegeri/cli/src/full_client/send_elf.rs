@@ -1,10 +1,10 @@
 use aegeri_full_client::FullClient;
 use aegeri_message::{ElfScript, Message, Nonce, Transaction};
+use cargo_metadata::MetadataCommand;
 use clap::Parser;
 use orfile::Orfile;
 use serde::{Deserialize, Serialize};
-use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common::{bootstrap_peers_from_peer_list, resolve_signer, PeerList};
@@ -37,14 +37,9 @@ pub struct SendElf {
 	elf: String,
 }
 
-#[derive(Debug, Deserialize)]
-struct CargoMetadata {
-	workspace_root: String,
-	target_directory: String,
-}
-
 impl SendElf {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
+		let elf_bytes = self.load_elf_bytes()?;
 		let signer = resolve_signer(self.private_key.as_deref(), self.seed)?;
 		let bootstrap_peers = bootstrap_peers_from_peer_list(&self.peer_list)?;
 		let bootstrap_count = self.peer_count_required.min(bootstrap_peers.len());
@@ -56,7 +51,6 @@ impl SendElf {
 		)
 		.await?;
 
-		let elf_bytes = self.load_elf_bytes()?;
 		let timeout = Duration::from_secs(self.timeout_seconds);
 		let nonce = Nonce::new(
 			std::time::SystemTime::now()
@@ -99,16 +93,11 @@ impl SendElf {
 	}
 
 	fn resolve_workspace_binary_path(&self) -> Result<Option<PathBuf>, anyhow::Error> {
-		let output = Command::new("cargo")
-			.args(["metadata", "--format-version", "1", "--no-deps"])
-			.output()?;
-		if !output.status.success() {
-			return Ok(None);
-		}
-
-		let metadata: CargoMetadata = serde_json::from_slice(&output.stdout)?;
-		let target_directory = Path::new(&metadata.target_directory);
-		let workspace_root = Path::new(&metadata.workspace_root);
+		let metadata = MetadataCommand::new().no_deps().exec()?;
+		let target_directory = metadata.target_directory.as_std_path();
+		let workspace_root = metadata.workspace_root.as_std_path();
+		log::info!("target_directory: {}", target_directory.display());
+		log::info!("workspace_root: {}", workspace_root.display());
 
 		let mut candidate_names = vec![self.elf.clone()];
 		if cfg!(windows) && !self.elf.ends_with(".exe") {
@@ -116,22 +105,40 @@ impl SendElf {
 		}
 
 		for name in candidate_names {
-			let target_debug = target_directory.join("debug").join(&name);
-			if target_debug.exists() {
-				return Ok(Some(target_debug));
-			}
-			let target_release = target_directory.join("release").join(&name);
+			let target_release =
+				target_directory.join("riscv32i-ramate-fuste-elf").join("release").join(&name);
 			if target_release.exists() {
+				log::info!("resolved target release '{}' to {}", name, target_release.display());
 				return Ok(Some(target_release));
 			}
-			// Fallback: workspace-local target directory in case metadata target differs.
-			let workspace_debug = workspace_root.join("target").join("debug").join(&name);
-			if workspace_debug.exists() {
-				return Ok(Some(workspace_debug));
+			let target_debug =
+				target_directory.join("riscv32i-ramate-fuste-elf").join("debug").join(&name);
+			if target_debug.exists() {
+				log::info!("resolved target debug '{}' to {}", name, target_debug.display());
+				return Ok(Some(target_debug));
 			}
-			let workspace_release = workspace_root.join("target").join("release").join(&name);
+			// Fallback: workspace-local target directory in case metadata target differs.
+			let workspace_release = workspace_root
+				.join("target")
+				.join("riscv32i-ramate-fuste-elf")
+				.join("release")
+				.join(&name);
 			if workspace_release.exists() {
+				log::info!(
+					"resolved workspace release '{}' to {}",
+					name,
+					workspace_release.display()
+				);
 				return Ok(Some(workspace_release));
+			}
+			let workspace_debug = workspace_root
+				.join("target")
+				.join("riscv32i-ramate-fuste-elf")
+				.join("debug")
+				.join(&name);
+			if workspace_debug.exists() {
+				log::info!("resolved workspace debug '{}' to {}", name, workspace_debug.display());
+				return Ok(Some(workspace_debug));
 			}
 		}
 
