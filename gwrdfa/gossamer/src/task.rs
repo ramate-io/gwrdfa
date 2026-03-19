@@ -394,13 +394,6 @@ impl<Entity: Send + Sync + 'static> GossamerTask<Entity> {
 							let behaviour = self.swarm.behaviour_mut();
 
 							behaviour.gossipsub.add_explicit_peer(&peer_id);
-
-							// ⚠️ Still consider removing or rate-limiting this
-							if let Err(e) = behaviour.kad.bootstrap() {
-								gossamer_log!(
-									"gossamer: kademlia bootstrap not started after connection to {peer_id}: {e}"
-								);
-							}
 						}
 
 						SwarmEvent::ConnectionClosed { peer_id, .. } => {

@@ -9,8 +9,7 @@ static LOG_INIT: Once = Once::new();
 fn init_test_logger() {
 	LOG_INIT.call_once(|| {
 		let _ = env_logger::Builder::from_env(
-			env_logger::Env::default()
-				.default_filter_or("aegeri_full_client=debug,gossamer=debug/client:*"),
+			env_logger::Env::default().default_filter_or("aegeri_full_client=debug"),
 		)
 		.is_test(true)
 		.try_init();

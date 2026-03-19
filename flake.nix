@@ -31,6 +31,7 @@
         # An LLVM build environment
         dependencies = with pkgs; [
           qemu
+          cargo-flamegraph
           cargo-machete
           protobuf
           grpcurl
@@ -155,6 +156,15 @@
                 export MACOSX_DEPLOYMENT_TARGET=$(sw_vers -productVersion)
                 export LDFLAGS="-L/opt/homebrew/opt/zlib/lib"
                 export CPPFLAGS="-I/opt/homebrew/opt/zlib/include"
+                # cargo-flamegraph defaults to xctrace on macOS if present.
+                # Force dtrace backend in this shell for consistency.
+                export CARGO_FLAMEGRAPH_BACKEND=dtrace
+                if command -v dtrace >/dev/null 2>&1; then
+                  export DTRACE="$(command -v dtrace)"
+                else
+                  export DTRACE="/usr/sbin/dtrace"
+                fi
+                export CARGO_PROFILE_RELEASE_DEBUG=true
               fi
 
               # Add ./target/debug/* to PATH
