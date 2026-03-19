@@ -27,6 +27,7 @@ dependencies = [
  "log",
  "orfile",
  "serde",
+ "serde_json",
  "tokio",
 ]
 

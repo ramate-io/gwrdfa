@@ -1,8 +1,9 @@
+use crate::common::PeerList;
 use aegeri_process::local_cluster::AegeriLocalClusterConfig;
 use clap::Parser;
 use orfile::Orfile;
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
+use std::{fs::File, time::Duration};
 
 /// Runs a local cluster and logs out the topic, public keys, and addresses of the nodes.
 ///
@@ -16,6 +17,9 @@ pub struct QuickRun {
 	/// The topic to use for the nodes
 	#[clap(long, default_value = "aegeri-local-cluster-quick-run")]
 	topic: String,
+	/// The file to write the peer list to.
+	#[clap(long, default_value = "aegeri.peer-list.json")]
+	output_file: String,
 }
 
 impl QuickRun {
@@ -29,13 +33,22 @@ impl QuickRun {
 
 		println!("topic: {}", self.topic);
 		println!("count: {}", cluster.harts.len());
+
+		// Build and log the peer list
+		let mut peer_list = PeerList::new();
 		for (i, (hart, addr)) in cluster.harts.iter().zip(cluster.listen_addrs.iter()).enumerate() {
 			println!(
 				"node[{i}] public_key={} address={}",
 				hart.signer_public_key().to_hex_string(),
 				addr
 			);
+			peer_list.add_peer(hart.signer_public_key());
+			peer_list.add_multiaddr(addr.clone());
 		}
+
+		// Write the peer list to the file
+		serde_json::to_writer_pretty(File::open(&self.output_file)?, &peer_list)?;
+		println!("wrote peer list to {}", self.output_file);
 
 		println!("cluster running; ticking {} harts (Ctrl-C to stop)", cluster.harts.len());
 
