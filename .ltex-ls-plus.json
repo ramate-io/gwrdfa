@@ -186,7 +186,17 @@
         "newtype",
         "Dataflow",
         "Aegeri-specific",
-        "mempool"
+        "mempool",
+        "CLI",
+        "CLIs",
+        "sendelf",
+        "subcommand",
+        "orfile",
+        "multiaddress",
+        "quickrun",
+        "localcluster",
+        "fullclient",
+        "subcommands"
       ]
     },
     "bibtex": {
