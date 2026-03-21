@@ -7,3 +7,54 @@
 | [Features & Bugs](https://github.com/ramate-io/gwrdfa/issues?q=is%3Aissue%20state%3Aopen%20label%3Afeature%2Cbug%20label%3Apriority%3Aurgent%2Cpriority%3Ahigh) | High-priority `feature` and `bug` issues. |
 
 Each issue should have a priority. All Releases Candidates should eventually link up to Events. All Features and Bugs should eventually link up to Release Candidates. 
+
+## Events
+
+Events should be titled as follows:
+
+```
+Event: <name of the event>
+```
+
+Events should be formatted in Markdown as follows:
+
+```
+# Summary
+- **Target date:** <insert date>
+
+Two to three line description of the event.
+
+- Bulleted
+- Line Item
+- Callouts
+
+Any other description as the writer sees fit...
+```
+
+## Release Candidates
+
+Release Candidates should be titled as follows:
+
+```
+Releade Candidate: <name of the release candidate>
+```
+
+Release Candidates should be formatted as follows:
+
+```
+# Summary
+
+This Release Candidate is intended to enable the following events:
+
+- [Link to Event Issue](https://github.com/ramate-io/gwrdfa/issues/4)
+- [Link to Event Issue](https://github.com/ramate-io/gwrdfa/issues/4)
+- [Link to Event Issue](https://github.com/ramate-io/gwrdfa/issues/4)
+
+Two to three line description of the release candidate. 
+
+- Bulleted
+- Line Item
+- Callout
+
+Any other description as the writer sees fit...
+```
