@@ -8,6 +8,13 @@
 
 Each issue should have a priority. All Releases Candidates should eventually link up to Events. All Features and Bugs should eventually link up to Release Candidates. 
 
+All issues should tag the following projects:
+
+- `Gwrdfa`
+- `Robles`
+- `Ramate`
+- `OAC`
+
 ## Events
 
 Events should be titled as follows:
