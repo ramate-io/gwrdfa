@@ -36,7 +36,7 @@ Any other description as the writer sees fit...
 Release Candidates should be titled as follows:
 
 ```
-Releade Candidate: <name of the release candidate>
+Release Candidate: <name of the release candidate>
 ```
 
 Release Candidates should be formatted as follows:
@@ -57,4 +57,26 @@ Two to three line description of the release candidate.
 - Callout
 
 Any other description as the writer sees fit...
+```
+
+## Features & Bugs
+
+A Feature or Bug should be titled as followed:
+
+```
+<One sentence description of what the bug or feature does.>
+```
+
+Features or Bugs should be formatted as follows:
+
+```
+# Summary
+
+<One sentence description of what the bug or feature does.>
+
+- Bulleted 
+- Line Item
+- Callouts
+
+Any other description as the writer sees fit.
 ```
