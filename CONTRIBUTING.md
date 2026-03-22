@@ -12,10 +12,10 @@ Proposals issue labels are generally used to mark requests for research.
 
 All issues should tag the following projects:
 
-- `Gwrdfa`
-- `Robles`
-- `Ramate`
-- `OAC`
+- `Gwrdfa`: https://github.com/orgs/ramate-io/projects/9
+- `Robles`: https://github.com/orgs/ramate-io/projects/4
+- `Ramate`: https://github.com/orgs/ramate-io/projects/2
+- `OAC`: https://github.com/orgs/ramate-io/projects/1
 
 ## Events
 
@@ -125,3 +125,19 @@ Common external knowledge bases include:
 - [Robles](https://github.com/ramate-io/robles)
     - Proposal issue should be followed up with desiderata in the repository.
     - Proposal issue would be closed with a corresponding spec.
+
+> [!TIP]
+> After `gh issue create`, **attach the release candidate as the parent** (sub-issue in the UI is not the same as a Markdown link) and add **`Gwrdfa`**, **`Robles`**, **`Ramate`**, **`OAC`** via Projects (new). `gh issue create -p …` often fails for org projects; use `gh project item-add` (needs `gh auth refresh -s project -s read:project`).
+>
+> ```bash
+> # 1) Create issue (title + body file; labels as needed)
+> gh issue create -R ramate-io/gwrdfa --title "…" --body-file body.md -l proposal -l priority:low
+>
+> # 2) Link new issue as sub-issue of the RC (parent = RC, child = new)
+> PARENT_NODE=$(gh api repos/ramate-io/gwrdfa/issues/<RC#> -q .node_id)
+> CHILD_NODE=$(gh api repos/ramate-io/gwrdfa/issues/<NEW#> -q .node_id)
+> gh api graphql -f query='mutation($i: ID!, $s: ID!) { addSubIssue(input: {issueId: $i, subIssueId: $s}) { issue { number } subIssue { number } } }' -f i="$PARENT_NODE" -f s="$CHILD_NODE"
+>
+> # 3) Add to each org project (numbers match the list under “All issues should tag…” above)
+> for n in 1 2 3 4; do gh project item-add "$n" --owner ramate-io --url https://github.com/ramate-io/gwrdfa/issues/<NEW#>; done
+> ```
