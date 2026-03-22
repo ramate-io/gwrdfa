@@ -30,6 +30,7 @@
 
         # An LLVM build environment
         dependencies = with pkgs; [
+          gh
           qemu
           cargo-flamegraph
           cargo-machete
