@@ -8,6 +8,8 @@
 
 Each issue should have a priority. All Releases Candidates should eventually link up to Events. All Features and Bugs should eventually link up to Release Candidates. 
 
+Proposals issue labels are generally used to mark requests for research.
+
 All issues should tag the following projects:
 
 - `Gwrdfa`
@@ -68,7 +70,7 @@ Any other description as the writer sees fit...
 
 ## Features & Bugs
 
-A Feature or Bug should be titled as followed:
+A Feature or Bug should be titled as follows:
 
 ```
 <One sentence description of what the bug or feature does.>
@@ -87,3 +89,39 @@ Features or Bugs should be formatted as follows:
 
 Any other description as the writer sees fit.
 ```
+
+## Proposals 
+
+A Proposal should be titled as follows:
+
+```
+<One sentence description of the problem which should be proposed against.>
+```
+
+Proposals should be formatted as follows:
+
+```
+# Summary
+
+<One sentence description of the problem which should be proposed against.>.
+
+- Bulleted 
+- Line Item
+- Callouts
+
+Any other description as the writer sees fit.
+```
+
+Proposals will generally be satisfied by additions to repository documentation or inclusion of a written proposal in another knowledge base.
+
+Common external knowledge bases include:
+
+- [OAC](https://github.com/ramate-io/oac)
+    - Proposal issue should be followed up with desiderata in the repository.
+    - Proposal issue would be closed with a corresponding spec.
+- [Ramate](https://github.com/ramate-io/ramate)
+    - Proposal issue should be followed up with desiderata in the repository.
+    - Proposal issue would be closed with a corresponding spec.
+- [Robles](https://github.com/ramate-io/robles)
+    - Proposal issue should be followed up with desiderata in the repository.
+    - Proposal issue would be closed with a corresponding spec.
