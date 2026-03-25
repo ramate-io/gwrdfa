@@ -25,6 +25,10 @@ pub struct GossamerConfig {
 	/// If adding a new deferred message would exceed this cap, the task emits
 	/// `GossamerTaskError::PendingOutboundFull` for that entity.
 	pub max_pending_outbound_bytes: usize,
+	/// Maximum gossipsub message size in bytes.
+	///
+	/// This is forwarded to `libp2p` gossipsub `ConfigBuilder::max_transmit_size`.
+	pub gossipsub_max_transmit_size: usize,
 }
 
 impl Default for GossamerConfig {
@@ -35,6 +39,7 @@ impl Default for GossamerConfig {
 			listen_on: "/ip4/0.0.0.0/tcp/0".parse().unwrap(),
 			bootstrap_peers: vec![],
 			max_pending_outbound_bytes: 1024 * 1024,
+			gossipsub_max_transmit_size: 1024 * 1024 * 6,
 		}
 	}
 }
@@ -73,6 +78,11 @@ impl GossamerConfig {
 		self
 	}
 
+	pub fn with_gossipsub_max_transmit_size(mut self, gossipsub_max_transmit_size: usize) -> Self {
+		self.gossipsub_max_transmit_size = gossipsub_max_transmit_size;
+		self
+	}
+
 	pub async fn build<Entity: Send + Sync + 'static>(
 		self,
 	) -> Result<(GossamerTask<Entity>, Receiver<Multiaddr>, Gossamer<Entity>), GossamerConfigError>
@@ -84,7 +94,7 @@ impl GossamerConfig {
 			// Allow publishes before the local node has fully entered the mesh.
 			// This reduces startup flakiness in small, fresh clusters.
 			.flood_publish(true)
-			.max_transmit_size(1024 * 1024 * 6)
+			.max_transmit_size(self.gossipsub_max_transmit_size)
 			.build()
 			.map_err(|e| {
 				GossamerConfigError::BuildError(format!("build gossipsub config: {e:?}"))

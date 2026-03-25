@@ -1,9 +1,38 @@
 use aegeri_message::PublicKey;
 use clap::Parser;
-use gossamer::Multiaddr;
+use gossamer::{GossamerConfig, Multiaddr};
 use ml_dsa::{ExpandedSigningKey, MlDsa44, SigningKey, B32};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
+
+#[derive(Parser, Serialize, Deserialize, Debug, Clone)]
+pub struct GossamerCliConfig {
+	/// Topic to use for gossamer networking.
+	#[clap(long, default_value = "aegeri-local-cluster-quick-run")]
+	pub topic: String,
+	/// Override gossipsub max transmit size (bytes).
+	#[clap(long, default_value_t = 8 * 1024 * 1024)]
+	pub gossipsub_max_transmit_size: usize,
+}
+
+impl GossamerCliConfig {
+	pub fn into_gossamer_config(self) -> GossamerConfig {
+		GossamerConfig::default()
+			.with_topic(self.topic)
+			.with_gossipsub_max_transmit_size(self.gossipsub_max_transmit_size)
+	}
+}
+
+pub fn gossamer_config_for_bootstrap(
+	cli: GossamerCliConfig,
+	bootstrap_peers: &[(Multiaddr, PublicKey)],
+) -> GossamerConfig {
+	let mut config = cli.into_gossamer_config();
+	config = config.with_bootstrap_peers(
+		bootstrap_peers.iter().map(|(addr, _)| addr).cloned().collect::<Vec<_>>(),
+	);
+	config
+}
 
 #[derive(Parser, Serialize, Deserialize, Debug, Clone)]
 pub struct PeerList {

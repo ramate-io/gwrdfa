@@ -62,8 +62,9 @@ async fn test_bootstrap_non_participant_leave_reaches_transition() -> Result<(),
 	let test_result = async {
 		// Waiting for 7 peers instead of 5 or 1 should make this wait deeper into the
 		// network startup before attempting to send transactions.
+		let gossamer_config = gossamer::GossamerConfig::default().with_topic(topic.clone());
 		let (mut client, _listen_addr) =
-			FullClient::bootstrap_non_participant(topic, 6, bootstrap_peers).await?;
+			FullClient::bootstrap_non_participant(gossamer_config, 6, bootstrap_peers).await?;
 		let leave = leave_message(99, b"resource-acquiring-leave")?;
 		let index = client
 			.send_and_wait_for_transition(leave, Duration::from_secs(60))
