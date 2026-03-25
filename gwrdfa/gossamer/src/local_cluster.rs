@@ -13,6 +13,10 @@ pub struct LocalClusterConfig {
 	pub count: usize,
 	/// The topic to use for the Gossamer instances.
 	pub topic: String,
+	/// Optional override for gossipsub max transmit size (bytes).
+	///
+	/// If unset, uses `GossamerConfig` defaults.
+	pub gossipsub_max_transmit_size: Option<usize>,
 }
 
 impl LocalClusterConfig {
@@ -26,14 +30,23 @@ impl LocalClusterConfig {
 		self
 	}
 
+	pub fn with_gossipsub_max_transmit_size(mut self, bytes: usize) -> Self {
+		self.gossipsub_max_transmit_size = Some(bytes);
+		self
+	}
+
 	pub fn into_base_config(self) -> GossamerConfig {
-		GossamerConfig::default().with_topic(self.topic)
+		let mut config = GossamerConfig::default().with_topic(self.topic);
+		if let Some(bytes) = self.gossipsub_max_transmit_size {
+			config = config.with_gossipsub_max_transmit_size(bytes);
+		}
+		config
 	}
 }
 
 impl Default for LocalClusterConfig {
 	fn default() -> Self {
-		Self { count: 3, topic: "gossamer".to_string() }
+		Self { count: 3, topic: "gossamer".to_string(), gossipsub_max_transmit_size: None }
 	}
 }
 
@@ -79,10 +92,20 @@ mod tests {
 		}
 	}
 
+	fn local_cluster_config_for_tests() -> LocalClusterConfig {
+		let mut config = LocalClusterConfig::default();
+		if let Ok(s) = env::var("GOSSAMER_TEST_MAX_TRANSMIT_SIZE") {
+			if let Ok(bytes) = s.parse::<usize>() {
+				config = config.with_gossipsub_max_transmit_size(bytes);
+			}
+		}
+		config
+	}
+
 	#[tokio::test]
 	#[ignore = "This acquires empheral ports. Run with --ignored if you want to opt in."]
 	async fn test_local_cluster_starts() -> Result<(), LocalClusterError> {
-		let config = LocalClusterConfig::default();
+		let config = local_cluster_config_for_tests();
 		let gossamers = config.build::<u32>().await?;
 		assert!(gossamers.len() == 3);
 		Ok(())
@@ -97,7 +120,7 @@ mod tests {
 	async fn run_local_cluster_send_and_receive_once(
 		max_retries: usize,
 	) -> Result<(), anyhow::Error> {
-		let config = LocalClusterConfig::default();
+		let config = local_cluster_config_for_tests();
 		let mut gossamers = config.build::<u32>().await?;
 		let message = TestMessage(1);
 
