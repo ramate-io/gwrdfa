@@ -97,7 +97,7 @@ mod tests {
 	}
 
 	fn local_cluster_config_for_tests() -> LocalClusterConfig {
-		let mut config = LocalClusterConfig::default();
+		let mut config = LocalClusterConfig::default().with_gossipsub_max_transmit_size(2048);
 		if let Ok(s) = env::var("GOSSAMER_TEST_MAX_TRANSMIT_SIZE") {
 			if let Ok(bytes) = s.parse::<usize>() {
 				config = config.with_gossipsub_max_transmit_size(bytes);
