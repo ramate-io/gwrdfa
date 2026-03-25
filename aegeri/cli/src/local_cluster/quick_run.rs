@@ -4,6 +4,7 @@ use clap::Parser;
 use orfile::Orfile;
 use serde::{Deserialize, Serialize};
 use std::{fs::File, time::Duration};
+use crate::common::GossamerCliConfig;
 
 /// Runs a local cluster and logs out the topic, public keys, and addresses of the nodes.
 ///
@@ -14,9 +15,8 @@ pub struct QuickRun {
 	/// The number of nodes to start
 	#[clap(long, default_value = "4")]
 	count: usize,
-	/// The topic to use for the nodes
-	#[clap(long, default_value = "aegeri-local-cluster-quick-run")]
-	topic: String,
+	#[clap(flatten)]
+	gossamer: GossamerCliConfig,
 	/// The file to write the peer list to.
 	#[clap(long, default_value = "aegeri.peer-list.json")]
 	output_file: String,
@@ -24,14 +24,19 @@ pub struct QuickRun {
 
 impl QuickRun {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
-		log::info!("building cluster with count={} and topic={}", self.count, self.topic);
+		log::info!(
+			"building cluster with count={} and topic={}",
+			self.count,
+			self.gossamer.topic
+		);
 		let mut cluster = AegeriLocalClusterConfig::default()
 			.with_count(self.count)
-			.with_topic(self.topic.clone())
+			.with_topic(self.gossamer.topic.clone())
+			.with_gossipsub_max_transmit_size(self.gossamer.gossipsub_max_transmit_size)
 			.build()
 			.await?;
 
-		println!("topic: {}", self.topic);
+		println!("topic: {}", self.gossamer.topic);
 		println!("count: {}", cluster.harts.len());
 
 		// Build and log the peer list

@@ -5,15 +5,17 @@ use orfile::Orfile;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-use crate::common::{bootstrap_peers_from_peer_list, resolve_signer, PeerList};
+use crate::common::{
+	bootstrap_peers_from_peer_list, gossamer_config_for_bootstrap, resolve_signer, GossamerCliConfig,
+	PeerList,
+};
 
 /// Sends a leave transaction to the cluster and waits for consensus on the transaction.
 #[derive(Parser, Serialize, Deserialize, Debug, Clone, Orfile)]
 #[clap(help_expected = true)]
 pub struct Leave {
-	/// Topic to use for gossamer networking.
-	#[clap(long, default_value = "aegeri-local-cluster-quick-run")]
-	topic: String,
+	#[clap(flatten)]
+	gossamer: GossamerCliConfig,
 	/// The private key hex string to use for the signer.
 	#[clap(long)]
 	private_key: Option<String>,
@@ -46,8 +48,9 @@ impl Leave {
 				.map(|(addr, pk)| format!("{}:{}", addr, pk))
 				.collect::<Vec<_>>()
 		);
+		let gossamer_config = gossamer_config_for_bootstrap(self.gossamer.clone(), &bootstrap_peers);
 		let (mut client, listen_addr) = FullClient::bootstrap_non_participant(
-			self.topic.clone(),
+			gossamer_config,
 			bootstrap_count,
 			bootstrap_peers,
 		)

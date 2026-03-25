@@ -130,9 +130,12 @@ Run quickrun with all parameters passed explicitly as CLI flags. See Orfile docu
 * `--count <COUNT>` — The number of nodes to start
 
   Default value: `4`
-* `--topic <TOPIC>` — The topic to use for the nodes
+* `--topic <TOPIC>` — Topic to use for gossamer networking
 
   Default value: `aegeri-local-cluster-quick-run`
+* `--gossipsub-max-transmit-size <GOSSIPSUB_MAX_TRANSMIT_SIZE>` — Override gossipsub max transmit size (bytes)
+
+  Default value: `8388608`
 * `--output-file <OUTPUT_FILE>` — The file to write the peer list to
 
   Default value: `aegeri.peer-list.json`
@@ -154,9 +157,12 @@ Run quickrun with parameters from environment variables, config files, and CLI f
 * `--count <COUNT>` — The number of nodes to start
 
   Default value: `4`
-* `--topic <TOPIC>` — The topic to use for the nodes
+* `--topic <TOPIC>` — Topic to use for gossamer networking
 
   Default value: `aegeri-local-cluster-quick-run`
+* `--gossipsub-max-transmit-size <GOSSIPSUB_MAX_TRANSMIT_SIZE>` — Override gossipsub max transmit size (bytes)
+
+  Default value: `8388608`
 * `--output-file <OUTPUT_FILE>` — The file to write the peer list to
 
   Default value: `aegeri.peer-list.json`
@@ -199,6 +205,9 @@ Run join with all parameters passed explicitly as CLI flags. See Orfile document
 * `--topic <TOPIC>` — Topic to use for gossamer networking
 
   Default value: `aegeri-local-cluster-quick-run`
+* `--gossipsub-max-transmit-size <GOSSIPSUB_MAX_TRANSMIT_SIZE>` — Override gossipsub max transmit size (bytes)
+
+  Default value: `8388608`
 * `--private-key <PRIVATE_KEY>` — The private key hex string to use for the signer.
 
    Currently interpreted as a 32-byte hex seed for ML-DSA key derivation.
@@ -232,6 +241,9 @@ Run join with parameters from environment variables, config files, and CLI flags
 * `--topic <TOPIC>` — Topic to use for gossamer networking
 
   Default value: `aegeri-local-cluster-quick-run`
+* `--gossipsub-max-transmit-size <GOSSIPSUB_MAX_TRANSMIT_SIZE>` — Override gossipsub max transmit size (bytes)
+
+  Default value: `8388608`
 * `--private-key <PRIVATE_KEY>` — The private key hex string to use for the signer.
 
    Currently interpreted as a 32-byte hex seed for ML-DSA key derivation.
@@ -269,6 +281,9 @@ Run leave with all parameters passed explicitly as CLI flags. See Orfile documen
 * `--topic <TOPIC>` — Topic to use for gossamer networking
 
   Default value: `aegeri-local-cluster-quick-run`
+* `--gossipsub-max-transmit-size <GOSSIPSUB_MAX_TRANSMIT_SIZE>` — Override gossipsub max transmit size (bytes)
+
+  Default value: `8388608`
 * `--private-key <PRIVATE_KEY>` — The private key hex string to use for the signer
 * `--seed <SEED>` — The seed to use for the signer if no private key is provided
 
@@ -300,6 +315,9 @@ Run leave with parameters from environment variables, config files, and CLI flag
 * `--topic <TOPIC>` — Topic to use for gossamer networking
 
   Default value: `aegeri-local-cluster-quick-run`
+* `--gossipsub-max-transmit-size <GOSSIPSUB_MAX_TRANSMIT_SIZE>` — Override gossipsub max transmit size (bytes)
+
+  Default value: `8388608`
 * `--private-key <PRIVATE_KEY>` — The private key hex string to use for the signer
 * `--seed <SEED>` — The seed to use for the signer if no private key is provided
 
@@ -335,6 +353,9 @@ Run sendelf with all parameters passed explicitly as CLI flags. See Orfile docum
 * `--topic <TOPIC>` — Topic to use for gossamer networking
 
   Default value: `aegeri-local-cluster-quick-run`
+* `--gossipsub-max-transmit-size <GOSSIPSUB_MAX_TRANSMIT_SIZE>` — Override gossipsub max transmit size (bytes)
+
+  Default value: `8388608`
 * `--private-key <PRIVATE_KEY>` — The private key hex string to use for the signer
 * `--seed <SEED>` — The seed to use for the signer if no private key is provided
 
@@ -367,6 +388,9 @@ Run sendelf with parameters from environment variables, config files, and CLI fl
 * `--topic <TOPIC>` — Topic to use for gossamer networking
 
   Default value: `aegeri-local-cluster-quick-run`
+* `--gossipsub-max-transmit-size <GOSSIPSUB_MAX_TRANSMIT_SIZE>` — Override gossipsub max transmit size (bytes)
+
+  Default value: `8388608`
 * `--private-key <PRIVATE_KEY>` — The private key hex string to use for the signer
 * `--seed <SEED>` — The seed to use for the signer if no private key is provided
 

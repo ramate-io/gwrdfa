@@ -21,6 +21,8 @@ pub struct AegeriLocalClusterConfig {
 	pub count: usize,
 	/// The topic to use for all gossamer nodes.
 	pub topic: String,
+	/// Override for gossipsub max transmit size (bytes).
+	pub gossipsub_max_transmit_size: usize,
 }
 
 pub struct AegeriLocalCluster {
@@ -39,11 +41,16 @@ impl AegeriLocalClusterConfig {
 		self.topic = topic;
 		self
 	}
+
+	pub fn with_gossipsub_max_transmit_size(mut self, gossipsub_max_transmit_size: usize) -> Self {
+		self.gossipsub_max_transmit_size = gossipsub_max_transmit_size;
+		self
+	}
 }
 
 impl Default for AegeriLocalClusterConfig {
 	fn default() -> Self {
-		Self { count: 3, topic: "aegeri".to_string() }
+		Self { count: 3, topic: "aegeri".to_string(), gossipsub_max_transmit_size: 1024 * 1024 * 6 }
 	}
 }
 
@@ -53,6 +60,7 @@ impl AegeriLocalClusterConfig {
 		let gossamers = LocalClusterConfig::default()
 			.with_count(count)
 			.with_topic(self.topic)
+			.with_gossipsub_max_transmit_size(self.gossipsub_max_transmit_size)
 			.build::<ContainerEntity>()
 			.await?;
 

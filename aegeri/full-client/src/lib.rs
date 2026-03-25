@@ -27,18 +27,16 @@ impl Drop for FullClient {
 
 impl FullClient {
 	pub async fn bootstrap_non_participant(
-		topic: impl Into<String>,
+		gossamer_config: GossamerConfig,
 		bootstrap_count: usize,
 		bootstrap_peers: impl IntoIterator<Item = (Multiaddr, PublicKey)>,
 	) -> Result<(Self, Multiaddr), anyhow::Error> {
 		// Collect all the bootstrap peers into a vector.
 		let bootstrap_peers = bootstrap_peers.into_iter().collect::<Vec<_>>();
 
-		let gossamer_config = GossamerConfig::default()
-			.with_bootstrap_peers(
-				bootstrap_peers.iter().map(|(addr, _)| addr).cloned().collect::<Vec<_>>(),
-			)
-			.with_topic(topic.into());
+		let gossamer_config = gossamer_config.with_bootstrap_peers(
+			bootstrap_peers.iter().map(|(addr, _)| addr).cloned().collect::<Vec<_>>(),
+		);
 		let (gossamer, listen_addr) = Gossamer::spawn_tokio(gossamer_config).await?;
 
 		let hart = AegeriHart::from_gossamer(gossamer)?
