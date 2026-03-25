@@ -14,7 +14,7 @@ dependencies = [
 
 [[package]]
 name = "aegeri"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "aegeri-full-client",
  "aegeri-message",
@@ -37,7 +37,7 @@ dependencies = [
 
 [[package]]
 name = "aegeri-full-client"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "aegeri-message",
  "aegeri-process",
@@ -51,7 +51,7 @@ dependencies = [
 
 [[package]]
 name = "aegeri-message"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "gossamer",
@@ -66,7 +66,7 @@ dependencies = [
 
 [[package]]
 name = "aegeri-process"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "aegeri-message",
  "anyhow",
@@ -1531,7 +1531,7 @@ dependencies = [
 
 [[package]]
 name = "gossamer"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "futures",
@@ -1545,14 +1545,14 @@ dependencies = [
 
 [[package]]
 name = "gwrdfa-container"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "parabyzantine",
 ]
 
 [[package]]
 name = "gwrdfa-resample"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "gwrdfa-container",
@@ -2705,7 +2705,7 @@ dependencies = [
 
 [[package]]
 name = "parabyzantine"
-version = "0.0.1"
+version = "0.1.0"
 
 [[package]]
 name = "parking"
