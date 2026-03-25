@@ -88,7 +88,11 @@ mod tests {
 			Ok(self.0.to_le_bytes().to_vec())
 		}
 		fn from_gossamer_bytes(bytes: Vec<u8>) -> Result<Self, GossamerMessageError> {
-			Ok(TestMessage(u32::from_le_bytes(bytes.try_into().unwrap())))
+			Ok(TestMessage(u32::from_le_bytes(
+				bytes.try_into().map_err(|_| {
+					GossamerMessageError::InternalError("Invalid bytes".to_string())
+				})?,
+			)))
 		}
 	}
 
